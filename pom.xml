@@ -1,0 +1,124 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>elh.eus</groupId>
+	<artifactId>MSM</artifactId>
+	<packaging>jar</packaging>
+	<version>1.0</version>
+	<name>elh-MSM</name>
+	<description>MSM, crawler solution developed by ELhuyar Foundation (elhuyar.eus). Mainly twitter stream connection</description>
+	<developers>
+		<developer>
+			<id>isanvi</id>
+			<name>Iñaki San Vicente</name>
+			<email>i.sanvicente@elhuyar.com</email>
+		</developer>
+		<developer>
+			<id>jasaur</id>
+			<name>Xabier Saralegi</name>
+			<email>x.saralegi@elhuyar.com</email>
+		</developer>
+	</developers>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.custom.java.version>1.7</project.custom.java.version>
+		<maven.compiler.source>${project.custom.java.version}</maven.compiler.source>
+		<maven.compiler.target>${project.custom.java.version}</maven.compiler.target>
+	</properties>
+	<prerequisites>
+		<maven>3.0</maven>
+	</prerequisites>
+	<dependencies>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.11</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>net.sourceforge.argparse4j</groupId>
+			<artifactId>argparse4j</artifactId>
+			<version>0.4.4</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.4</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-validator</groupId>
+			<artifactId>commons-validator</artifactId>
+			<version>1.4.1</version>
+		</dependency>		
+		<dependency>
+  			<groupId>org.json</groupId>
+  			<artifactId>json</artifactId>
+  			<version>20140107</version>
+		</dependency>
+		<dependency>
+			<groupId>jaxen</groupId>
+			<artifactId>jaxen</artifactId>
+			<version>1.1.4</version>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+		  <groupId>com.twitter</groupId>
+		  <artifactId>hbc-core</artifactId>
+		  <version>2.2.0</version>
+		</dependency>
+		<dependency>
+		  <groupId>com.twitter</groupId>
+		  <artifactId>hbc-twitter4j</artifactId>
+		  <version>2.2.0</version>
+		</dependency>
+
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>2.1</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<transformers>
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+									<manifestEntries>
+										<Main-Class>elh.eus.crawler.CLI</Main-Class>
+									</manifestEntries>
+								</transformer>
+							</transformers>
+							<artifactSet>
+								<excludes></excludes>
+							</artifactSet>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>1.2.1</version>
+				<configuration>
+					<mainClass>elh.eus.absa.CLI</mainClass>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>2.9</version>
+			</plugin>
+		
+		</plugins>
+	</build>
+	<url>https://github.com/Elhuyar/MSM.git</url>
+</project>
