@@ -1,9 +1,29 @@
+/*
+ * Copyright 2014 Iñaki San Vicente
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+ */
+
 package elh.eus.MSM;
 
 import com.google.common.collect.Lists;
 import com.twitter.hbc.ClientBuilder;
 import com.twitter.hbc.core.Constants;
+import com.twitter.hbc.core.Hosts;
+import com.twitter.hbc.core.HttpHosts;
+import com.twitter.hbc.core.endpoint.StatusesFilterEndpoint;
 import com.twitter.hbc.core.endpoint.StatusesSampleEndpoint;
+import com.twitter.hbc.core.event.Event;
 import com.twitter.hbc.core.processor.StringDelimitedProcessor;
 import com.twitter.hbc.httpclient.BasicClient;
 import com.twitter.hbc.httpclient.auth.Authentication;
@@ -18,6 +38,9 @@ import twitter4j.Status;
 import twitter4j.StatusDeletionNotice;
 import twitter4j.StatusListener;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -29,7 +52,7 @@ public class TwitterStreamClient {
 
 	private Properties params = new Properties();	
 
-	public TwitterStreamClient (String config, boolean db)
+	public TwitterStreamClient (String config, String store)
 	{
 		params.load(new FileInputStream(new File(config)));
 	
@@ -56,15 +79,15 @@ public class TwitterStreamClient {
 		//After we have created a Client, we can connect and process messages:
 
 		client.connect();
-		while (!client.isDone()) {
-		 String message = queue.take();
-		 if (!db) // print the message to stdout
-		 {
-			 System.out.println(message); 
-		 }
-		 else   //message to database
-		 {
-			 
+		while (!client.isDone()) 
+		{
+			String message = queue.take();
+			switch (store) // print the message to stdout
+			{
+			case "stout": System.out.println(message); break;
+			case "db": System.out.println(message); break;
+			case "solr": System.out.println(message); break;
+			} 
 		 }
 	}
 

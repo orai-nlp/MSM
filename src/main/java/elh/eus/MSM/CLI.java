@@ -66,8 +66,8 @@ public class CLI {
 	 * Argument parser instance.
 	 */
 	private ArgumentParser argParser = ArgumentParsers.newArgumentParser(
-			"elh-crawler-" + version + ".jar").description(
-					"elh-crawler-" + version
+			"elh-MSM-" + version + ".jar").description(
+					"elh-MSM-" + version
 					+ " is a crawling module developed by Elhuyar Foundation.\n");
 	/**
 	 * Sub parser instance.
@@ -136,10 +136,11 @@ public class CLI {
 	
 	public final void twitterCrawler()
 	{
-		String cfg = parsedArguments.getString("config");			
+		String cfg = parsedArguments.getString("config");
+		String store = parsedArguments.getString("store");
 		
 		try {
-			TwitterStreamClient twitterClient = new TwitterStreamClient(cfg);
+			TwitterStreamClient twitterClient = new TwitterStreamClient(cfg, store);
 		} catch (Exception e) {			
 			e.printStackTrace();
 		} 		
@@ -148,11 +149,11 @@ public class CLI {
 	public final void tagInfluence()
 	{
 		String cfg = parsedArguments.getString("config");	
-		String sources = parsedArguments.getString("sources", );	
+		String sources = parsedArguments.getString("sources");	
 		boolean db = parsedArguments.getBoolean("database");
 		
 		try {
-			InfluenceTagger infTagger = new InfluenceTagger(cfg);
+			InfluenceTagger infTagger = new InfluenceTagger(cfg, db);
 		} catch (Exception e) {			
 			e.printStackTrace();
 		} 
@@ -166,9 +167,13 @@ public class CLI {
 		.required(true)
 		.help("Configuration file that contains the necessary parameters to connect to the twitter public "
 				+ "stream for crawling.\n");
-		tweetCrawlParser.addArgument("-db", "--database")		
-		.action(Arguments.storeTrue())
-		.help("Whether tweets shall be stored in a database or printed to stdout (default).\n");
+		tweetCrawlParser.addArgument("-s", "--store")		
+		.choices("stout", "db", "solr")
+		.setDefault("stout")
+		.help("Whether tweets shall be stored in a database, an Apache solr Index or printed to stdout (default).\n"
+				+ "\t - \"stout\" : standard output"
+				+ "\t - \"db\" : standard output"
+				+ "\t - \"solr\" : standard output\n");
 	}
 	
 	
@@ -179,7 +184,7 @@ public class CLI {
 		.help("Configuration file that contains the necessary parameters to connect to the twitter public "
 				+ "stream for crawling.\n");
 		influenceTaggerParser.addArgument("-c", "--config")		
-		.action(false)
+		.required(true)
 		.help("Whether tweets shall be stored in a database or printed to stdout (default).\n");
 		influenceTaggerParser.addArgument("-db", "--database")		
 		.action(Arguments.storeTrue())
