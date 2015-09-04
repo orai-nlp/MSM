@@ -66,6 +66,11 @@
 		  <artifactId>hbc-twitter4j</artifactId>
 		  <version>2.2.0</version>
 		</dependency>
+	    <dependency>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-simple</artifactId>
+          <version>1.7.12</version>
+    	</dependency>
 
 	</dependencies>
 
@@ -86,7 +91,7 @@
 								<transformer
 									implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
 									<manifestEntries>
-										<Main-Class>elh.eus.crawler.CLI</Main-Class>
+										<Main-Class>elh.eus.MSM.CLI</Main-Class>
 									</manifestEntries>
 								</transformer>
 							</transformers>
@@ -103,7 +108,7 @@
 				<artifactId>exec-maven-plugin</artifactId>
 				<version>1.2.1</version>
 				<configuration>
-					<mainClass>elh.eus.absa.CLI</mainClass>
+					<mainClass>elh.eus.MSM.CLI</mainClass>
 				</configuration>
 			</plugin>
 

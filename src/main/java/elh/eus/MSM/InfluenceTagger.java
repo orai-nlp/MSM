@@ -19,6 +19,7 @@ package elh.eus.MSM;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -40,17 +41,26 @@ public class InfluenceTagger {
 
 	public InfluenceTagger (String config, boolean db)
 	{
-		params.load(new FileInputStream(new File(config)));
+		try {
+			params.load(new FileInputStream(new File(config)));
+		} catch (FileNotFoundException fe){
+			System.err.println("elh-MSM::InfluenceTagger - Config file not found "+config);
+			System.exit(1);
+		} catch (IOException ioe){
+			System.err.println("elh-MSM::InfluenceTagger - Config file could not read "+config);
+			System.exit(1);
+		} 
+		
 		KloutKey = params.getProperty("KloutKey", "none");
 		if (KloutKey.equalsIgnoreCase("none"))
 		{
-			System.err.println("MSM::InflucenceTagger WARNING - no Klout Key could be found, Klout index won't be retrieved");
+			System.err.println("MSM::InfluenceTagger WARNING - no Klout Key could be found, Klout index won't be retrieved");
 		}
 		
 		PRKey = params.getProperty("PRKey", "none");
 		if (PRKey.equalsIgnoreCase("none"))
 		{
-			System.err.println("MSM::InflucenceTagger WARNING - no PageRank Key could be found, PageRank index won't be retrieved");
+			System.err.println("MSM::InfluenceTagger WARNING - no PageRank Key could be found, PageRank index won't be retrieved");
 		}
 	}
 	
@@ -98,22 +108,7 @@ public class InfluenceTagger {
      */
 	private double PageRankIndex (String id) 
 	{
-         // get klout id          
-         JSONObject json=get("http://api.klout.com/v2/identity.json/twitter?screenName="+userId+"&key="+key);
-         // if json is empty return influence 0.
-         if (!json)
-         {
-             return 0;
-         }      
-         my $decoded_json = decode_json( $json );
-         my $kloutid=$decoded_json->{'id'};
-         // get klout score. Klout scroe range is [1..100]
-         $json=get("http://api.klout.com/v2/user.json/"+kloutId"/score?key="+key);
-         $decoded_json = decode_json( $json );
-         double kloutscore=$decoded_json->{'score'};
-         //print STDERR "$src - $srcType - $kloutscore\n";
-         return kloutscore; 
-
+		return 0;
 	}
 	
 	
