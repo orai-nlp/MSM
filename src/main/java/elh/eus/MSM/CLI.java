@@ -79,6 +79,10 @@ public class CLI {
 	 */
 	private Subparser tweetCrawlParser;
 	/**
+	 * The parser that manages the feed reader sub-command.
+	 */
+	private Subparser feedReaderParser;
+	/**
 	 * The parser that manages the influence tagger sub-command.
 	 */
 	private Subparser influenceTaggerParser;
@@ -90,6 +94,8 @@ public class CLI {
 	public CLI() {
 		tweetCrawlParser = subParsers.addParser("twitter").help("Twitter Stream crawling CLI");
 		loadTwitterCrawlerParameters();
+		feedReaderParser = subParsers.addParser("feed").help("Feed reaader CLI");
+		loadFeedReaderParameters();
 		influenceTaggerParser = subParsers.addParser("influence").help("Influence tagger CLI");
 		loadInfluenceTaggerParameters();
 	}
@@ -123,7 +129,11 @@ public class CLI {
 			System.err.println("CLI options: " + parsedArguments);
 			if (args[0].equals("twitter")) {
 				twitterCrawler();
-			} else if (args[0].equals("influence")) {
+			} 
+			else if (args[0].equals("feed")) {
+				feedReader();
+			} 
+			else if (args[0].equals("influence")) {
 				tagInfluence();
 			}
 		} catch (ArgumentParserException e) {
@@ -144,6 +154,27 @@ public class CLI {
 		} catch (Exception e) {			
 			e.printStackTrace();
 		} 		
+	}
+	
+	
+	public final void feedReader()
+	{
+		String cfg = parsedArguments.getString("config");
+		String store = parsedArguments.getString("store");
+		String url = parsedArguments.getString("url");
+		
+		if (! url.isEmpty())
+		{		
+			FeedReader feedReader = new FeedReader(url);
+		}
+		else
+		{
+			try {
+				FeedReader feedReader = new FeedReader(cfg, store);
+			} catch (Exception e) {			
+				e.printStackTrace();
+			}
+		}
 	}
 	
 	public final void tagInfluence()
@@ -176,6 +207,24 @@ public class CLI {
 				+ "\t - \"solr\" : standard output\n");
 	}
 	
+	public final void loadFeedReaderParameters()
+	{
+		feedReaderParser.addArgument("-c", "--config")
+		.required(false)
+		.help("Configuration file that contains the necessary parameters to connect to the twitter public "
+				+ "stream for crawling.\n");
+
+		feedReaderParser.addArgument("-u", "--url")
+		.required(false)
+		.help("URL of the feed we want to crawl.\n");
+		feedReaderParser.addArgument("-s", "--store")		
+		.choices("stout", "db", "solr")
+		.setDefault("stout")
+		.help("Whether tweets shall be stored in a database, an Apache solr Index or printed to stdout (default).\n"
+				+ "\t - \"stout\" : standard output"
+				+ "\t - \"db\" : standard output"
+				+ "\t - \"solr\" : standard output\n");
+	}
 	
 	public final void loadInfluenceTaggerParameters()
 	{
