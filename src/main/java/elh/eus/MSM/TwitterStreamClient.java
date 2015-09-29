@@ -1,18 +1,22 @@
 /*
- * Copyright 2014 Iñaki San Vicente
+ * Copyright 2015 Elhuyar Fundazioa
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+This file is part of MSM.
 
-http://www.apache.org/licenses/LICENSE-2.0
+    EliXa is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+    MSM is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with MSM.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 
 package elh.eus.MSM;
 
@@ -56,6 +60,7 @@ public class TwitterStreamClient {
 
 	private Properties params = new Properties();	
 	private String store = "";
+	private List<String> acceptedLangs;
 		
 	public String getStore() {
 		return store;
@@ -72,12 +77,34 @@ public class TwitterStreamClient {
         	switch (getStore()) // print the message to stdout
 			{
 			case "stout": System.out.println(status.toString()); break;
-			case "db": System.out.println("db - @" + status.getUser().getScreenName() + " - " + status.getText()); break;
+			case "db":
+				System.out.println("db - @" + status.getUser().getScreenName() + " - " + status.getText());
+				storeMention(status);
+				break;
 			case "solr": System.out.println("solr - @" + status.getUser().getScreenName() + " - " + status.getText()); break;
 			} 
         }
 
-        @Override
+        private void storeMention(Status status) {        	
+			String text = status.getText();
+			String lang = status.getLang();			
+			//we do not blindly trust twitter language identification, so we do our own checking.
+			lang = Utils.detectLanguage(text, lang);
+			
+			if (acceptedLangs.contains("all") || acceptedLangs.contains(lang))
+			{
+				Mention m = new Mention (status);
+				int success =1;
+				switch (getStore()) // print the message to stdout
+				{				
+				case "db": success = m.mention2db(); break;
+				case "solr": success = m.mention2solr(); break;
+				}
+			}
+			
+		}
+
+		@Override
         public void onDeletionNotice(StatusDeletionNotice statusDeletionNotice) {
             System.out.println("Got a status deletion notice id:" + statusDeletionNotice.getStatusId());
         }
@@ -154,6 +181,7 @@ public class TwitterStreamClient {
 		} 
 		
 		setStore(store);
+		loadAcceptedLangs(params.getProperty("langs", "all"));
 		
 		/** Set up your blocking queues: Be sure to size these properly based on expected TPS of your stream */
 		BlockingQueue<String> msgQueue = new LinkedBlockingQueue<String>(100000);
@@ -233,6 +261,10 @@ public class TwitterStreamClient {
 		//After we have created a Client, we can connect and process messages:
 		//client.connect();
 
+	}
+
+	private void loadAcceptedLangs(String property) {
+		this.acceptedLangs=Arrays.asList(property.split(","));		
 	}
 	
 	/*sub store_tweet_toDB
