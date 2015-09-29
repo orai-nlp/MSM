@@ -17,3 +17,8 @@ hs_err_pid*
 
 #mvn createad files
 /dependency-reduced-pom.xml
+
+#eclipse related files
+/.settings/
+/.project
+/.classpath

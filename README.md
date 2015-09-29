@@ -105,15 +105,16 @@ To install the module in the local maven repository, usually located in ~/.m2/, 
 mvn clean install
 ````
 
-7. USING elh-crawler
+7. USING MSM
 =========================
 
 
-Elh-crawler Funcionalities
+MSM Funcionalities
 ==========================
-Elh-crawler provides 2 main funcionalities:
-   - **twitter**: Twitter Publick stream crawling.
-   - **influence**: looks for the influence of a given list of sources. Klout index for twitter users and PageRank for websites
+MSM provides 3 main funcionalities:
+   - **twitter**: Twitter Public stream crawling.
+   - **feed**: Syndication feed crawling (RSS, Atom, ...). Feed types supported by ROME tools (http://rometools.github.io/rome/)  
+   - **influence**: looks for the influence of a given list of sources. Klout index for twitter users and PageRank for websites.
 
 
 GENERATING JAVADOC
