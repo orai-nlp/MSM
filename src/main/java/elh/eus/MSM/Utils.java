@@ -32,11 +32,20 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+
 import com.google.common.base.Optional;
+import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
 import com.optimaize.langdetect.LanguageDetector;
 import com.optimaize.langdetect.LanguageDetectorBuilder;
 import com.optimaize.langdetect.i18n.LdLocale;
@@ -199,6 +208,18 @@ public final class Utils {
 			System.exit(1);
 		}
 		return result;
+	}
+	
+	public static Connection DbConnection (String usr, String pass, String host, String db) throws NamingException, SQLException {
+					
+			MysqlDataSource ds = new MysqlDataSource();
+			ds.setUser(usr);
+			ds.setPassword(pass);
+			ds.setServerName(host);
+			ds.setDatabaseName(db);			
+			//ds.setUrl("jdbc:mysql://"+host+":3306/"+db);
+			Connection conn = ds.getConnection();
+			return conn;		
 	}
 	
 }

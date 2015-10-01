@@ -24,13 +24,16 @@ import java.util.List;
 import twitter4j.JSONObject;
 import twitter4j.Status;
 
+import java.sql.* ;  // for standard JDBC programs
+import java.math.* ; // for BigDecimal and BigInteger support
+
 public class Mention {
 
-	private int id;
-	private int author_id;
+	private int mention_id;
+	private int source_id;
 	private String text;
 	private String url;
-	private List<String> keywords;
+	private List<Keyword> keywords;
 	private String lang;
 	private String polarity;
 	
@@ -55,7 +58,18 @@ public class Mention {
 		
 	}
 	
-	public int mention2db() {
+	public int mention2db(Connection conn) {	
+
+		Statement stmt;
+		try {
+			stmt = conn.createStatement();
+			stmt.close();
+			conn.close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 		return 1;
 	}
 	

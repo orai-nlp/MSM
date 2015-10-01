@@ -47,9 +47,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.sql.Connection;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -90,14 +93,26 @@ public class TwitterStreamClient {
 			String lang = status.getLang();			
 			//we do not blindly trust twitter language identification, so we do our own checking.
 			lang = Utils.detectLanguage(text, lang);
-			
+
 			if (acceptedLangs.contains("all") || acceptedLangs.contains(lang))
 			{
 				Mention m = new Mention (status);
 				int success =1;
 				switch (getStore()) // print the message to stdout
 				{				
-				case "db": success = m.mention2db(); break;
+				case "db":
+					try {
+						success = m.mention2db(Utils.DbConnection(
+								params.getProperty("dbuser"),
+								params.getProperty("dbpass"),
+								params.getProperty("dbpass"),
+								params.getProperty("dbpass")));
+						break;
+					} catch (Exception e) {
+						System.err.println("elh-MSM::TwitterStreamClient - connection with the DB could not be established");
+						e.printStackTrace();
+					}
+
 				case "solr": success = m.mention2solr(); break;
 				}
 			}
@@ -192,7 +207,36 @@ public class TwitterStreamClient {
 		StatusesFilterEndpoint hosebirdEndpoint = new StatusesFilterEndpoint();
 		// Optional: set up some followings and track terms
 		//List<Long> followings = Lists.newArrayList(1234L, 566788L);
-		String searchTerms = params.getProperty("searchTerms", "twitter,api");		
+		String searchTerms = "";
+		try{
+			Connection conn = Utils.DbConnection(
+						params.getProperty("dbuser"), 
+						params.getProperty("dbpass"), 
+						params.getProperty("dbhost"), 
+						params.getProperty("dbname")); 
+			List<Keyword> kwrds= Keyword.retrieveFromDB(conn);
+			Set<String> kwrdSet = new HashSet<String>();
+			for (Keyword k : kwrds)
+			{
+				kwrdSet = new HashSet<String>();
+				kwrdSet.addAll(k.getAllTexts());				
+			}
+			searchTerms = Arrays.asList(kwrdSet).toString().replaceAll("(^\\[|\\]$)", "").replace(", ", ",").toLowerCase();
+			
+		} catch (Exception e){
+			System.err.println("elh-MSM::TwitterStreamClient - connection with the DB could not be established");
+			e.printStackTrace();
+			searchTerms = params.getProperty("searchTerms", "twitter,api");
+		}
+		
+		if (searchTerms.equalsIgnoreCase(""))
+		{
+			searchTerms = params.getProperty("searchTerms", "twitter,api");
+		}
+		
+		System.err.println("elh-MSM::TwitterStreamClient - Search terms: "+searchTerms);
+		
+		
 		List<String> terms = Arrays.asList(searchTerms.split(","));
 		//hosebirdEndpoint.followings(followings);
 		hosebirdEndpoint.trackTerms(terms);

@@ -54,7 +54,7 @@ public class SearchEngineAPI {
 			System.err.println("MSM::SearchEngineAPI - ERROR: malformed source url given"+ue.getMessage());
 		} 
 
-		getFeed();
+		queryAPI();
 	}
 
 	public SearchEngineAPI(String config, String store) {
@@ -76,19 +76,14 @@ public class SearchEngineAPI {
 			System.err.println("MSM::SearchEngineAPI - ERROR: malformed source url given"+ue.getMessage());
 		} 
 
-		getFeed();
+		queryAPI();
 	}
 
 
-	private void getFeed (){
+	private void queryAPI (){
 
 		boolean ok = false;
 		try {
-			SyndFeedInput input = new SyndFeedInput();
-			SyndFeed feed = input.build(new XmlReader(getFeedUrl()));
-
-			System.out.println(feed);
-
 			ok = true;
 		} catch (Exception ex) {
 			ex.printStackTrace();
