@@ -20,6 +20,7 @@ This file is part of MSM.
 package elh.eus.MSM;
 
 import java.util.List;
+import java.util.Date;
 
 import twitter4j.JSONObject;
 import twitter4j.Status;
@@ -30,20 +31,113 @@ import java.math.* ; // for BigDecimal and BigInteger support
 public class Mention {
 
 	private int mention_id;
-	private int source_id;
+	private long source_id;
 	private String text;
 	private String url;
 	private List<Keyword> keywords;
 	private String lang;
+	private Date date;
 	private String polarity;
+	private int retweets;
+	private int favourites;
+	
+	/**
+	 * Setter and getter functions  
+	 */
+	
+	public int getMention_id() {
+		return mention_id;
+	}
+
+	public void setMention_id(int mention_id) {
+		this.mention_id = mention_id;
+	}
+
+	public long getSource_id() {
+		return source_id;
+	}
+
+	public void setSource_id(long l) {
+		this.source_id = l;
+	}
+
+	public String getText() {
+		return text;
+	}
+
+	public void setText(String text) {
+		this.text = text;
+	}
+
+	public Date getDate() {
+		return date;
+	}
+
+	public void setDate(Date date) {
+		this.date = date;
+	}
+	
+	public String getUrl() {
+		return url;
+	}
+
+	public void setUrl(String url) {
+		this.url = url;
+	}
+
+	public List<Keyword> getKeywords() {
+		return keywords;
+	}
+
+	public void setKeywords(List<Keyword> keywords) {
+		this.keywords = keywords;
+	}
+
+	public String getLang() {
+		return lang;
+	}
+
+	public void setLang(String lang) {
+		this.lang = lang;
+	}
+
+	public String getPolarity() {
+		return polarity;
+	}
+
+	public void setPolarity(String polarity) {
+		this.polarity = polarity;
+	}
+
+	public int getRetweets() {
+		return retweets;
+	}
+
+	public void setRetweets(int rt) {
+		this.retweets = rt;
+	}
+
+	public int getFavourites() {
+		return favourites;
+	}
+
+	public void setFavourites(int favourites) {
+		this.favourites = favourites;
+	}
 	
 	
 	public Mention(JSONObject json) {
 		
 	}
 	
-	public Mention(Status statusTwitter4j) {
-		
+	public Mention(Status statusTwitter4j, String lang) {
+		setLang(lang);
+		setText(statusTwitter4j.getText());
+		setDate(statusTwitter4j.getCreatedAt());
+		setUrl("https://twitter.com/"+statusTwitter4j.getUser().getScreenName()+"/status/"+statusTwitter4j.getId());
+		setRetweets(statusTwitter4j.getRetweetCount());
+		setFavourites(statusTwitter4j.getFavoriteCount());
+		setSource_id(statusTwitter4j.getUser().getId());
 	}
 	
 	public Mention() {

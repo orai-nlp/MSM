@@ -48,6 +48,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.Connection;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -57,6 +58,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+
+import org.apache.commons.io.FileUtils;
 
 
 public class TwitterStreamClient {
@@ -77,6 +80,17 @@ public class TwitterStreamClient {
         @Override
         public void onStatus(Status status) 
         {
+        	//if log is active store status into log file.
+        	String logFilePath = params.getProperty("twitter_log", "no");
+        	if (! logFilePath.equalsIgnoreCase("no"))
+        	{
+        		try {
+					FileUtils.writeStringToFile(new File(logFilePath), status.toString());
+				} catch (IOException e) {
+					System.err.println("elh-MSM::TwitterStreamClient -IO error when writing to twitter client log");
+					e.printStackTrace();
+				}
+        	}
         	switch (getStore()) // print the message to stdout
 			{
 			case "stout": System.out.println(status.toString()); break;
@@ -96,7 +110,7 @@ public class TwitterStreamClient {
 
 			if (acceptedLangs.contains("all") || acceptedLangs.contains(lang))
 			{
-				Mention m = new Mention (status);
+				Mention m = new Mention (status, lang);
 				int success =1;
 				switch (getStore()) // print the message to stdout
 				{				
@@ -205,39 +219,42 @@ public class TwitterStreamClient {
 		/** Declare the host you want to connect to, the endpoint, and authentication (basic auth or oauth) */
 		Hosts hosebirdHosts = new HttpHosts(Constants.STREAM_HOST);
 		StatusesFilterEndpoint hosebirdEndpoint = new StatusesFilterEndpoint();
-		// Optional: set up some followings and track terms
-		//List<Long> followings = Lists.newArrayList(1234L, 566788L);
-		String searchTerms = "";
+		
+		//get search terms from the DB
+		List<String> terms = new ArrayList<String>();
 		try{
 			Connection conn = Utils.DbConnection(
 						params.getProperty("dbuser"), 
 						params.getProperty("dbpass"), 
 						params.getProperty("dbhost"), 
 						params.getProperty("dbname")); 
-			List<Keyword> kwrds= Keyword.retrieveFromDB(conn);
+			List<Keyword> kwrds= Keyword.retrieveFromDB(conn);			
 			Set<String> kwrdSet = new HashSet<String>();
 			for (Keyword k : kwrds)
 			{
-				kwrdSet = new HashSet<String>();
 				kwrdSet.addAll(k.getAllTexts());				
 			}
-			searchTerms = Arrays.asList(kwrdSet).toString().replaceAll("(^\\[|\\]$)", "").replace(", ", ",").toLowerCase();
+			
+			// null object and empty string ("") may be here due to the fields in DB. Remove them from keyword set. 
+			kwrdSet.remove(null);
+			kwrdSet.remove("");
+			terms = new ArrayList<String>(kwrdSet);
+			//searchTerms = Arrays.asList(kwrdSet).toString().replaceAll("(^\\[|\\]$)", "").replace(", ", ",").toLowerCase();
 			
 		} catch (Exception e){
-			System.err.println("elh-MSM::TwitterStreamClient - connection with the DB could not be established");
-			e.printStackTrace();
-			searchTerms = params.getProperty("searchTerms", "twitter,api");
+			System.err.println("elh-MSM::TwitterStreamClient - connection with the DB could not be established,"
+					+ "MSM will try to read search terms from config file.");
+			//e.printStackTrace();			
 		}
 		
-		if (searchTerms.equalsIgnoreCase(""))
+		// If no search terms could be retrieved from DB read them from config file.
+		if (terms.isEmpty())
 		{
-			searchTerms = params.getProperty("searchTerms", "twitter,api");
+			terms = Arrays.asList(params.getProperty("searchTerms").split(","));			
 		}
 		
-		System.err.println("elh-MSM::TwitterStreamClient - Search terms: "+searchTerms);
-		
-		
-		List<String> terms = Arrays.asList(searchTerms.split(","));
+		System.err.println("elh-MSM::TwitterStreamClient - Search terms: "+terms.toString());
+				
 		//hosebirdEndpoint.followings(followings);
 		hosebirdEndpoint.trackTerms(terms);
 		

@@ -129,9 +129,8 @@ public class Keyword {
 		ResultSet rs = stmt.executeQuery("SELECT * FROM keyword");
 		try{	
 			while (rs.next()) {
-				Keyword kwrd = new Keyword(rs.getString("text_eu"), rs.getString("text_es"), rs.getString("text_en"), rs.getString("text_fr"));
+				Keyword kwrd = new Keyword(rs.getString("term_eu"), rs.getString("term_es"), rs.getString("term_en"), rs.getString("term_fr"));
 				kwrd.setId(rs.getInt("keyword_id"));
-				System.out.println(kwrd.getId() + "\t" + rs.getString("text_eu") + "\t" + rs.getString("text_es") + "\t" + rs.getString("text_en") + "\t" + rs.getString("text_fr"));
 				result.add(kwrd);
 			}
 		} catch (SQLException sqle ) {

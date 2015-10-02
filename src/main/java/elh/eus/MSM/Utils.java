@@ -217,7 +217,7 @@ public final class Utils {
 			ds.setPassword(pass);
 			ds.setServerName(host);
 			ds.setDatabaseName(db);			
-			//ds.setUrl("jdbc:mysql://"+host+":3306/"+db);
+			//System.err.println("Utils::DbConnection -> connection attributes: "+ds.getUrl());
 			Connection conn = ds.getConnection();
 			return conn;		
 	}
