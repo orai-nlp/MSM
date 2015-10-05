@@ -31,7 +31,7 @@ import java.math.* ; // for BigDecimal and BigInteger support
 public class Mention {
 
 	private int mention_id;
-	private long source_id;
+	private String source_id;
 	private String text;
 	private String url;
 	private List<Keyword> keywords;
@@ -53,11 +53,11 @@ public class Mention {
 		this.mention_id = mention_id;
 	}
 
-	public long getSource_id() {
+	public String getSource_id() {
 		return source_id;
 	}
 
-	public void setSource_id(long l) {
+	public void setSource_id(String l) {
 		this.source_id = l;
 	}
 
@@ -137,7 +137,7 @@ public class Mention {
 		setUrl("https://twitter.com/"+statusTwitter4j.getUser().getScreenName()+"/status/"+statusTwitter4j.getId());
 		setRetweets(statusTwitter4j.getRetweetCount());
 		setFavourites(statusTwitter4j.getFavoriteCount());
-		setSource_id(statusTwitter4j.getUser().getId());		
+		setSource_id("tw_"+statusTwitter4j.getUser().getId());		
 	}
 	
 	public Mention() {
@@ -154,13 +154,20 @@ public class Mention {
 	
 	public int mention2db(Connection conn) {	
 
-		Statement stmt;
-		try {
-			stmt = conn.createStatement();
+		PreparedStatement stmt = null;
+		try {			
 			// prepare the sql statements to insert the mention in the DB and insert.
-	        String mentionIns = "insert ignore into mention (id, date, source_id, url, text, lang, polarity) values (?,?,?,?,?,?,NULL)";
+	        String mentionIns = "insert ignore into mention (date, source_id, url, text, lang, polarity, favourites, retweets) values (?,?,?,?,?,?,NULL)";
 	        String keywordMentionIns = "insert ignore into keyword_mention (mention_id, keyword_term, keyword_lang) values (?,?,?)";
-	        String source="insert ignore into source (id, type, influence) values (?,?,NULL)";
+	        String source="insert ignore into source (id, type, influence) values (?,?,NULL)";	        
+			stmt = conn.prepareStatement(mentionIns);
+	        stmt.setString(1, getDate().toString());
+	        stmt.setString(2, getSource_id());
+	        stmt.setString(3, getUrl());
+	        stmt.setString(4, getLang());
+	        stmt.setString(5, getPolarity());
+	        stmt.setInt(6, getRetweets());
+	        stmt.setInt(7, getFavourites());
 			stmt.executeUpdate(mentionIns);
 			stmt.close();
 			conn.close();

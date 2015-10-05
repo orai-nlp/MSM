@@ -99,6 +99,8 @@ CREATE TABLE IF NOT EXISTS `DSS2016_MoodMap`.`mention` (
   `text` TEXT CHARACTER SET 'utf8' COLLATE 'utf8_unicode_ci' NULL DEFAULT NULL,
   `lang` VARCHAR(5) CHARACTER SET 'utf8' COLLATE 'utf8_unicode_ci' NULL DEFAULT NULL,
   `polarity` VARCHAR(10) CHARACTER SET 'utf8' COLLATE 'utf8_unicode_ci' NULL DEFAULT NULL,
+  `favourites` INT(11) NULL DEFAULT 0,
+  `retweets` INT(11) NULL DEFAULT 0,
   PRIMARY KEY (`mention_id`))
 ENGINE = MyISAM
 DEFAULT CHARACTER SET = utf8
