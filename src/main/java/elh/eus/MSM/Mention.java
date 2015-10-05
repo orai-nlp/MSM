@@ -154,22 +154,42 @@ public class Mention {
 	
 	public int mention2db(Connection conn) {	
 
-		PreparedStatement stmt = null;
+		PreparedStatement stmtM = null;
+		PreparedStatement stmtKM = null;
+		//PreparedStatement stmtS = null;		
 		try {			
 			// prepare the sql statements to insert the mention in the DB and insert.
 	        String mentionIns = "insert ignore into mention (date, source_id, url, text, lang, polarity, favourites, retweets) values (?,?,?,?,?,?,NULL)";
-	        String keywordMentionIns = "insert ignore into keyword_mention (mention_id, keyword_term, keyword_lang) values (?,?,?)";
-	        String source="insert ignore into source (id, type, influence) values (?,?,NULL)";	        
-			stmt = conn.prepareStatement(mentionIns);
-	        stmt.setString(1, getDate().toString());
-	        stmt.setString(2, getSource_id());
-	        stmt.setString(3, getUrl());
-	        stmt.setString(4, getLang());
-	        stmt.setString(5, getPolarity());
-	        stmt.setInt(6, getRetweets());
-	        stmt.setInt(7, getFavourites());
-			stmt.executeUpdate(mentionIns);
-			stmt.close();
+	        stmtM = conn.prepareStatement(mentionIns, Statement.RETURN_GENERATED_KEYS);
+	        stmtM.setString(1, getDate().toString());
+	        stmtM.setString(2, getSource_id());
+	        stmtM.setString(3, getUrl());
+	        stmtM.setString(4, getLang());
+	        stmtM.setString(5, getPolarity());
+	        stmtM.setInt(6, getRetweets());
+	        stmtM.setInt(7, getFavourites());
+						
+			String keywordMentionIns = "insert ignore into keyword_mention (mention_id, keyword_id) values (?,?)";			
+			//String source="insert ignore into source (id, type, influence) values (?,?,NULL)";	        
+			
+			stmtM.executeUpdate();
+			ResultSet rs = stmtM.getGeneratedKeys();
+			//retrieve the generated mention id, in order to use it in the keyword_mention table.
+			if(rs != null && rs.next()){
+				setMention_id(rs.getInt(1));
+				//System.out.println("Generated Emp Id: "+rs.getInt(1));
+			}
+			//connect mention to keywords
+			for (Keyword k: getKeywords()){
+				stmtKM.setInt(1, k.getId());
+				stmtKM.setInt(2, getMention_id());
+				stmtKM.executeUpdate();
+			}
+			
+			
+			stmtM.close();
+			stmtKM.close();
+			//stmtS.close();
 			conn.close();
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block

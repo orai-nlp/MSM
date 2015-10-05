@@ -119,8 +119,8 @@ public class TwitterStreamClient {
 						success = m.mention2db(Utils.DbConnection(
 								params.getProperty("dbuser"),
 								params.getProperty("dbpass"),
-								params.getProperty("dbpass"),
-								params.getProperty("dbpass")));
+								params.getProperty("dbhost"),
+								params.getProperty("dbname")));
 						break;
 					} catch (Exception e) {
 						System.err.println("elh-MSM::TwitterStreamClient - connection with the DB could not be established");
