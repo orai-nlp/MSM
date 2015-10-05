@@ -137,7 +137,7 @@ public class Mention {
 		setUrl("https://twitter.com/"+statusTwitter4j.getUser().getScreenName()+"/status/"+statusTwitter4j.getId());
 		setRetweets(statusTwitter4j.getRetweetCount());
 		setFavourites(statusTwitter4j.getFavoriteCount());
-		setSource_id(statusTwitter4j.getUser().getId());
+		setSource_id(statusTwitter4j.getUser().getId());		
 	}
 	
 	public Mention() {
@@ -157,6 +157,11 @@ public class Mention {
 		Statement stmt;
 		try {
 			stmt = conn.createStatement();
+			// prepare the sql statements to insert the mention in the DB and insert.
+	        String mentionIns = "insert ignore into mention (id, date, source_id, url, text, lang, polarity) values (?,?,?,?,?,?,NULL)";
+	        String keywordMentionIns = "insert ignore into keyword_mention (mention_id, keyword_term, keyword_lang) values (?,?,?)";
+	        String source="insert ignore into source (id, type, influence) values (?,?,NULL)";
+			stmt.executeUpdate(mentionIns);
 			stmt.close();
 			conn.close();
 		} catch (SQLException e) {
