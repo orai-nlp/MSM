@@ -57,6 +57,11 @@
 			<optional>true</optional>
 		</dependency>
 		<dependency>
+		  <groupId>com.optimaize.languagedetector</groupId>
+	      <artifactId>language-detector</artifactId>
+	      <version>0.5</version>
+		</dependency>
+		<dependency>
 		  <groupId>com.twitter</groupId>
 		  <artifactId>hbc-core</artifactId>
 		  <version>2.2.0</version>
@@ -75,12 +80,7 @@
           <groupId>org.slf4j</groupId>
           <artifactId>slf4j-simple</artifactId>
           <version>1.7.12</version>
-    	</dependency>		
-    	<dependency>
-		  <groupId>com.optimaize.languagedetector</groupId>
-	      <artifactId>language-detector</artifactId>
-	      <version>0.5</version>
-		</dependency>
+    	</dependency>		    	
     	<dependency>
 		  <groupId>mysql</groupId>
 	      <artifactId>mysql-connector-java</artifactId>

@@ -48,6 +48,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -107,8 +108,9 @@ public class TwitterStreamClient {
 			String lang = status.getLang();			
 			//we do not blindly trust twitter language identification, so we do our own checking.
 			lang = Utils.detectLanguage(text, lang);
-
-			if (acceptedLangs.contains("all") || acceptedLangs.contains(lang))
+			
+			//language must be accepted and tweet must not be a retweet
+			if ((acceptedLangs.contains("all") || acceptedLangs.contains(lang)) && (! text.matches("^RT[^\\p{L}\\p{M}\\p{Nd}]+.*")))
 			{
 				Mention m = new Mention (status, lang);
 				int success =1;
@@ -122,8 +124,11 @@ public class TwitterStreamClient {
 								params.getProperty("dbhost"),
 								params.getProperty("dbname")));
 						break;
-					} catch (Exception e) {
+					} catch (SQLException sqle) {
 						System.err.println("elh-MSM::TwitterStreamClient - connection with the DB could not be established");
+						sqle.printStackTrace();
+					} catch (Exception e) {
+						System.err.println("elh-MSM::TwitterStreamClient - error when storing mention");
 						e.printStackTrace();
 					}
 
@@ -325,7 +330,8 @@ public class TwitterStreamClient {
 	}
 
 	private void loadAcceptedLangs(String property) {
-		this.acceptedLangs=Arrays.asList(property.split(","));		
+		this.acceptedLangs=Arrays.asList(property.split(","));	
+		System.err.println("elh-MSM::TwitterStreamClient - Accepted languages: "+acceptedLangs);
 	}
 	
 	/*sub store_tweet_toDB

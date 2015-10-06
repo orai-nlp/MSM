@@ -137,7 +137,8 @@ public class Mention {
 		setUrl("https://twitter.com/"+statusTwitter4j.getUser().getScreenName()+"/status/"+statusTwitter4j.getId());
 		setRetweets(statusTwitter4j.getRetweetCount());
 		setFavourites(statusTwitter4j.getFavoriteCount());
-		setSource_id("tw_"+statusTwitter4j.getUser().getId());		
+		setSource_id("tw_"+statusTwitter4j.getUser().getId());
+		setPolarity("NULL");
 	}
 	
 	public Mention() {
@@ -159,15 +160,16 @@ public class Mention {
 		//PreparedStatement stmtS = null;		
 		try {			
 			// prepare the sql statements to insert the mention in the DB and insert.
-	        String mentionIns = "insert ignore into mention (date, source_id, url, text, lang, polarity, favourites, retweets) values (?,?,?,?,?,?,NULL)";
+	        String mentionIns = "insert ignore into mention (date, source_id, url, text, lang, polarity, favourites, retweets) values (?,?,?,?,?,?,?,?)";
 	        stmtM = conn.prepareStatement(mentionIns, Statement.RETURN_GENERATED_KEYS);
 	        stmtM.setString(1, getDate().toString());
 	        stmtM.setString(2, getSource_id());
 	        stmtM.setString(3, getUrl());
-	        stmtM.setString(4, getLang());
-	        stmtM.setString(5, getPolarity());
-	        stmtM.setInt(6, getRetweets());
-	        stmtM.setInt(7, getFavourites());
+	        stmtM.setString(4, getText());
+	        stmtM.setString(5, getLang());	        
+	        stmtM.setString(6, getPolarity());
+	        stmtM.setInt(7, getRetweets());
+	        stmtM.setInt(8, getFavourites());
 						
 			String keywordMentionIns = "insert ignore into keyword_mention (mention_id, keyword_id) values (?,?)";			
 			//String source="insert ignore into source (id, type, influence) values (?,?,NULL)";	        
@@ -179,20 +181,23 @@ public class Mention {
 				setMention_id(rs.getInt(1));
 				//System.out.println("Generated Emp Id: "+rs.getInt(1));
 			}
-			//connect mention to keywords
-			for (Keyword k: getKeywords()){
-				stmtKM.setInt(1, k.getId());
-				stmtKM.setInt(2, getMention_id());
-				stmtKM.executeUpdate();
-			}
-			
-			
 			stmtM.close();
-			stmtKM.close();
+			
+			//connect mention to keywords
+			if (getKeywords()!=null && !getKeywords().isEmpty())
+			{
+				for (Keyword k: getKeywords()){
+					stmtKM.setInt(1, k.getId());
+					stmtKM.setInt(2, getMention_id());
+					stmtKM.executeUpdate();
+					stmtKM.close();
+				}
+			}
+						
 			//stmtS.close();
 			conn.close();
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
+			System.err.println("elh-MSM::Mention mention2db - Error when trying to store mention into db.");
 			e.printStackTrace();
 		}
 

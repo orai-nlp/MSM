@@ -46,6 +46,7 @@ import javax.naming.NamingException;
 
 import com.google.common.base.Optional;
 import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
+import com.optimaize.langdetect.DetectedLanguage;
 import com.optimaize.langdetect.LanguageDetector;
 import com.optimaize.langdetect.LanguageDetectorBuilder;
 import com.optimaize.langdetect.i18n.LdLocale;
@@ -199,9 +200,17 @@ public final class Utils {
 			TextObjectFactory textObjectFactory = CommonTextObjectFactories.forDetectingOnLargeText();
 
 			//query:
-			TextObject textObject = textObjectFactory.forText("my text");
-			Optional<LdLocale> lang = languageDetector.detect(textObject);
-			result = (String) lang.asSet().toArray()[0];
+			TextObject textObject = textObjectFactory.forText(input);
+			List<DetectedLanguage> langs = languageDetector.getProbabilities(textObject);
+			for (DetectedLanguage l : langs)
+			{
+				System.err.println("Utils::detectLanguage -> lang for text "+textObject+" ("+langs.indexOf(l) +") -> "+l.toString()+" ("+l.getLocale().getLanguage()+")");
+				if (l.getProbability() > 0.70)
+				{
+					result = l.getLocale().getLanguage();
+				}
+			}
+
 			
 		} catch (IOException ioe){
 			System.err.println("Utils::detectLanguage -> Error when loading language models");
