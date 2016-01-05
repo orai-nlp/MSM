@@ -142,7 +142,7 @@ public class CLI {
 		} catch (ArgumentParserException e) {
 			argParser.handleError(e);
 			System.out.println("Run java -jar target/elh-crawler-" + version
-					+ ".jar (twitter) -help for details");
+					+ ".jar (twitter|feed|influence) -help for details");
 			System.exit(1);
 		}
 	}
@@ -214,8 +214,8 @@ public class CLI {
 	{
 		feedReaderParser.addArgument("-c", "--config")
 		.required(false)
-		.help("Configuration file that contains the necessary parameters to connect to the twitter public "
-				+ "stream for crawling.\n");
+		.help("Configuration file that contains the necessary parameters to connect to the feed stream for crawling."
+				+ "Only needed if no url is given through the --url parameter.\n");
 
 		feedReaderParser.addArgument("-u", "--url")
 		.required(false)

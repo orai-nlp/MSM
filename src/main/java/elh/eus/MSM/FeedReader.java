@@ -28,9 +28,15 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+import com.rometools.rome.feed.synd.SyndContent;
+import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.SyndFeedInput;
 import com.rometools.rome.io.XmlReader;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.safety.Whitelist;
 
 /**
  * RSS/Atom feed reader.
@@ -90,9 +96,27 @@ public class FeedReader {
 		try {
 			SyndFeedInput input = new SyndFeedInput();
 			SyndFeed feed = input.build(new XmlReader(getFeedUrl()));
+			
+			//System.out.println(feed);
 
-			System.out.println(feed);
+			for (SyndEntry entry : feed.getEntries())
+			{
+				String link = entry.getLink();						
+				StringBuilder sb = new StringBuilder();	
+				for (SyndContent content : entry.getContents())
+				{				
+					sb.append(Jsoup.clean(content.getValue(), Whitelist.none().addTags("br","p")));
+				}
+				String text = sb.toString().replaceAll("<p>", "").replaceAll("</p>", "\n\n").replaceAll("<br\\/?>","\n");
+				System.out.println("-------------\n"
+						+ "link : "+link);
+				System.out.println("\n"
+						+ "content:\n"+text+"\n-------------");
 
+				// Hemen testuan gako hitzak bilatzeko kodea falta da, eta topatuz gero
+				// aipamen bat sortu eta datubasera sartzea.
+				
+			}
 			ok = true;
 		} catch (Exception ex) {
 			ex.printStackTrace();
