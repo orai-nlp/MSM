@@ -21,6 +21,8 @@ package elh.eus.MSM;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 import java.io.File;
 import java.io.FileInputStream;
@@ -48,6 +50,9 @@ public class FeedReader {
 
 	private Properties params = new Properties();	
 	private URL feedUrl;
+	private LangDetect LID = new LangDetect();
+	private List<String> acceptedLangs;
+
 
 	public URL getFeedUrl() {
 		return feedUrl;
@@ -63,7 +68,10 @@ public class FeedReader {
 		} catch (MalformedURLException ue ) {
 			System.err.println("MSM::FeedReader - ERROR: malformed source url given"+ue.getMessage());
 		} 
-
+		
+		//Language identification
+		loadAcceptedLangs(params.getProperty("langs", "all"));
+		
 		getFeed();
 	}
 
@@ -78,6 +86,9 @@ public class FeedReader {
 			System.exit(1);
 		} 
 
+		//Language identification
+		loadAcceptedLangs(params.getProperty("langs", "all"));
+				
 		String source = params.getProperty("feedURL", "none");
 		
 		try {
@@ -95,13 +106,11 @@ public class FeedReader {
 		boolean ok = false;
 		try {
 			SyndFeedInput input = new SyndFeedInput();
-			SyndFeed feed = input.build(new XmlReader(getFeedUrl()));
-			
-			//System.out.println(feed);
+			SyndFeed feed = input.build(new XmlReader(getFeedUrl()));	
 
 			for (SyndEntry entry : feed.getEntries())
 			{
-				String link = entry.getLink();						
+				String link = entry.getLink();	
 				StringBuilder sb = new StringBuilder();	
 				for (SyndContent content : entry.getContents())
 				{				
@@ -132,6 +141,9 @@ public class FeedReader {
 	}
 
 
-
+	private void loadAcceptedLangs(String property) {
+		this.acceptedLangs=Arrays.asList(property.split(","));	
+		System.err.println("elh-MSM::TwitterStreamClient - Accepted languages: "+acceptedLangs);
+	}
 
 }

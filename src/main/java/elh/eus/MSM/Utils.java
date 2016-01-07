@@ -184,41 +184,17 @@ public final class Utils {
 	}
 	
 	
-	public static String detectLanguage(String input, String supposedLang)
-	{
-		String result = "unk";
-		try {
-			//load all languages:
-			List<LanguageProfile> languageProfiles = new LanguageProfileReader().readAllBuiltIn();			
-
-			//build language detector:
-			LanguageDetector languageDetector = LanguageDetectorBuilder.create(NgramExtractors.standard())
-					.withProfiles(languageProfiles)
-					.build();
-
-			//create a text object factory
-			TextObjectFactory textObjectFactory = CommonTextObjectFactories.forDetectingOnLargeText();
-
-			//query:
-			TextObject textObject = textObjectFactory.forText(input);
-			List<DetectedLanguage> langs = languageDetector.getProbabilities(textObject);
-			for (DetectedLanguage l : langs)
-			{
-				System.err.println("Utils::detectLanguage -> lang for text "+textObject+" ("+langs.indexOf(l) +") -> "+l.toString()+" ("+l.getLocale().getLanguage()+")");
-				if (l.getProbability() > 0.70)
-				{
-					result = l.getLocale().getLanguage();
-				}
-			}
-
-			
-		} catch (IOException ioe){
-			System.err.println("Utils::detectLanguage -> Error when loading language models");
-			System.exit(1);
-		}
-		return result;
-	}
-	
+	/**
+	 * Function opens a connection with a mysql database given connection information.
+	 * 
+	 * @param usr
+	 * @param pass
+	 * @param host
+	 * @param db
+	 * @return
+	 * @throws NamingException
+	 * @throws SQLException
+	 */
 	public static Connection DbConnection (String usr, String pass, String host, String db) throws NamingException, SQLException {
 					
 			MysqlDataSource ds = new MysqlDataSource();

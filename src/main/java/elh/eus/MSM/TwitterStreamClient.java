@@ -68,6 +68,7 @@ public class TwitterStreamClient {
 	private Properties params = new Properties();	
 	private String store = "";
 	private List<String> acceptedLangs;
+	private LangDetect LID;
 		
 	public String getStore() {
 		return store;
@@ -107,7 +108,7 @@ public class TwitterStreamClient {
 			String text = status.getText();
 			String lang = status.getLang();			
 			//we do not blindly trust twitter language identification, so we do our own checking.
-			lang = Utils.detectLanguage(text, lang);
+			lang = LID.detectLanguage(text, lang);
 			
 			//language must be accepted and tweet must not be a retweet
 			if ((acceptedLangs.contains("all") || acceptedLangs.contains(lang)) && (! text.matches("^RT[^\\p{L}\\p{M}\\p{Nd}]+.*")))
@@ -214,8 +215,11 @@ public class TwitterStreamClient {
 			System.exit(1);
 		} 
 		
+		//where should the retrieved messages be stored [db|solr|stout]
 		setStore(store);
+		//Language identification
 		loadAcceptedLangs(params.getProperty("langs", "all"));
+		LID = new LangDetect();
 		
 		/** Set up your blocking queues: Be sure to size these properly based on expected TPS of your stream */
 		BlockingQueue<String> msgQueue = new LinkedBlockingQueue<String>(100000);
