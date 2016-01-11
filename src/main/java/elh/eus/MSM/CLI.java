@@ -219,7 +219,8 @@ public class CLI {
 
 		feedReaderParser.addArgument("-u", "--url")
 		.required(false)
-		.help("URL of the feed we want to crawl.\n");
+		.help("URL(s) of the feed(s) we want to crawl. Feeds must be separated with ',' chars.\n"
+				+ "e.g. : java -jar MSM-1.0.jar feed -u 'url1,url2,...'");
 		feedReaderParser.addArgument("-s", "--store")		
 		.choices("stout", "db", "solr")
 		.setDefault("stout")

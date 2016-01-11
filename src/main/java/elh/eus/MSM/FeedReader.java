@@ -24,6 +24,7 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -33,11 +34,13 @@ import java.io.InputStreamReader;
 import com.rometools.rome.feed.synd.SyndContent;
 import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndFeed;
+import com.rometools.rome.io.FeedException;
 import com.rometools.rome.io.SyndFeedInput;
 import com.rometools.rome.io.XmlReader;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.safety.Cleaner;
 import org.jsoup.safety.Whitelist;
 
 /**
@@ -49,30 +52,34 @@ import org.jsoup.safety.Whitelist;
 public class FeedReader {
 
 	private Properties params = new Properties();	
-	private URL feedUrl;
+	//private URL feedUrl;
 	private LangDetect LID = new LangDetect();
 	private List<String> acceptedLangs;
 
 
-	public URL getFeedUrl() {
+	/*public URL getFeedUrl() {
 		return feedUrl;
 	}
 
 	public void setFeedUrl(URL feedUrl) {
 		this.feedUrl = feedUrl;
-	}
+	}*/
 
 	public FeedReader(String source) {
-		try {
-			setFeedUrl(new URL(source));
-		} catch (MalformedURLException ue ) {
-			System.err.println("MSM::FeedReader - ERROR: malformed source url given"+ue.getMessage());
-		} 
 		
 		//Language identification
 		loadAcceptedLangs(params.getProperty("langs", "all"));
-		
-		getFeed();
+				
+		String[] urls = source.split(",");
+		for (int i=0; i<urls.length;i++)
+		{
+			try {
+				URL feedUrl = new URL(urls[i]);
+				getFeed(feedUrl);
+			} catch (MalformedURLException ue ) {
+				System.err.println("MSM::FeedReader - ERROR: malformed source url given"+ue.getMessage());
+			}		
+		}
 	}
 
 	public FeedReader(String config, String store) {
@@ -88,50 +95,84 @@ public class FeedReader {
 
 		//Language identification
 		loadAcceptedLangs(params.getProperty("langs", "all"));
-				
+						
 		String source = params.getProperty("feedURL", "none");
 		
-		try {
-			setFeedUrl(new URL(source));
-		} catch (MalformedURLException ue ) {
-			System.err.println("MSM::FeedReader - ERROR: malformed source url given"+ue.getMessage());
-		} 
-
-		getFeed();
+		String[] urls = source.split(",");
+		for (int i=0; i<urls.length;i++)
+		{
+			try {
+				URL feedUrl = new URL(urls[i]);
+				getFeed(feedUrl);
+			} catch (MalformedURLException ue ) {
+				System.err.println("MSM::FeedReader - ERROR: malformed source url given"+ue.getMessage());
+			}			
+		}
 	}
 
 
-	private void getFeed (){
+	private void getFeed (URL url){
 
 		boolean ok = false;
+		String link = "";
 		try {
 			SyndFeedInput input = new SyndFeedInput();
-			SyndFeed feed = input.build(new XmlReader(getFeedUrl()));	
+			SyndFeed feed = input.build(new XmlReader(url));	
 
 			for (SyndEntry entry : feed.getEntries())
 			{
-				String link = entry.getLink();	
+				link = entry.getLink();
+
+				Document doc = Jsoup.connect(link).get();
+				Cleaner clean = new Cleaner(Whitelist.none().addTags("br","p"));
+				String text = clean.clean(doc).text().replaceAll("<p>", "").replaceAll("</p>", "\n\n").replaceAll("<br\\/?>","\n");
+				/*
+				 * Code using standard url library from java. 
+				URL linkSource = new URL(link);
+				BufferedReader in = new BufferedReader(
+				        new InputStreamReader(linkSource.openStream()));
+				
 				StringBuilder sb = new StringBuilder();	
+				String inputLine;
+		        while ((inputLine = in.readLine()) != null)
+		        {
+		            sb.append(inputLine);
+		        }
+		        in.close();
+				
+		        String text = Jsoup.clean(sb.toString(), Whitelist.none().addTags("br","p")).replaceAll("<p>", "").replaceAll("</p>", "\n\n").replaceAll("<br\\/?>","\n");
+		        */
+				/*
+				 * Old code to read the feed actual contents (usually snippets) 
+				 * 
+				StringBuilder sb = new StringBuilder();	
+				
 				for (SyndContent content : entry.getContents())
 				{				
 					sb.append(Jsoup.clean(content.getValue(), Whitelist.none().addTags("br","p")));
 				}
 				String text = sb.toString().replaceAll("<p>", "").replaceAll("</p>", "\n\n").replaceAll("<br\\/?>","\n");
+				*/
 				System.out.println("-------------\n"
 						+ "link : "+link);
 				System.out.println("\n"
-						+ "content:\n"+text+"\n-------------");
+						+ "content:\n"+text+"\n-------------");                
 
-				// Hemen testuan gako hitzak bilatzeko kodea falta da, eta topatuz gero
+                // Hemen testuan gako hitzak bilatzeko kodea falta da, eta topatuz gero
 				// aipamen bat sortu eta datubasera sartzea.
 				
 			}
 			ok = true;
-		} catch (Exception ex) {
-			ex.printStackTrace();
-			System.out.println("ERROR: "+ex.getMessage());
-		} 	        
-
+		} catch (MalformedURLException mue) {
+			mue.printStackTrace();
+			System.out.println("FeadReader::getFeed ->  ERROR: Malformed url when parsing a link"+mue.getMessage());
+		} catch (IOException ioe) {	        
+			ioe.printStackTrace();
+			System.out.println("FeadReader::getFeed ->  ERROR when reading html a link ("+link+") - "+ioe.getMessage());
+		} catch (FeedException fe) {	        
+			fe.printStackTrace();
+			System.out.println("FeadReader::getFeed ->  Feed ERROR with"+url.toString()+" : "+fe.getMessage());
+		}
 		if (!ok) {
 			System.out.println();
 			System.out.println("FeedReader reads and prints any RSS/Atom feed type.");
