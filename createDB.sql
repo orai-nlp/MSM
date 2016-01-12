@@ -19,6 +19,12 @@ CREATE TABLE IF NOT EXISTS `DSS2016_MoodMap`.`keyword` (
   `term_es` VARCHAR(40) CHARACTER SET 'utf8' COLLATE 'utf8_unicode_ci' NULL DEFAULT '',
   `term_en` VARCHAR(40) CHARACTER SET 'utf8' COLLATE 'utf8_unicode_ci' NULL DEFAULT '',
   `term_fr` VARCHAR(40) CHARACTER SET 'utf8' COLLATE 'utf8_unicode_ci' NULL DEFAULT '',
+  `twt_eu` VARCHAR(40) NULL,
+  `twt_es` VARCHAR(40) NULL,
+  `twt_fr` VARCHAR(40) NULL,
+  `twt_en` VARCHAR(40) NULL,
+  `Category` VARCHAR(40) NULL,
+  `SubCat` VARCHAR(40) NULL,
   PRIMARY KEY (`keyword_id`))
 ENGINE = MyISAM
 DEFAULT CHARACTER SET = utf8
@@ -100,7 +106,7 @@ CREATE TABLE IF NOT EXISTS `DSS2016_MoodMap`.`mention` (
   `lang` VARCHAR(5) CHARACTER SET 'utf8' COLLATE 'utf8_unicode_ci' NULL DEFAULT NULL,
   `polarity` VARCHAR(10) CHARACTER SET 'utf8' COLLATE 'utf8_unicode_ci' NULL DEFAULT NULL,
   `favourites` INT(11) NULL DEFAULT 0,
-  `retweets` INT(11) NULL DEFAULT 0,
+  `Retweets` INT(11) NULL DEFAULT 0,
   PRIMARY KEY (`mention_id`))
 ENGINE = MyISAM
 DEFAULT CHARACTER SET = utf8

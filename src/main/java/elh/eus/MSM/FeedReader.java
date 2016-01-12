@@ -20,6 +20,7 @@ This file is part of MSM.
 package elh.eus.MSM;
 
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
@@ -31,6 +32,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+import org.xml.sax.SAXException;
+
 import com.rometools.rome.feed.synd.SyndContent;
 import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndFeed;
@@ -38,10 +41,11 @@ import com.rometools.rome.io.FeedException;
 import com.rometools.rome.io.SyndFeedInput;
 import com.rometools.rome.io.XmlReader;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.safety.Cleaner;
-import org.jsoup.safety.Whitelist;
+import de.l3s.boilerpipe.BoilerpipeExtractor;
+import de.l3s.boilerpipe.BoilerpipeProcessingException;
+import de.l3s.boilerpipe.extractors.CommonExtractors;
+import de.l3s.boilerpipe.sax.HtmlArticleExtractor;
+
 
 /**
  * RSS/Atom feed reader.
@@ -123,9 +127,16 @@ public class FeedReader {
 			{
 				link = entry.getLink();
 
-				Document doc = Jsoup.connect(link).get();
-				Cleaner clean = new Cleaner(Whitelist.none().addTags("br","p"));
-				String text = clean.clean(doc).text().replaceAll("<p>", "").replaceAll("</p>", "\n\n").replaceAll("<br\\/?>","\n");
+				final BoilerpipeExtractor extractor = CommonExtractors.ARTICLE_EXTRACTOR;
+
+				final HtmlArticleExtractor htmlExtr = HtmlArticleExtractor.INSTANCE;
+				
+				String text = htmlExtr.process(extractor, new URL(link));
+				text = text.replaceAll("(?i)<p>", "").replaceAll("(?i)</p>", "\n\n").replaceAll("(?i)<br\\/?>","\n");
+				
+				//Document doc = Jsoup.connect(link).get();
+				//Cleaner clean = new Cleaner(Whitelist.none().addTags("br","p"));
+				//String text = clean.clean(doc).text().replaceAll("<p>", "").replaceAll("</p>", "\n\n").replaceAll("<br\\/?>","\n");
 				/*
 				 * Code using standard url library from java. 
 				URL linkSource = new URL(link);
@@ -172,6 +183,10 @@ public class FeedReader {
 		} catch (FeedException fe) {	        
 			fe.printStackTrace();
 			System.out.println("FeadReader::getFeed ->  Feed ERROR with"+url.toString()+" : "+fe.getMessage());
+		} catch (BoilerpipeProcessingException | SAXException
+				| URISyntaxException be) {
+			be.printStackTrace();
+			System.out.println("FeadReader::getFeed ->  Boilerplate removal ERROR with"+url.toString()+" : "+be.getMessage());
 		}
 		if (!ok) {
 			System.out.println();

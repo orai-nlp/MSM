@@ -86,12 +86,12 @@
 	      <artifactId>mysql-connector-java</artifactId>
 		  <version>5.1.36</version>
 		</dependency>
-    	<dependency>
-			<groupId>org.jsoup</groupId>
-			<artifactId>jsoup</artifactId>
-			<version>1.8.3</version>
+		<dependency>
+			<groupId>com.robbypond</groupId>
+			<artifactId>boilerpipe</artifactId>
+			<version>1.2.3</version>
 		</dependency>
-		
+    	
 	</dependencies>
 
 	<build>
