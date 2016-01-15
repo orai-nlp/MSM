@@ -131,6 +131,20 @@ public class Mention {
 	}
 	
 	public Mention(Status statusTwitter4j, String lang) {
+		mentionFromTweet(statusTwitter4j,lang);
+	}
+	
+	public Mention(String lang, String text, Date date, String url, List<Keyword> kwrds, String source_id) {
+		setLang(lang);
+		setText(text);
+		setDate(date);
+		setUrl(url);
+		setKeywords(kwrds);
+		setSource_id(source_id);
+		setPolarity("NULL");
+	}
+
+	private void mentionFromTweet(Status statusTwitter4j, String lang) {
 		setLang(lang);
 		setText(statusTwitter4j.getText());
 		setDate(statusTwitter4j.getCreatedAt());
@@ -141,18 +155,19 @@ public class Mention {
 		setPolarity("NULL");
 	}
 	
-	public Mention() {
-		
-	}
-
-	private void mentionFromTweet() {
-		
-	}
-	
+	/**
+	 * @deprecated
+	 */
 	private void mentionFromFeed() {
 		
 	}
 	
+	/**
+	 * Store mention into the database.
+	 * 
+	 * @param conn
+	 * @return
+	 */
 	public int mention2db(Connection conn) {	
 
 		PreparedStatement stmtM = null;

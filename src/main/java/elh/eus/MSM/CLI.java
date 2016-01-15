@@ -224,7 +224,7 @@ public class CLI {
 		feedReaderParser.addArgument("-s", "--store")		
 		.choices("stout", "db", "solr")
 		.setDefault("stout")
-		.help("Whether tweets shall be stored in a database, an Apache solr Index or printed to stdout (default).\n"
+		.help("Whether mentions shall be stored in a database, an Apache solr Index or printed to stdout (default).\n"
 				+ "\t - \"stout\" : standard output"
 				+ "\t - \"db\" : standard output"
 				+ "\t - \"solr\" : standard output\n");
@@ -234,8 +234,7 @@ public class CLI {
 	{
 		influenceTaggerParser.addArgument("-s", "--sources")
 		.required(false)
-		.help("Configuration file that contains the necessary parameters to connect to the twitter public "
-				+ "stream for crawling.\n");
+		.help("Configuration file that contains the necessary parameters to connect to Influence APIs\n");
 		influenceTaggerParser.addArgument("-c", "--config")		
 		.required(true)
 		.help("Whether tweets shall be stored in a database or printed to stdout (default).\n");

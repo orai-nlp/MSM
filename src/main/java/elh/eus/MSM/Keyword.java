@@ -40,43 +40,62 @@ import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
 public class Keyword {
 
 	private int keyword_id;
-	private String textEu;
-	private String textEs;
-	private String textEn;
-	private String textFr;
+	private String text;
+	private String lang;
+	private String subcat;
+	private String cat;
+	private String screenTag;
+	private boolean needsAnchor;
+	private boolean isAnchor;
 
-	public String getTextEu() {
-		return textEu;
+	public String getText() {
+		return text;
 	}
 
-	public void setTextEu(String textEu) {
-		this.textEu = textEu;
+	public void setText(String text) {
+		this.text = text;
 	}
 
-	public String getTextEs() {
-		return textEs;
+	public String getLang() {
+		return lang;
 	}
 
-	public void setTextEs(String textEs) {
-		this.textEs = textEs;
-	}
-
-	public String getTextEn() {
-		return textEn;
-	}
-
-	public void setTextEn(String textEn) {
-		this.textEn = textEn;
-	}
-
-	public String getTextFr() {
-		return textFr;
-	}
-
-	public void setTextFr(String textFr) {
-		this.textFr = textFr;
+	public void setLang(String lang) {
+		this.lang = lang;
 	}
 	
+	public String getCat() {
+		return cat;
+	}
+
+	public void setCat(String cat) {
+		this.cat = cat;
+	}
+	
+	public String getSubcat() {
+		return subcat;
+	}
+
+	public void setSubcat(String cat) {
+		this.subcat = cat;
+	}
+
+	public String getScreenTag() {
+		return screenTag;
+	}
+
+	public void setScreenTag(String tag) {
+		this.screenTag = tag;
+	}
+
+	public void setIsAnchor(boolean anc) {
+		this.isAnchor = anc;
+	}
+	
+	public boolean isAnchor()
+	{
+		return isAnchor;
+	}
 	
 	/**
 	 *  Constructor
@@ -87,16 +106,24 @@ public class Keyword {
 	/**
 	 * Constructor
 	 * 
-	 * @param txtEu
-	 * @param txtEs
-	 * @param txtEn
-	 * @param txtFr
+	 * @param txt
+	 * @param lng
 	 */
-	public Keyword(String txtEu, String txtEs, String txtEn, String txtFr) {
-		textEu = txtEu;
-		textEs = txtEs;
-		textEn = txtEn;
-		textFr = txtFr;
+	public Keyword(String txt, String lng) {
+		this(txt,lng,false,false);
+	}
+	
+	/**
+	 * Constructor
+	 * 
+	 * @param txt
+	 * @param lng
+	 */
+	public Keyword(String txt, String lng, boolean isAnch, boolean needsAnch) {
+		setText(txt);
+		setLang(lng);
+		isAnchor=isAnch;
+		needsAnchor=needsAnch;
 	}
 	
 	/**
@@ -118,18 +145,28 @@ public class Keyword {
 	 * Retrieve keywords from database. Normally in order to launch a crawler or search engine queries
 	 * 
 	 * @param conn
+	 * @param type (twitter|press|behagune)
 	 * @return
 	 * @throws NamingException
 	 * @throws SQLException
 	 */
-	public static List<Keyword> retrieveFromDB(Connection conn) throws NamingException, SQLException {
+	public static List<Keyword> retrieveFromDB(Connection conn, String type, String lang) throws NamingException, SQLException {
 
 		List<Keyword> result = new ArrayList<Keyword>(); 
 		Statement stmt = conn.createStatement();
-		ResultSet rs = stmt.executeQuery("SELECT * FROM keyword");
+		String[]langs = lang.split(",");
+		StringBuilder sb = new StringBuilder();
+		sb.append("( ");
+		for (String l: langs)
+		{
+			sb.append("'").append(l).append("',"); 
+		}
+		String whereClause=sb.substring(0, sb.length()-1)+")";
+		ResultSet rs = stmt.executeQuery("SELECT * FROM keyword where type="+type+" AND lang in"+whereClause);
+		
 		try{	
 			while (rs.next()) {
-				Keyword kwrd = new Keyword(rs.getString("term_eu"), rs.getString("term_es"), rs.getString("term_en"), rs.getString("term_fr"));
+				Keyword kwrd = new Keyword(rs.getString("term"), rs.getString("lang"),rs.getBoolean("is_anchor"),rs.getBoolean("anchor"));
 				kwrd.setId(rs.getInt("keyword_id"));
 				result.add(kwrd);
 			}
@@ -143,8 +180,21 @@ public class Keyword {
 		conn.close();
 		return result;
 	}
+	
+	public static List<Keyword> getAnchors (List<Keyword> kwrds)
+	{
+		List<Keyword> result = new ArrayList<Keyword>(); 
+		for (Keyword k: kwrds)
+		{
+			if (k.isAnchor())
+			{
+				result.add(k);
+			}
+		}
+		return result;
+	}
 
-	public List<String> getAllTexts ()
+	/*public List<String> getAllTexts ()
 	{
 		List<String> rslt = new ArrayList<String>();
 		rslt.add(getTextEu());
@@ -153,6 +203,8 @@ public class Keyword {
 		rslt.add(getTextFr());
 		
 		return rslt;
-	}
+	}*/
+	
+	
 	
 }
