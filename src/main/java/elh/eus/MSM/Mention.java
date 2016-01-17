@@ -93,6 +93,10 @@ public class Mention {
 		this.keywords = keywords;
 	}
 
+	public void addKeyword(Keyword k){
+		this.keywords.add(k);
+	}
+	
 	public String getLang() {
 		return lang;
 	}
@@ -186,7 +190,7 @@ public class Mention {
 	        stmtM.setInt(7, getRetweets());
 	        stmtM.setInt(8, getFavourites());
 						
-			String keywordMentionIns = "insert ignore into keyword_mention (mention_id, keyword_id) values (?,?)";			
+			String keywordMentionIns = "insert ignore into keyword_mention (keyword_id, mention_id) values (?,?)";			
 			//String source="insert ignore into source (id, type, influence) values (?,?,NULL)";	        
 			
 			stmtM.executeUpdate();
@@ -213,6 +217,34 @@ public class Mention {
 			conn.close();
 		} catch (SQLException e) {
 			System.err.println("elh-MSM::Mention mention2db - Error when trying to store mention into db.");
+			e.printStackTrace();
+		}
+
+		return 1;
+	}
+	
+	/**
+	 * Add keyword connection into the into the database to an already existing mention..
+	 * 
+	 * @param conn
+	 * @return
+	 */
+	public int addKwrd2db(Connection conn, int kwrdId) {	
+
+		PreparedStatement stmtKM = null;
+		//PreparedStatement stmtS = null;		
+		try {			
+			// prepare the sql statements to insert the mention in the DB and insert.						
+			String keywordMentionIns = "insert ignore into keyword_mention (mention_id, keyword_id) values (?,?)";			
+			
+			//connect mention to keywords
+			stmtKM.setInt(1, getMention_id());
+			stmtKM.setInt(2, kwrdId);
+			stmtKM.executeUpdate();
+			stmtKM.close();						
+			
+		} catch (SQLException e) {
+			System.err.println("elh-MSM::Mention mention2db - Error when trying add keyword to mention "+getMention_id()+" into db.");
 			e.printStackTrace();
 		}
 

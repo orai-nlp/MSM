@@ -28,8 +28,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -67,6 +70,10 @@ public class FeedReader {
 	private Connection DBconn;
 	private List<Keyword> kwrds;
 	
+	private static Pattern anchorPattern; //pattern for anchor kwrds. they are usually general terms.
+	private HashMap<Integer,Pattern> kwrdAnchorPatterns; //patterns for keywords needing anchor keywords.
+	private HashMap<Integer,Pattern> independentKwrdPatterns; //pattern for keywords not needing anchor keywords.
+	
 
 
 	/*public URL getFeedUrl() {
@@ -84,6 +91,8 @@ public class FeedReader {
 		
 		try {
 			kwrds = Keyword.retrieveFromDB(DBconn, "press", params.getProperty("langs", "all"));
+			constructKeywordsPatterns();
+			
 		}catch (Exception e)
 		{
 			System.err.println("elh-MSM::FeedReader - DB Error when trying to load keywords");
@@ -99,6 +108,45 @@ public class FeedReader {
 				System.err.println("MSM::FeedReader - ERROR: malformed source url given"+ue.getMessage());
 			}		
 		}
+	}
+
+	/**
+	 * This void creates Patterns for all the keywords and stores them in two structures depending if the keywords are anchors or not.
+	 * @param kwrds2
+	 */
+	
+	private void constructKeywordsPatterns() {
+		if (this.kwrds == null || this.kwrds.isEmpty())
+		{
+			System.err.println ("elh-MSM::FeedReader - No keywords loaded");
+			System.exit(1);
+		}
+
+		StringBuilder sb_anchors = new StringBuilder();
+		sb_anchors.append("(?i)\\b(");
+		for (Keyword k : kwrds)
+		{
+			Pattern p = Pattern.compile("(?i)\\b"+k.getText().replace("_", " ")); 
+			if (k.isAnchor())
+			{
+				sb_anchors.append(k.getText().replace("_", " ")).append("|"); 
+			}
+			else
+			{
+				//Pattern p = Pattern.compile("(?i)\\b"+k.getText().replace("_", " ")); 
+				if (k.needsAnchor())
+				{
+					kwrdAnchorPatterns.put(k.getId(), p);
+				}
+				else	
+				{
+					independentKwrdPatterns.put(k.getId(), p);					
+				}
+			}
+		} 
+		String anchPatt = sb_anchors.toString();
+		anchPatt=anchPatt.substring(0, anchPatt.length()-1)+")";
+		anchorPattern = Pattern.compile(anchPatt);
 	}
 
 	public FeedReader(String config, String store) {
@@ -245,11 +293,35 @@ public class FeedReader {
 
 		boolean anchorFound= false;
 		List<Keyword> anchors = Keyword.getAnchors(kwrds);
-		for (Keyword k : anchors)
+		Matcher anch = anchorPattern.matcher(text);
+
+		String[] paragraphs = text.split("\n+");
+		for (String par : paragraphs)
 		{
-			if 
+			Mention m = new Mention();
+			//keywords that do not need any anchor
+			for (String par : paragraphs)
+			{
+				for (Pattern p : independentKwrdPatterns)
+				{
+					if (p.matches(par)) 
+				}
+			}
+
+			//keywords that need and anchor
+			if (anch.matches())
+			{
+				
+				for (int pid : kwrdAnchorPatterns.keySet())
+				{
+					if (kwrdAnchorPatterns.get(pid).matcher(par).matches())
+					{
+						
+					}
+				}
+			}
 		}
-		
+				
 	}
 
 	/**

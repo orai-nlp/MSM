@@ -51,6 +51,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
@@ -59,6 +60,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 
@@ -68,8 +71,12 @@ public class TwitterStreamClient {
 	private Properties params = new Properties();	
 	private String store = "";
 	private List<String> acceptedLangs;
+	private List<Keyword> keywords;
+	private HashMap<Integer,Pattern> kwrdPatterns;
 	private LangDetect LID;
-		
+	
+	private static Pattern retweetPattern = Pattern.compile("^RT[^\\p{L}\\p{M}\\p{Nd}]+.*");
+	
 	public String getStore() {
 		return store;
 	}
@@ -111,29 +118,37 @@ public class TwitterStreamClient {
 			lang = LID.detectLanguage(text, lang);
 			
 			//language must be accepted and tweet must not be a retweet
-			if ((acceptedLangs.contains("all") || acceptedLangs.contains(lang)) && (! text.matches("^RT[^\\p{L}\\p{M}\\p{Nd}]+.*")))
+			if ((acceptedLangs.contains("all") || acceptedLangs.contains(lang)) && (! retweetPattern.matcher(text).matches()))
 			{
-				Mention m = new Mention (status, lang);
-				int success =1;
-				switch (getStore()) // print the message to stdout
-				{				
-				case "db":
-					try {
-						success = m.mention2db(Utils.DbConnection(
-								params.getProperty("dbuser"),
-								params.getProperty("dbpass"),
-								params.getProperty("dbhost"),
-								params.getProperty("dbname")));
-						break;
-					} catch (SQLException sqle) {
-						System.err.println("elh-MSM::TwitterStreamClient - connection with the DB could not be established");
-						sqle.printStackTrace();
-					} catch (Exception e) {
-						System.err.println("elh-MSM::TwitterStreamClient - error when storing mention");
-						e.printStackTrace();
-					}
+				List <Keyword> kwrds = parseTweetForKeywords(text);
+				//if no keyword is found in the tweet it is discarded. 
+				// This discard some valid tweets, as the keyword maybe in an attached link. 
+				if (kwrds != null && !kwrds.isEmpty())
+				{
+					Mention m = new Mention (status, lang);
+					int success =1;
+					switch (getStore()) // print the message to stdout
+					{				
+					case "db":
+						try {
+							Connection conn = Utils.DbConnection(
+									params.getProperty("dbuser"),
+									params.getProperty("dbpass"),
+									params.getProperty("dbhost"),
+									params.getProperty("dbname"));
+							success = m.mention2db(conn);
+							conn.close();
+							break;
+						} catch (SQLException sqle) {
+							System.err.println("elh-MSM::TwitterStreamClient - connection with the DB could not be established");
+							sqle.printStackTrace();
+						} catch (Exception e) {
+							System.err.println("elh-MSM::TwitterStreamClient - error when storing mention");
+							e.printStackTrace();
+						}
 
-				case "solr": success = m.mention2solr(); break;
+					case "solr": success = m.mention2solr(); break;
+					}
 				}
 			}
 			
@@ -237,11 +252,11 @@ public class TwitterStreamClient {
 						params.getProperty("dbpass"), 
 						params.getProperty("dbhost"), 
 						params.getProperty("dbname")); 
-			List<Keyword> kwrds= Keyword.retrieveFromDB(conn);			
+			keywords= Keyword.retrieveFromDB(conn,"Twitter",params.getProperty("langs", "all"));			
 			Set<String> kwrdSet = new HashSet<String>();
-			for (Keyword k : kwrds)
+			for (Keyword k : keywords)
 			{
-				kwrdSet.addAll(k.getAllTexts());				
+				kwrdSet.add(k.getText());				
 			}
 			
 			// null object and empty string ("") may be here due to the fields in DB. Remove them from keyword set. 
@@ -336,6 +351,49 @@ public class TwitterStreamClient {
 	private void loadAcceptedLangs(String property) {
 		this.acceptedLangs=Arrays.asList(property.split(","));	
 		System.err.println("elh-MSM::TwitterStreamClient - Accepted languages: "+acceptedLangs);
+	}
+	
+	
+	/**
+	 * This void creates Patterns for all the keywords and stores them in two structures depending if the keywords are anchors or not.
+	 * @param kwrds2
+	 */
+	
+	private void constructKeywordsPatterns() {
+		if (this.keywords == null || this.keywords.isEmpty())
+		{
+			System.err.println ("elh-MSM::FeedReader - No keywords loaded");
+			System.exit(1);
+		}
+
+		StringBuilder sb_anchors = new StringBuilder();
+		sb_anchors.append("(?i)\\b(");
+		for (Keyword k : keywords)
+		{
+			Pattern p = Pattern.compile("(?i)\\b"+k.getText().replace("_", " ")); 			
+			kwrdPatterns.put(k.getId(), p);			
+		} 
+	}
+	
+	
+	/**
+	 * @param text
+	 */
+	private List<Keyword> parseTweetForKeywords(String text) {
+
+		boolean anchorFound= false;
+		List<Keyword> result = new ArrayList<Keyword>();
+		
+		//Mention m = new Mention();
+		//keywords that do not need any anchor
+		for (int kId : kwrdPatterns.keySet())
+		{
+			if (kwrdPatterns.get(kId).matcher(text).matches())
+			{
+				//result.add(kId);
+			}
+		}		
+		return result;
 	}
 	
 	/*sub store_tweet_toDB

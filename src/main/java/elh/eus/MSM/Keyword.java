@@ -97,6 +97,15 @@ public class Keyword {
 		return isAnchor;
 	}
 	
+	public void setNeedsAnchor(boolean anc) {
+		this.needsAnchor = anc;
+	}
+	
+	public boolean needsAnchor()
+	{
+		return needsAnchor;
+	}
+	
 	/**
 	 *  Constructor
 	 */
@@ -154,15 +163,20 @@ public class Keyword {
 
 		List<Keyword> result = new ArrayList<Keyword>(); 
 		Statement stmt = conn.createStatement();
-		String[]langs = lang.split(",");
-		StringBuilder sb = new StringBuilder();
-		sb.append("( ");
-		for (String l: langs)
+		String langCondition = "";
+		if (!lang.equalsIgnoreCase("all"))
 		{
-			sb.append("'").append(l).append("',"); 
+			String[]langs = lang.split(",");
+			StringBuilder sb = new StringBuilder();
+			sb.append(" AND lang in ( ");
+			for (String l: langs)
+			{
+				sb.append("'").append(l).append("',"); 
+			}
+			langCondition=sb.substring(0, sb.length()-1)+")";
 		}
-		String whereClause=sb.substring(0, sb.length()-1)+")";
-		ResultSet rs = stmt.executeQuery("SELECT * FROM keyword where type="+type+" AND lang in"+whereClause);
+		
+		ResultSet rs = stmt.executeQuery("SELECT * FROM keyword where type="+type+langCondition);
 		
 		try{	
 			while (rs.next()) {
