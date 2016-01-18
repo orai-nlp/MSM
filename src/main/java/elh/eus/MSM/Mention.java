@@ -182,7 +182,7 @@ public class Mention {
 			
 			//retrieve id of the last mention in db
 			Statement stmt = conn.createStatement();
-			ResultSet rs1 = stmt.executeQuery("SELECT max(mention_id) AS maxid FROM mention");
+			ResultSet rs1 = stmt.executeQuery("SELECT max(mention_id) AS maxid FROM behagunea_app_mention");
 			int id = 0;
 			while (rs1.next()){
 				id = rs1.getInt("maxid");
@@ -191,7 +191,7 @@ public class Mention {
 			stmt.close();
 			
 			// prepare the sql statements to insert the mention in the DB and insert.
-	        String mentionIns = "insert ignore into mention (mention_id, date, source_id, url, text, lang, polarity, favourites, retweets) values (?,?,?,?,?,?,?,?,?)";
+	        String mentionIns = "insert ignore into behagunea_app_mention (mention_id, date, source_id, url, text, lang, polarity, favourites, retweets) values (?,?,?,?,?,?,?,?,?)";
 	        stmtM = conn.prepareStatement(mentionIns, Statement.RETURN_GENERATED_KEYS);
 	        stmtM.setInt(1, id+1);
 	        stmtM.setString(2, getDate().toString());
@@ -203,7 +203,7 @@ public class Mention {
 	        stmtM.setInt(8, getRetweets());
 	        stmtM.setInt(9, getFavourites());
 						
-			String keywordMentionIns = "insert ignore into keyword_mention (keyword_id, mention_id) values (?,?)";			
+			String keywordMentionIns = "insert ignore into behagunea_app_keyword_mention (keyword_id, mention_id) values (?,?)";			
 			//String source="insert ignore into source (id, type, influence) values (?,?,NULL)";	        
 			
 			stmtM.executeUpdate();

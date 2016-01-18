@@ -41,7 +41,9 @@ import java.io.IOException;
 
 import javax.naming.NamingException;
 
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import org.apache.commons.lang3.StringUtils;
 
 import com.rometools.rome.feed.synd.SyndContent;
 import com.rometools.rome.feed.synd.SyndEntry;
@@ -52,7 +54,12 @@ import com.rometools.rome.io.XmlReader;
 
 import de.l3s.boilerpipe.BoilerpipeExtractor;
 import de.l3s.boilerpipe.BoilerpipeProcessingException;
+import de.l3s.boilerpipe.document.TextBlock;
+import de.l3s.boilerpipe.document.TextDocument;
+import de.l3s.boilerpipe.extractors.ArticleExtractor;
 import de.l3s.boilerpipe.extractors.CommonExtractors;
+import de.l3s.boilerpipe.sax.BoilerpipeSAXInput;
+import de.l3s.boilerpipe.sax.HTMLFetcher;
 import de.l3s.boilerpipe.sax.HtmlArticleExtractor;
 
 
@@ -70,11 +77,11 @@ public class FeedReader {
 	private List<String> acceptedLangs;
 	private Connection DBconn;
 	private List<Keyword> kwrds;
-	private List<Keyword> independentkwrds;
-	private List<Keyword> dependentkwrds;
+	private List<Keyword> independentkwrds = new ArrayList<Keyword>();
+	private List<Keyword> dependentkwrds = new ArrayList<Keyword>();
 	
 	private static Pattern anchorPattern; //pattern for anchor kwrds. they are usually general terms.
-	private HashMap<Integer,Pattern> kwrdPatterns; //patterns for keywords.
+	private HashMap<Integer,Pattern> kwrdPatterns = new HashMap<Integer,Pattern>(); //patterns for keywords.
 
 	
 
@@ -139,11 +146,8 @@ public class FeedReader {
 		{
 			//create and store pattern;
 			Pattern p = Pattern.compile("(?i)\\b"+k.getText().replace("_", " "));
-			System.err.println("elh-MSM::FeedReader::constructKeywordPatterns - currentPattern:"+p.toString());
-			if (k.getId() == null)
-			{
-				System.err.println("elh-MSM::FeedReader::constructKeywordPatterns - null mention id!!: "+k.getText());
-			}
+			//System.err.println("elh-MSM::FeedReader::constructKeywordPatterns - currentPattern:"+p.toString());
+			
 			kwrdPatterns.put(k.getId(), p);
 			if (k.isAnchor())
 			{
@@ -188,8 +192,7 @@ public class FeedReader {
 			
 			// prepare patterns to match keywords
 			constructKeywordsPatterns();
-			
-			DBconn.close();
+			DBconn.close();			
 		}catch (Exception e)
 		{
 			System.err.println("elh-MSM::FeedReader(config,store) - DB Error when trying to load keywords");
@@ -202,7 +205,10 @@ public class FeedReader {
 		// * try to load them from the config file
 		String source = params.getProperty("feedURL", "none");
 		if (!source.equalsIgnoreCase("none"))
-		{
+		{	
+			try{
+			DBconn = Utils.DbConnection(params.getProperty("dbuser"),params.getProperty("dbpass"),params.getProperty("dbhost"),params.getProperty("dbname"));
+			
 			String[] urls = source.split(",");
 			for (int i=0; i<urls.length;i++)
 			{
@@ -212,6 +218,10 @@ public class FeedReader {
 				} catch (MalformedURLException ue ) {
 					System.err.println("MSM::FeedReader - ERROR: malformed source url given - "+ue.getMessage()+" url: "+urls[i]);
 				}			
+			}
+			DBconn.close();
+			}catch (Exception e){
+				e.printStackTrace();
 			}
 		}
 		else
@@ -272,24 +282,35 @@ public class FeedReader {
 				{
 					link = entry.getLink();		
 					URL linkSrc = new URL(link);
-					String date = entry.getPublishedDate().toString();
-
+					Date pubDate = entry.getPublishedDate();
+					if (pubDate==null)
+					{
+						pubDate = feed.getPublishedDate();
+					}
+					String date = pubDate.toString();
+					
 					if (date.compareToIgnoreCase(lastFetchDate)>0)
 					{
-						final BoilerpipeExtractor extractor = CommonExtractors.ARTICLE_EXTRACTOR;
-
-						final HtmlArticleExtractor htmlExtr = HtmlArticleExtractor.INSTANCE;
+						//com.robbypond version.
+						//final BoilerpipeExtractor extractor = CommonExtractors.ARTICLE_EXTRACTOR;
+						//final HtmlArticleExtractor htmlExtr = HtmlArticleExtractor.INSTANCE;
+						//String text = htmlExtr.process(extractor, linkSrc);
 						
-						String text = htmlExtr.process(extractor, linkSrc);
-						text = text.replaceAll("(?i)<p>", "").replaceAll("(?i)</p>", "\n\n").replaceAll("(?i)<br\\/?>","\n");
+						//normal kohlschuetter extractor call
+						// parse the document into boilerpipe's internal data structure
+						final InputSource is = HTMLFetcher.fetch(linkSrc).toInputSource();						 
+						TextDocument doc = new BoilerpipeSAXInput(is).getTextDocument();
+						// perform the extraction/classification process on "doc"
+						ArticleExtractor.INSTANCE.process(doc);
+						//text = text.replaceAll("(?i)<p>", "").replaceAll("(?i)</p>", "\n\n").replaceAll("(?i)<br\\/?>","\n");
 
 						// Hemen testuan gako hitzak bilatzeko kodea falta da, eta topatuz gero
 						// aipamen bat sortu eta datubasera sartzea.
-						String lang = LID.detectLanguage(text, langs);
+						String lang = LID.detectLanguage(doc.getText(true, false), langs);
 						
 						if (acceptedLangs.contains("all") || acceptedLangs.contains(lang))
 						{
-							parseArticleForKeywords(text,lang, entry.getPublishedDate(), link, sId);
+							parseArticleForKeywords(doc,lang, entry.getPublishedDate(), link, sId);
 						}
 					}
 					
@@ -304,8 +325,7 @@ public class FeedReader {
 			} catch (FeedException fe) {	        
 				fe.printStackTrace();
 				System.out.println("FeadReader::getFeed ->  Feed ERROR with"+url.toString()+" : "+fe.getMessage());
-			} catch (BoilerpipeProcessingException | SAXException
-					| URISyntaxException be) {
+			} catch (BoilerpipeProcessingException | SAXException be){ //| URISyntaxException be) {			
 				be.printStackTrace();
 				System.out.println("FeadReader::getFeed ->  Boilerplate removal ERROR with"+url.toString()+" : "+be.getMessage());
 			}
@@ -321,21 +341,29 @@ public class FeedReader {
 	/**
 	 * @param text
 	 */
-	private void parseArticleForKeywords(String text, String lang, Date date, String link, int sId) {
+	private void parseArticleForKeywords(TextDocument doc, String lang, Date date, String link, int sId) {
 		
 		List<Keyword> result = new ArrayList<Keyword>();
-		System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - anchorPattern: "+anchorPattern.toString());
-		boolean anchorFound = anchorPattern.matcher(text).matches();
+		String wholeText = StringUtils.stripAccents(doc.getContent()); 
+		boolean anchorFound = anchorPattern.matcher(wholeText).find();
+		System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - anchorPattern: "+anchorPattern.toString()
+				+"\n -- found? "+anchorFound+"\n "+wholeText);
 		
-		String[] paragraphs = text.split("\n+");
-		for (String par : paragraphs)
+		
+		//String[] paragraphs = text.split("\n+");
+		for (TextBlock b : doc.getTextBlocks())
 		{
+			if (b.isContent())
+			{
+				String origText = b.getText();
+				String par = StringUtils.stripAccents(origText);
 			//Mention m = new Mention();
 			//keywords that do not need any anchor
 			for (Keyword k : independentkwrds)
-			{
-				if (k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(par).matches())
+			{				
+				if (k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(par).find())
 				{
+					System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key found!!!: "+k.getText());
 					result.add(k);
 				}
 			}			
@@ -344,8 +372,9 @@ public class FeedReader {
 			{
 				for (Keyword k : dependentkwrds)
 				{
-					if (k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(par).matches())
+					if (k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(par).find())
 					{
+						System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - dependent key found!!!: "+k.getText());						
 						result.add(k);
 					}
 				}
@@ -353,9 +382,11 @@ public class FeedReader {
 			
 			if (result != null && !result.isEmpty())
 			{
-				Mention m = new Mention(lang,text,date,link,String.valueOf(sId));
+				Mention m = new Mention(lang,origText,date,link,String.valueOf(sId));
 				m.setKeywords(result);
 				m.mention2db(DBconn);
+				System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - mention2db: "+par);
+			}
 			}
 		}				
 	}
@@ -374,55 +405,42 @@ public class FeedReader {
 			SyndFeedInput input = new SyndFeedInput();
 			SyndFeed feed = input.build(new XmlReader(url));	
 
+			String langs = acceptedLangs.toString();
 			for (SyndEntry entry : feed.getEntries())
 			{
-				link = entry.getLink();
-
-				final BoilerpipeExtractor extractor = CommonExtractors.ARTICLE_EXTRACTOR;
-
-				final HtmlArticleExtractor htmlExtr = HtmlArticleExtractor.INSTANCE;
-				
-				String text = htmlExtr.process(extractor, new URL(link));
-				text = text.replaceAll("(?i)<p>", "").replaceAll("(?i)</p>", "\n\n").replaceAll("(?i)<br\\/?>","\n");
-				
-				//Document doc = Jsoup.connect(link).get();
-				//Cleaner clean = new Cleaner(Whitelist.none().addTags("br","p"));
-				//String text = clean.clean(doc).text().replaceAll("<p>", "").replaceAll("</p>", "\n\n").replaceAll("<br\\/?>","\n");
-				/*
-				 * Code using standard url library from java. 
-				URL linkSource = new URL(link);
-				BufferedReader in = new BufferedReader(
-				        new InputStreamReader(linkSource.openStream()));
-				
-				StringBuilder sb = new StringBuilder();	
-				String inputLine;
-		        while ((inputLine = in.readLine()) != null)
-		        {
-		            sb.append(inputLine);
-		        }
-		        in.close();
-				
-		        String text = Jsoup.clean(sb.toString(), Whitelist.none().addTags("br","p")).replaceAll("<p>", "").replaceAll("</p>", "\n\n").replaceAll("<br\\/?>","\n");
-		        */
-				/*
-				 * Old code to read the feed actual contents (usually snippets) 
-				 * 
-				StringBuilder sb = new StringBuilder();	
-				
-				for (SyndContent content : entry.getContents())
-				{				
-					sb.append(Jsoup.clean(content.getValue(), Whitelist.none().addTags("br","p")));
+				System.err.println("FeadReader::getFeed ->  entry: "+entry.getLink());
+				link = entry.getLink();		
+				URL linkSrc = new URL(link);
+				Date pubDate = entry.getPublishedDate();
+				if (pubDate==null)
+				{
+					pubDate = feed.getPublishedDate();
 				}
-				String text = sb.toString().replaceAll("<p>", "").replaceAll("</p>", "\n\n").replaceAll("<br\\/?>","\n");
-				*/
-				System.out.println("-------------\n"
-						+ "link : "+link);
-				System.out.println("\n"
-						+ "content:\n"+text+"\n-------------");                
+				String date = pubDate.toString();
 
-                // Hemen testuan gako hitzak bilatzeko kodea falta da, eta topatuz gero
-				// aipamen bat sortu eta datubasera sartzea.
+				//com.robbypond version.
+				//final BoilerpipeExtractor extractor = CommonExtractors.ARTICLE_EXTRACTOR;
+				//final HtmlArticleExtractor htmlExtr = HtmlArticleExtractor.INSTANCE;
+				//String text = htmlExtr.process(extractor, linkSrc);
+
+				//normal kohlschuetter extractor call
+				// parse the document into boilerpipe's internal data structure
+				final InputSource is = HTMLFetcher.fetch(linkSrc).toInputSource();						 
+				TextDocument doc = new BoilerpipeSAXInput(is).getTextDocument();
+				// perform the extraction/classification process on "doc"
+				ArticleExtractor.INSTANCE.process(doc);
 				
+				//text = text.replaceAll("(?i)<p>", "").replaceAll("(?i)</p>", "\n\n").replaceAll("(?i)<br\\/?>","\n");
+
+				// Hemen testuan gako hitzak bilatzeko kodea falta da, eta topatuz gero
+				// aipamen bat sortu eta datubasera sartzea.
+				//System.err.println("--------------------\n"+doc.getContent()+"\n----------------\n");
+				String lang = LID.detectLanguage(doc.getContent(), langs);
+				
+				if (acceptedLangs.contains("all") || acceptedLangs.contains(lang))
+				{
+					parseArticleForKeywords(doc,lang, entry.getPublishedDate(), link, 99999999);
+				}
 			}
 			ok = true;
 		} catch (MalformedURLException mue) {
@@ -434,8 +452,7 @@ public class FeedReader {
 		} catch (FeedException fe) {	        
 			fe.printStackTrace();
 			System.out.println("FeadReader::getFeed ->  Feed ERROR with"+url.toString()+" : "+fe.getMessage());
-		} catch (BoilerpipeProcessingException | SAXException
-				| URISyntaxException be) {
+		} catch (BoilerpipeProcessingException | SAXException be){ //| URISyntaxException be) {			
 			be.printStackTrace();
 			System.out.println("FeadReader::getFeed ->  Boilerplate removal ERROR with"+url.toString()+" : "+be.getMessage());
 		}

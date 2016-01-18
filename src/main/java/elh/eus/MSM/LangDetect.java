@@ -81,7 +81,7 @@ public class LangDetect {
 		double minProb = 0.69; 
 		for (DetectedLanguage l : langs)
 		{			
-			System.err.println("Utils::detectLanguage -> lang for text "+textObject+" ("+langs.indexOf(l) +") -> "+l.toString()+" ("+l.getLocale().getLanguage()+")");
+			//System.err.println("Utils::detectLanguage -> lang for text "+textObject+" ("+langs.indexOf(l) +") -> "+l.toString()+" ("+l.getLocale().getLanguage()+")");
 			double prob = l.getProbability();
 			if (prob > 0.70 && prob > minProb)
 			{
@@ -112,7 +112,8 @@ public class LangDetect {
 		double minProb = 0.69; 
 		for (DetectedLanguage l : langs)
 		{			
-			System.err.println("Utils::detectLanguage -> lang for text "+textObject+" ("+langs.indexOf(l) +") -> "+l.toString()+" ("+l.getLocale().getLanguage()+")");
+			//System.err.println("Utils::detectLanguage -> lang for text "+textObject+" ("+langs.indexOf(l) +") -> "+l.toString()+" ("+l.getLocale().getLanguage()+")");
+			System.err.println("Utils::detectLanguage -> lang for text ("+langs.indexOf(l) +") -> "+l.toString()+" ("+l.getLocale().getLanguage()+")");
 			double prob = l.getProbability();
 			if (prob > 0.70 && prob > minProb)
 			{

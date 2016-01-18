@@ -166,7 +166,7 @@ public class CLI {
 		String store = parsedArguments.getString("store");
 		String url = parsedArguments.getString("url");
 		
-		if ((url!=null) && (!url.isEmpty()))
+		if ((url!=null) && (url.length() > 0))
 		{		
 			FeedReader feedReader = new FeedReader(url);
 			feedReader.closeDBConnection();
