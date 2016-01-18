@@ -204,7 +204,7 @@ public class FeedReader {
 				String query = "SELECT * FROM "
 						+ "behagunea_app_source JOIN behagunea_app_feed "
 						+ "ON behagunea_app_source.source_id=behagunea_app_feed.source_id "
-						+ "WHERE behagunea_app_source.type='feed'";
+						+ "WHERE behagunea_app_source.type='press'";
 
 				Statement st = DBconn.createStatement();			       
 				// execute the query, and get a java resultset
