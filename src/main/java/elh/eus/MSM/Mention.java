@@ -176,19 +176,31 @@ public class Mention {
 
 		PreparedStatement stmtM = null;
 		PreparedStatement stmtKM = null;
+		
 		//PreparedStatement stmtS = null;		
-		try {			
+		try {	
+			
+			//retrieve id of the last mention in db
+			Statement stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery("SELECT max(mention_id) AS maxid FROM mention");
+			int id = 0;
+			while (rs.next()){
+				id = rs.getInt("maxid");
+			}
+			
+			
 			// prepare the sql statements to insert the mention in the DB and insert.
-	        String mentionIns = "insert ignore into mention (date, source_id, url, text, lang, polarity, favourites, retweets) values (?,?,?,?,?,?,?,?)";
+	        String mentionIns = "insert ignore into mention (mention_id, date, source_id, url, text, lang, polarity, favourites, retweets) values (?,?,?,?,?,?,?,?,?)";
 	        stmtM = conn.prepareStatement(mentionIns, Statement.RETURN_GENERATED_KEYS);
-	        stmtM.setString(1, getDate().toString());
-	        stmtM.setString(2, getSource_id());
-	        stmtM.setString(3, getUrl());
-	        stmtM.setString(4, getText());
-	        stmtM.setString(5, getLang());	        
-	        stmtM.setString(6, getPolarity());
-	        stmtM.setInt(7, getRetweets());
-	        stmtM.setInt(8, getFavourites());
+	        stmtM.setInt(1, id+1);
+	        stmtM.setString(2, getDate().toString());
+	        stmtM.setString(3, getSource_id());
+	        stmtM.setString(4, getUrl());
+	        stmtM.setString(5, getText());
+	        stmtM.setString(6, getLang());	        
+	        stmtM.setString(7, getPolarity());
+	        stmtM.setInt(8, getRetweets());
+	        stmtM.setInt(9, getFavourites());
 						
 			String keywordMentionIns = "insert ignore into keyword_mention (keyword_id, mention_id) values (?,?)";			
 			//String source="insert ignore into source (id, type, influence) values (?,?,NULL)";	        
