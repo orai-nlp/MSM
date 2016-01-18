@@ -26,6 +26,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -69,10 +70,12 @@ public class FeedReader {
 	private List<String> acceptedLangs;
 	private Connection DBconn;
 	private List<Keyword> kwrds;
+	private List<Keyword> independentkwrds;
+	private List<Keyword> dependentkwrds;
 	
 	private static Pattern anchorPattern; //pattern for anchor kwrds. they are usually general terms.
-	private HashMap<Integer,Pattern> kwrdAnchorPatterns; //patterns for keywords needing anchor keywords.
-	private HashMap<Integer,Pattern> independentKwrdPatterns; //pattern for keywords not needing anchor keywords.
+	private HashMap<Integer,Pattern> kwrdPatterns; //patterns for keywords.
+
 	
 
 
@@ -126,21 +129,22 @@ public class FeedReader {
 		sb_anchors.append("(?i)\\b(");
 		for (Keyword k : kwrds)
 		{
+			//create and store pattern;
 			Pattern p = Pattern.compile("(?i)\\b"+k.getText().replace("_", " ")); 
+			kwrdPatterns.put(k.getId(), p);
 			if (k.isAnchor())
 			{
 				sb_anchors.append(k.getText().replace("_", " ")).append("|"); 
 			}
 			else
 			{
-				//Pattern p = Pattern.compile("(?i)\\b"+k.getText().replace("_", " ")); 
 				if (k.needsAnchor())
 				{
-					kwrdAnchorPatterns.put(k.getId(), p);
+					independentkwrds.add(k);
 				}
 				else	
 				{
-					independentKwrdPatterns.put(k.getId(), p);					
+					dependentkwrds.add(k);
 				}
 			}
 		} 
@@ -215,7 +219,7 @@ public class FeedReader {
 					String langs = rs.getString("lang");
 					try {
 						URL feedUrl = new URL(url);
-						getFeed(feedUrl, lastFetch, langs);
+						getFeed(feedUrl, lastFetch, langs, id);
 					} catch (MalformedURLException ue ) {
 						System.err.println("MSM::FeedReader - ERROR: malformed source url given"+ue.getMessage());
 					}		
@@ -229,7 +233,7 @@ public class FeedReader {
 		}		
 	}//end constructor
 
-		private void getFeed (URL url, String lastFetchDate, String langs){
+		private void getFeed (URL url, String lastFetchDate, String langs, int sId){
 
 			boolean ok = false;
 			String link = "";
@@ -243,7 +247,8 @@ public class FeedReader {
 
 				for (SyndEntry entry : feed.getEntries())
 				{
-					link = entry.getLink();
+					link = entry.getLink();		
+					URL linkSrc = new URL(link);
 					String date = entry.getPublishedDate().toString();
 
 					if (date.compareToIgnoreCase(lastFetchDate)>0)
@@ -252,12 +257,14 @@ public class FeedReader {
 
 						final HtmlArticleExtractor htmlExtr = HtmlArticleExtractor.INSTANCE;
 						
-						String text = htmlExtr.process(extractor, new URL(link));
+						String text = htmlExtr.process(extractor, linkSrc);
 						text = text.replaceAll("(?i)<p>", "").replaceAll("(?i)</p>", "\n\n").replaceAll("(?i)<br\\/?>","\n");
 
 						// Hemen testuan gako hitzak bilatzeko kodea falta da, eta topatuz gero
 						// aipamen bat sortu eta datubasera sartzea.
-						parseArticleForKeywords(text);
+						String lang = LID.detectLanguage(text, langs);
+						
+						parseArticleForKeywords(text,lang, entry.getPublishedDate(), link, sId);
 						
 					}
 					
@@ -289,39 +296,41 @@ public class FeedReader {
 	/**
 	 * @param text
 	 */
-	private void parseArticleForKeywords(String text) {
-
-		boolean anchorFound= false;
-		List<Keyword> anchors = Keyword.getAnchors(kwrds);
-		Matcher anch = anchorPattern.matcher(text);
-
+	private void parseArticleForKeywords(String text, String lang, Date date, String link, int sId) {
+		
+		List<Keyword> result = new ArrayList<Keyword>();
+		boolean anchorFound = anchorPattern.matcher(text).matches();
+		
 		String[] paragraphs = text.split("\n+");
 		for (String par : paragraphs)
 		{
-			Mention m = new Mention();
+			//Mention m = new Mention();
 			//keywords that do not need any anchor
-			for (String par : paragraphs)
+			for (Keyword k : independentkwrds)
 			{
-				for (Pattern p : independentKwrdPatterns)
+				if (k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(par).matches())
 				{
-					if (p.matches(par)) 
+					result.add(k);
 				}
-			}
-
-			//keywords that need and anchor
-			if (anch.matches())
+			}			
+			//keywords that need and anchor, only if anchors where found
+			if (anchorFound)
 			{
-				
-				for (int pid : kwrdAnchorPatterns.keySet())
+				for (Keyword k : dependentkwrds)
 				{
-					if (kwrdAnchorPatterns.get(pid).matcher(par).matches())
+					if (k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(par).matches())
 					{
-						
+						result.add(k);
 					}
 				}
 			}
-		}
-				
+			
+			if (result != null && !result.isEmpty())
+			{
+				Mention m = new Mention(lang,text,date,link,String.valueOf(sId));
+				m.setKeywords(result);
+			}
+		}				
 	}
 
 	/**

@@ -120,12 +120,13 @@ public class TwitterStreamClient {
 			//language must be accepted and tweet must not be a retweet
 			if ((acceptedLangs.contains("all") || acceptedLangs.contains(lang)) && (! retweetPattern.matcher(text).matches()))
 			{
-				List <Keyword> kwrds = parseTweetForKeywords(text);
+				List <Keyword> kwrds = parseTweetForKeywords(text,lang);
 				//if no keyword is found in the tweet it is discarded. 
 				// This discard some valid tweets, as the keyword maybe in an attached link. 
 				if (kwrds != null && !kwrds.isEmpty())
 				{
 					Mention m = new Mention (status, lang);
+					m.setKeywords(kwrds);
 					int success =1;
 					switch (getStore()) // print the message to stdout
 					{				
@@ -377,20 +378,23 @@ public class TwitterStreamClient {
 	
 	
 	/**
+	 * Function looks for keywords in a given text
+	 * 
 	 * @param text
+	 * @param lang
+	 * @return
 	 */
-	private List<Keyword> parseTweetForKeywords(String text) {
+	private List<Keyword> parseTweetForKeywords(String text, String lang) {
 
-		boolean anchorFound= false;
 		List<Keyword> result = new ArrayList<Keyword>();
 		
 		//Mention m = new Mention();
 		//keywords that do not need any anchor
-		for (int kId : kwrdPatterns.keySet())
+		for (Keyword  k : keywords)
 		{
-			if (kwrdPatterns.get(kId).matcher(text).matches())
+			if (k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(text).matches())
 			{
-				//result.add(kId);
+				result.add(k);
 			}
 		}		
 		return result;

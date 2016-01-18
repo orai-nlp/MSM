@@ -138,12 +138,12 @@ public class Mention {
 		mentionFromTweet(statusTwitter4j,lang);
 	}
 	
-	public Mention(String lang, String text, Date date, String url, List<Keyword> kwrds, String source_id) {
+	public Mention(String lang, String text, Date date, String url, String source_id) {
 		setLang(lang);
 		setText(text);
 		setDate(date);
 		setUrl(url);
-		setKeywords(kwrds);
+		//setKeywords(kwrds);
 		setSource_id(source_id);
 		setPolarity("NULL");
 	}
