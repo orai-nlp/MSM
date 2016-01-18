@@ -92,16 +92,23 @@ public class FeedReader {
 		//Language identification
 		loadAcceptedLangs(params.getProperty("langs", "all"));
 		
+		//keyword loading: keywords to identify relevant mentions in articles.
 		try {
+			DBconn = Utils.DbConnection(params.getProperty("dbuser"),params.getProperty("dbpass"),params.getProperty("dbhost"),params.getProperty("dbname"));
 			kwrds = Keyword.retrieveFromDB(DBconn, "press", params.getProperty("langs", "all"));
+			System.err.println("elh-MSM::FeedReader(config,store) - retrieved "+kwrds.size()+" keywords");
+
+			// prepare patterns to match keywords
 			constructKeywordsPatterns();
-			
+
+			DBconn.close();
 		}catch (Exception e)
 		{
-			System.err.println("elh-MSM::FeedReader - DB Error when trying to load keywords");
+			System.err.println("elh-MSM::FeedReader(config,store) - DB Error when trying to load keywords");
 			e.printStackTrace();
 			System.exit(1);
 		}
+
 		String[] urls = source.split(",");
 		for (int i=0; i<urls.length;i++)
 		{
@@ -131,7 +138,12 @@ public class FeedReader {
 		for (Keyword k : kwrds)
 		{
 			//create and store pattern;
-			Pattern p = Pattern.compile("(?i)\\b"+k.getText().replace("_", " ")); 
+			Pattern p = Pattern.compile("(?i)\\b"+k.getText().replace("_", " "));
+			System.err.println("elh-MSM::FeedReader::constructKeywordPatterns - currentPattern:"+p.toString());
+			if (k.getId() == null)
+			{
+				System.err.println("elh-MSM::FeedReader::constructKeywordPatterns - null mention id!!: "+k.getText());
+			}
 			kwrdPatterns.put(k.getId(), p);
 			if (k.isAnchor())
 			{
@@ -167,13 +179,21 @@ public class FeedReader {
 
 		//Language identification
 		loadAcceptedLangs(params.getProperty("langs", "all"));
-
-		//keyword loading keywords identify relevant mentions in articles.
+		
+		//keyword loading: keywords to identify relevant mentions in articles.
 		try {
+			DBconn = Utils.DbConnection(params.getProperty("dbuser"),params.getProperty("dbpass"),params.getProperty("dbhost"),params.getProperty("dbname"));
 			kwrds = Keyword.retrieveFromDB(DBconn, "press", params.getProperty("langs", "all"));
+			System.err.println("elh-MSM::FeedReader(config,store) - retrieved "+kwrds.size()+" keywords");
+			
+			// prepare patterns to match keywords
+			constructKeywordsPatterns();
+			
+			DBconn.close();
 		}catch (Exception e)
 		{
-			System.err.println("elh-MSM::FeedReader - DB Error when trying to load keywords");
+			System.err.println("elh-MSM::FeedReader(config,store) - DB Error when trying to load keywords");
+			e.printStackTrace();
 			System.exit(1);
 		}
 
@@ -181,7 +201,7 @@ public class FeedReader {
 		//feed sources
 		// * try to load them from the config file
 		String source = params.getProperty("feedURL", "none");
-		if (source.equalsIgnoreCase("none"))
+		if (!source.equalsIgnoreCase("none"))
 		{
 			String[] urls = source.split(",");
 			for (int i=0; i<urls.length;i++)
@@ -190,7 +210,7 @@ public class FeedReader {
 					URL feedUrl = new URL(urls[i]);
 					getFeed(feedUrl);
 				} catch (MalformedURLException ue ) {
-					System.err.println("MSM::FeedReader - ERROR: malformed source url given"+ue.getMessage());
+					System.err.println("MSM::FeedReader - ERROR: malformed source url given - "+ue.getMessage()+" url: "+urls[i]);
 				}			
 			}
 		}
@@ -222,11 +242,11 @@ public class FeedReader {
 						URL feedUrl = new URL(url);
 						getFeed(feedUrl, lastFetch, langs, id);
 					} catch (MalformedURLException ue ) {
-						System.err.println("MSM::FeedReader - ERROR: malformed source url given"+ue.getMessage());
+						System.err.println("MSM::FeedReader - ERROR: malformed source url given - "+ue.getMessage()+" url: "+url);
 					}		
 				}
 				st.close();			
-
+				DBconn.close();
 			} catch (SQLException | NamingException sqle){
 				System.err.println("elh-MSM::FeedReader - DB Error when retrieving feed sources");
 				sqle.printStackTrace();
@@ -304,6 +324,7 @@ public class FeedReader {
 	private void parseArticleForKeywords(String text, String lang, Date date, String link, int sId) {
 		
 		List<Keyword> result = new ArrayList<Keyword>();
+		System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - anchorPattern: "+anchorPattern.toString());
 		boolean anchorFound = anchorPattern.matcher(text).matches();
 		
 		String[] paragraphs = text.split("\n+");

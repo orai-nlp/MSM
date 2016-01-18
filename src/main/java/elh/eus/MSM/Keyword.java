@@ -176,7 +176,10 @@ public class Keyword {
 			langCondition=sb.substring(0, sb.length()-1)+")";
 		}
 		
-		ResultSet rs = stmt.executeQuery("SELECT * FROM keyword where type="+type+langCondition);
+		String query = "SELECT * FROM behagunea_app_keyword where type='"+type+"'"+langCondition;
+		//System.err.println("elh-MSM::Keyword::retrieveFromDB - query:"+query);
+		ResultSet rs = stmt.executeQuery(query);
+		
 		
 		try{	
 			while (rs.next()) {
@@ -184,14 +187,14 @@ public class Keyword {
 				kwrd.setId(rs.getInt("keyword_id"));
 				result.add(kwrd);
 			}
+			stmt.close();
 		} catch (SQLException sqle ) {
 			sqle.printStackTrace();
-		} finally {
-			if (stmt != null) { stmt.close(); }
-		}
+		} //finally {
+		//	if (stmt != null) { stmt.close(); }
+		//}
 
-		rs.close();
-		conn.close();
+		rs.close();		
 		return result;
 	}
 	
