@@ -182,12 +182,13 @@ public class Mention {
 			
 			//retrieve id of the last mention in db
 			Statement stmt = conn.createStatement();
-			ResultSet rs = stmt.executeQuery("SELECT max(mention_id) AS maxid FROM mention");
+			ResultSet rs1 = stmt.executeQuery("SELECT max(mention_id) AS maxid FROM mention");
 			int id = 0;
-			while (rs.next()){
-				id = rs.getInt("maxid");
+			while (rs1.next()){
+				id = rs1.getInt("maxid");
 			}
-			
+			rs1.close();
+			stmt.close();
 			
 			// prepare the sql statements to insert the mention in the DB and insert.
 	        String mentionIns = "insert ignore into mention (mention_id, date, source_id, url, text, lang, polarity, favourites, retweets) values (?,?,?,?,?,?,?,?,?)";
