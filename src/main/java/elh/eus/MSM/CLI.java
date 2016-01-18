@@ -169,11 +169,13 @@ public class CLI {
 		if (! url.isEmpty())
 		{		
 			FeedReader feedReader = new FeedReader(url);
+			feedReader.closeDBConnection();
 		}
 		else
 		{
 			try {
 				FeedReader feedReader = new FeedReader(cfg, store);
+				feedReader.closeDBConnection();
 			} catch (Exception e) {			
 				e.printStackTrace();
 			}

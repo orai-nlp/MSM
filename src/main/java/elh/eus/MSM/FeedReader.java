@@ -235,6 +235,7 @@ public class FeedReader {
 
 		private void getFeed (URL url, String lastFetchDate, String langs, int sId){
 
+			System.err.println("FeadReader::getFeed -> parse feed "+url.toString());
 			boolean ok = false;
 			String link = "";
 
@@ -264,8 +265,10 @@ public class FeedReader {
 						// aipamen bat sortu eta datubasera sartzea.
 						String lang = LID.detectLanguage(text, langs);
 						
-						parseArticleForKeywords(text,lang, entry.getPublishedDate(), link, sId);
-						
+						if (acceptedLangs.contains("all") || acceptedLangs.contains(lang))
+						{
+							parseArticleForKeywords(text,lang, entry.getPublishedDate(), link, sId);
+						}
 					}
 					
 				}
@@ -329,6 +332,7 @@ public class FeedReader {
 			{
 				Mention m = new Mention(lang,text,date,link,String.valueOf(sId));
 				m.setKeywords(result);
+				m.mention2db(DBconn);
 			}
 		}				
 	}
@@ -423,7 +427,18 @@ public class FeedReader {
 
 	private void loadAcceptedLangs(String property) {
 		this.acceptedLangs=Arrays.asList(property.split(","));	
-		System.err.println("elh-MSM::TwitterStreamClient - Accepted languages: "+acceptedLangs);
+		System.err.println("elh-MSM::FeedReader - Accepted languages: "+acceptedLangs);
 	}
 
+	public void closeDBConnection()
+	{
+		try {
+			DBconn.close();
+		} catch (SQLException e) {
+			System.err.println("elh-MSM::FeedReader::closeDBConnection - ERROR when closing DB connection. "
+					+ "Either it is already closed or it was never openned");
+			e.printStackTrace();
+		}
+	}
+	
 }
