@@ -228,6 +228,7 @@ public class FeedReader {
 
 			} catch (SQLException | NamingException sqle){
 				System.err.println("elh-MSM::FeedReader - DB Error when retrieving feed sources");
+				sqle.printStackTrace();
 				System.exit(1);
 			}
 		}		
