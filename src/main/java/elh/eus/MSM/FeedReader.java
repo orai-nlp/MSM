@@ -99,6 +99,7 @@ public class FeedReader {
 		}catch (Exception e)
 		{
 			System.err.println("elh-MSM::FeedReader - DB Error when trying to load keywords");
+			e.printStackTrace();
 			System.exit(1);
 		}
 		String[] urls = source.split(",");
