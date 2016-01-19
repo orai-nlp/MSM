@@ -288,8 +288,13 @@ public class FeedReader {
 					if (pubDate==null)
 					{
 						pubDate = feed.getPublishedDate();
+						if (pubDate==null)
+						{
+							pubDate = new Date();
+						}
 					}
-					String date = pubDate.toString();
+					DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");				
+					String date = dateFormat.format(pubDate);
 					
 					if (date.compareToIgnoreCase(lastFetchDate)>0)
 					{
@@ -446,7 +451,7 @@ public class FeedReader {
 				
 				if (acceptedLangs.contains("all") || acceptedLangs.contains(lang))
 				{
-					parseArticleForKeywords(doc,lang, entry.getPublishedDate(), link, 99999999);
+					parseArticleForKeywords(doc,lang, pubDate, link, 99999999);
 				}
 			}
 			ok = true;
