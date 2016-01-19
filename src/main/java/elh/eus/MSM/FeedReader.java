@@ -310,7 +310,7 @@ public class FeedReader {
 						
 						if (acceptedLangs.contains("all") || acceptedLangs.contains(lang))
 						{
-							parseArticleForKeywords(doc,lang, entry.getPublishedDate(), link, sId);
+							parseArticleForKeywords(doc,lang, pubDate, link, sId);
 						}
 					}
 					
