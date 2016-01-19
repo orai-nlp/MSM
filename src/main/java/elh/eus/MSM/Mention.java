@@ -194,7 +194,7 @@ public class Mention {
 	        String mentionIns = "insert ignore into behagunea_app_mention (mention_id, date, source_id, url, text, lang, polarity, favourites, retweets) values (?,?,?,?,?,?,?,?,?)";
 	        stmtM = conn.prepareStatement(mentionIns, Statement.RETURN_GENERATED_KEYS);
 	        stmtM.setInt(1, id+1);
-	        System.err.println("daaaaaaataaaaa: "+getDate());
+	       // System.err.println("daaaaaaataaaaa: "+getDate());
 	        stmtM.setString(2, getDate().toString());
 	        stmtM.setString(3, getSource_id());
 	        stmtM.setString(4, getUrl());

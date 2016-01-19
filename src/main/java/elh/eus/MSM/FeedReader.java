@@ -26,6 +26,8 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -415,8 +417,13 @@ public class FeedReader {
 				if (pubDate==null)
 				{
 					pubDate = feed.getPublishedDate();
-				}
-				String date = pubDate.toString();
+					if (pubDate==null)
+					{
+						pubDate= new Date();
+					}
+				}	
+				DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");				
+				String date = dateFormat.format(pubDate);
 
 				//com.robbypond version.
 				//final BoilerpipeExtractor extractor = CommonExtractors.ARTICLE_EXTRACTOR;
