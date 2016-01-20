@@ -226,11 +226,10 @@ public class Mention {
 					//System.out.println("Mention2db: text: "+k.getText()+" cat: "+k.getCat()+" lang: "+k.getLang()+" subcat: "+k.getSubcat()+" id: "+k.getId());
 					stmtKM.setInt(1, k.getId());
 					stmtKM.setInt(2, getMention_id());
-					stmtKM.executeUpdate();
-					stmtKM.close();
+					stmtKM.executeUpdate();				
 				}
 			}
-						
+			stmtKM.close();			
 			//stmtS.close();
 			conn.close();
 		} catch (SQLException e) {
