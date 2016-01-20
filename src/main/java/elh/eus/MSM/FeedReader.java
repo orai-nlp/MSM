@@ -150,7 +150,7 @@ public class FeedReader {
 		{
 			//create and store pattern;
 			Pattern p = Pattern.compile("\\b"+k.getText().replace('_',' ').toLowerCase());
-			System.err.println("elh-MSM::FeedReader::constructKeywordPatterns - currentPattern:"+p.toString());
+			//System.err.println("elh-MSM::FeedReader::constructKeywordPatterns - currentPattern:"+p.toString());
 			
 			kwrdPatterns.put(k.getId(), p);
 			if (k.isAnchor())
@@ -358,8 +358,8 @@ public class FeedReader {
 		Set<Keyword> result = new HashSet<Keyword>();
 		String wholeText = StringUtils.stripAccents(doc.getContent()).toLowerCase(); 
 		boolean anchorFound = anchorPattern.matcher(wholeText).find();
-		System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - anchorPattern: "+anchorPattern.toString()
-				+"\n -- found? "+anchorFound+" lang: "+lang+" indep/dep:"+independentkwrds.size()+"/"+dependentkwrds.size());
+		//System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - anchorPattern: "+anchorPattern.toString()
+		//		+"\n -- found? "+anchorFound+" lang: "+lang+" indep/dep:"+independentkwrds.size()+"/"+dependentkwrds.size());
 		
 		
 		String[] paragraphs = doc.getContent().split("\n+");
@@ -368,7 +368,7 @@ public class FeedReader {
 		{
 			result = new HashSet<Keyword>();
 			String searchText = StringUtils.stripAccents(par).toLowerCase();			
-			System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - search paragraph: "+searchText);						
+			//System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - search paragraph: "+searchText);						
 			//if (b.isContent())
 			//{
 				//String origText = b.getText();
@@ -377,16 +377,13 @@ public class FeedReader {
 			//keywords that do not need any anchor
 			for (Keyword k : independentkwrds)
 			{				
-				if (k.getLang().equalsIgnoreCase(lang))
-				{
-					System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key:"
-							+k.getText()+" l="+k.getLang()+" pattern:"+kwrdPatterns.get(k.getId()).toString());
-					if( kwrdPatterns.get(k.getId()).matcher(searchText).find())
-					{	
-						System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key found!!!: "+k.getText()+" id: "+k.getId());
-						result.add(k);
-					}				
-				}
+				//System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key:"
+				//	+k.getText()+" l="+k.getLang()+" pattern:"+kwrdPatterns.get(k.getId()).toString());
+				if(k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(searchText).find())
+				{	
+					System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key found!!!: "+k.getText()+" id: "+k.getId());
+					result.add(k);
+				}								
 			}			
 			//keywords that need and anchor, only if anchors where found
 			if (anchorFound)
