@@ -269,7 +269,7 @@ public class FeedReader {
 
 		private void getFeed (URL url, String lastFetchDate, String langs, int sId){
 
-			System.err.println("FeadReader::getFeed -> parse feed "+url.toString());
+			System.err.println("FeadReader::getFeed -> parse feed "+url.toString()+" lastFetched: "+lastFetchDate);
 			boolean ok = false;
 			String link = "";
 
@@ -319,6 +319,10 @@ public class FeedReader {
 						{
 							parseArticleForKeywords(doc,lang, pubDate, link, sId);
 						}
+					}
+					else
+					{
+						System.err.println("FeadReader::getFeed -> no new entries ");
 					}
 					
 				}
