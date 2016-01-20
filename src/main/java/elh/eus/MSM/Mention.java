@@ -206,10 +206,7 @@ public class Mention {
 	        stmtM.setInt(8, getRetweets());
 	        stmtM.setInt(9, getFavourites());
 						
-			String keywordMentionIns = "insert ignore into behagunea_app_keyword_mention (keyword_id, mention_id) values (?,?)";			
-			//String source="insert ignore into source (id, type, influence) values (?,?,NULL)";	        
-			
-			stmtM.executeUpdate();
+	        stmtM.executeUpdate();
 			ResultSet rs = stmtM.getGeneratedKeys();
 			//retrieve the generated mention id, in order to use it in the keyword_mention table.
 			if(rs != null && rs.next()){
@@ -217,12 +214,15 @@ public class Mention {
 				//System.out.println("Generated Emp Id: "+rs.getInt(1));
 			}
 			stmtM.close();
-			
+								
 			//connect mention to keywords
+			String keywordMentionIns = "insert ignore into behagunea_app_keyword_mention (keyword_id, mention_id) values (?,?)";			
+			stmtKM = conn.prepareStatement(keywordMentionIns, Statement.RETURN_GENERATED_KEYS);	        
+			
 			if (getKeywords()!=null && !getKeywords().isEmpty())
 			{
 				for (Keyword k: getKeywords()){
-					System.out.println("Mention2db: text: "+k.getText()+" tag: "+k.getScreenTag()+" lang: "+k.getLang());
+					//System.out.println("Mention2db: text: "+k.getText()+" cat: "+k.getCat()+" lang: "+k.getLang()+" subcat: "+k.getSubcat()+" id: "+k.getId());
 					stmtKM.setInt(1, k.getId());
 					stmtKM.setInt(2, getMention_id());
 					stmtKM.executeUpdate();
