@@ -300,8 +300,14 @@ public class FeedReader {
 						}
 					}
 					String date = dateFormat.format(pubDate);
-					Date lastFetchDate_date = dateFormat.parse(lastFetchDate); 
-							
+					Date lastFetchDate_date = new Date();
+					try {
+						lastFetchDate_date = dateFormat.parse(lastFetchDate); 
+					}catch(ParseException de){
+						DateFormat alternative = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+						lastFetchDate = alternative.format(lastFetchDate_date);
+					}
+					
 					if (pubDate.after(lastFetchDate_date))
 					{
 						System.err.println("FeadReader::getFeed -> new entry "+date+" vs."+lastFetchDate);
