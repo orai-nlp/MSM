@@ -145,7 +145,7 @@ public class FeedReader {
 		}
 
 		StringBuilder sb_anchors = new StringBuilder();
-		sb_anchors.append("(?i)\\b(");
+		sb_anchors.append("\\b(");
 		for (Keyword k : kwrds)
 		{
 			//create and store pattern;
@@ -161,11 +161,11 @@ public class FeedReader {
 			{
 				if (k.needsAnchor())
 				{
-					independentkwrds.add(k);
+					dependentkwrds.add(k);
 				}
 				else	
 				{
-					dependentkwrds.add(k);
+					independentkwrds.add(k);
 				}
 			}
 		} 
@@ -379,7 +379,7 @@ public class FeedReader {
 			//keywords that do not need any anchor
 			for (Keyword k : independentkwrds)
 			{				
-				System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key:"+k.getText()+" l="+k.getLang());
+				//System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key:"+k.getText()+" l="+k.getLang());
 				if (k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(searchText).find())
 				{
 					System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key found!!!: "+k.getText()+" id: "+k.getId());
