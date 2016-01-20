@@ -379,6 +379,7 @@ public class FeedReader {
 			//keywords that do not need any anchor
 			for (Keyword k : independentkwrds)
 			{				
+				System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key:"+k.getText()+" l="+k.getLang());
 				if (k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(searchText).find())
 				{
 					System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key found!!!: "+k.getText()+" id: "+k.getId());
