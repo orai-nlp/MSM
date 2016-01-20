@@ -369,7 +369,7 @@ public class FeedReader {
 		//for (TextBlock b : doc.getTextBlocks())
 		{
 			String searchText = StringUtils.stripAccents(par).toLowerCase();			
-
+			System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - search paragraph: "+par);						
 			//if (b.isContent())
 			//{
 				//String origText = b.getText();

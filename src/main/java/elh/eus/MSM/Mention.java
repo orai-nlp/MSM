@@ -207,14 +207,15 @@ public class Mention {
 	        stmtM.setInt(9, getFavourites());
 						
 	        stmtM.executeUpdate();
-			ResultSet rs = stmtM.getGeneratedKeys();
+			//ResultSet rs = stmtM.getGeneratedKeys();
 			//retrieve the generated mention id, in order to use it in the keyword_mention table.
-			if(rs != null && rs.next()){
-				setMention_id(rs.getInt(1));
+			//if(rs != null && rs.next()){
+			//	setMention_id(rs.getInt(1));
 				//System.out.println("Generated Emp Id: "+rs.getInt(1));
-			}
+			//}
 			stmtM.close();
-								
+				
+			setMention_id(id+1);
 			//connect mention to keywords
 			String keywordMentionIns = "insert ignore into behagunea_app_keyword_mention (keyword_id, mention_id) values (?,?)";			
 			stmtKM = conn.prepareStatement(keywordMentionIns, Statement.RETURN_GENERATED_KEYS);	        
