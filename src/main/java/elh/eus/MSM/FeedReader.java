@@ -341,7 +341,7 @@ public class FeedReader {
 				}
 								
 				String updateComm = "UPDATE behagunea_app_feed"
-						+ "SET last_fetch="+dateFormat.format(currentDate)+" WHERE id="+fId;
+						+ "SET last_fetch='"+dateFormat.format(currentDate)+"' WHERE id='"+fId+"'";
 				Statement st = DBconn.createStatement();			       
 				// execute the query, and get a java resultset
 				st.executeUpdate(updateComm);
@@ -361,7 +361,7 @@ public class FeedReader {
 				be.printStackTrace();
 				System.out.println("FeadReader::getFeed ->  Boilerplate removal ERROR with"+url.toString()+" : "+be.getMessage());
 			} catch (SQLException sqle) {
-				System.out.println("FeadReader::getFeed ->  ERROR when updating fetch time"+dateFormat.format(currentDate)+" : "+sqle.getMessage());
+				System.out.println("FeadReader::getFeed ->  ERROR when updating fetch time "+dateFormat.format(currentDate)+" : "+sqle.getMessage());
 				//e.printStackTrace();
 			}
 			if (!ok) {
