@@ -247,13 +247,14 @@ public class FeedReader {
 				// iterate through the java resultset
 				while (rs.next())
 				{
-					int id = rs.getInt("source_id");
+					int id = rs.getInt("behagunea_app_feed.source_id");
+					int fid = rs.getInt("id");
 					String url = rs.getString("url");
-					String lastFetch = rs.getString("last_fetch");
+					String lastFetch = rs.getString("behagunea_app_feed.last_fetch");
 					String langs = rs.getString("lang");
 					try {
 						URL feedUrl = new URL(url);
-						getFeed(feedUrl, lastFetch, langs, id);
+						getFeed(feedUrl, lastFetch, langs, id, fid);
 					} catch (MalformedURLException ue ) {
 						System.err.println("MSM::FeedReader - ERROR: malformed source url given - "+ue.getMessage()+" url: "+url);
 					}		
@@ -268,12 +269,15 @@ public class FeedReader {
 		}		
 	}//end constructor
 
-		private void getFeed (URL url, String lastFetchDate, String langs, int sId){
+		private void getFeed (URL url, String lastFetchDate, String langs, int sId, int fId){
 
 			System.err.println("FeadReader::getFeed -> parse feed "+url.toString()+" lastFetched: "+lastFetchDate);
 			boolean ok = false;
 			String link = "";
 
+			DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");				
+			Date currentDate = new Date();
+			
 			//Language identification
 			loadAcceptedLangs(langs);
 			
@@ -283,7 +287,7 @@ public class FeedReader {
 
 				for (SyndEntry entry : feed.getEntries())
 				{
-					System.err.println("FeadReader::getFeed -> analysing entries");
+					//System.err.println("FeadReader::getFeed -> analysing entries");
 					link = entry.getLink();		
 					URL linkSrc = new URL(link);
 					Date pubDate = entry.getPublishedDate();
@@ -292,16 +296,15 @@ public class FeedReader {
 						pubDate = feed.getPublishedDate();
 						if (pubDate==null)
 						{
-							pubDate = new Date();
+							pubDate = currentDate;
 						}
 					}
-					DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");				
 					String date = dateFormat.format(pubDate);
 					Date lastFetchDate_date = dateFormat.parse(lastFetchDate); 
 							
 					if (pubDate.after(lastFetchDate_date))
 					{
-						
+						System.err.println("FeadReader::getFeed -> new entry "+date+" vs."+lastFetchDate);
 						//com.robbypond version.
 						//final BoilerpipeExtractor extractor = CommonExtractors.ARTICLE_EXTRACTOR;
 						//final HtmlArticleExtractor htmlExtr = HtmlArticleExtractor.INSTANCE;
@@ -330,6 +333,14 @@ public class FeedReader {
 					}
 					
 				}
+								
+				String updateComm = "UPDATE behagunea_app_feed"
+						+ "SET last_fetch="+dateFormat.format(currentDate)+" WHERE id="+fId;
+				Statement st = DBconn.createStatement();			       
+				// execute the query, and get a java resultset
+				st.executeUpdate(updateComm);
+				
+				
 				ok = true;
 			} catch (MalformedURLException mue) {
 				mue.printStackTrace();
@@ -346,6 +357,9 @@ public class FeedReader {
 			} catch (ParseException de) {
 				System.out.println("FeadReader::getFeed ->  ERROR when parsing dates"+lastFetchDate+" : "+de.getMessage());
 				//de.printStackTrace();
+			} catch (SQLException sqle) {
+				System.out.println("FeadReader::getFeed ->  ERROR when updating fetch time"+dateFormat.format(currentDate)+" : "+sqle.getMessage());
+				//e.printStackTrace();
 			}
 			if (!ok) {
 				System.out.println();
