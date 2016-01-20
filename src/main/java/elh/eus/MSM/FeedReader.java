@@ -360,9 +360,6 @@ public class FeedReader {
 			} catch (BoilerpipeProcessingException | SAXException be){ //| URISyntaxException be) {			
 				be.printStackTrace();
 				System.out.println("FeadReader::getFeed ->  Boilerplate removal ERROR with"+url.toString()+" : "+be.getMessage());
-			} catch (ParseException de) {
-				System.out.println("FeadReader::getFeed ->  ERROR when parsing dates"+lastFetchDate+" : "+de.getMessage());
-				//de.printStackTrace();
 			} catch (SQLException sqle) {
 				System.out.println("FeadReader::getFeed ->  ERROR when updating fetch time"+dateFormat.format(currentDate)+" : "+sqle.getMessage());
 				//e.printStackTrace();
