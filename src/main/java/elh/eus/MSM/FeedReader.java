@@ -403,8 +403,7 @@ public class FeedReader {
 				m.setKeywords(result);
 				m.mention2db(DBconn);
 				System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - mention2db: "+par);
-			}
-			}
+			}			
 		}				
 	}
 
