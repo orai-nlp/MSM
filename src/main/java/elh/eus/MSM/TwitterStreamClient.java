@@ -71,7 +71,7 @@ public class TwitterStreamClient {
 	private Properties params = new Properties();	
 	private String store = "";
 	private List<String> acceptedLangs;
-	private List<Keyword> keywords;
+	private Set<Keyword> keywords;
 	private HashMap<Integer,Pattern> kwrdPatterns;
 	private LangDetect LID;
 	
@@ -120,7 +120,7 @@ public class TwitterStreamClient {
 			//language must be accepted and tweet must not be a retweet
 			if ((acceptedLangs.contains("all") || acceptedLangs.contains(lang)) && (! retweetPattern.matcher(text).matches()))
 			{
-				List <Keyword> kwrds = parseTweetForKeywords(text,lang);
+				Set<Keyword> kwrds = parseTweetForKeywords(text,lang);
 				//if no keyword is found in the tweet it is discarded. 
 				// This discard some valid tweets, as the keyword maybe in an attached link. 
 				if (kwrds != null && !kwrds.isEmpty())
@@ -384,9 +384,9 @@ public class TwitterStreamClient {
 	 * @param lang
 	 * @return
 	 */
-	private List<Keyword> parseTweetForKeywords(String text, String lang) {
+	private Set<Keyword> parseTweetForKeywords(String text, String lang) {
 
-		List<Keyword> result = new ArrayList<Keyword>();
+		Set<Keyword> result = new HashSet<Keyword>();
 		
 		//Mention m = new Mention();
 		//keywords that do not need any anchor
