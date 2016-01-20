@@ -231,7 +231,6 @@ public class Mention {
 			}
 			stmtKM.close();			
 			//stmtS.close();
-			conn.close();
 		} catch (SQLException e) {
 			System.err.println("elh-MSM::Mention mention2db - Error when trying to store mention into db.");
 			e.printStackTrace();

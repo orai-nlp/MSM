@@ -149,13 +149,13 @@ public class FeedReader {
 		for (Keyword k : kwrds)
 		{
 			//create and store pattern;
-			Pattern p = Pattern.compile("(?i)\\b"+k.getText().replace("_", " "));
-			//System.err.println("elh-MSM::FeedReader::constructKeywordPatterns - currentPattern:"+p.toString());
+			Pattern p = Pattern.compile("(?i)\\b"+k.getText().replace('_',' '));
+			System.err.println("elh-MSM::FeedReader::constructKeywordPatterns - currentPattern:"+p.toString());
 			
 			kwrdPatterns.put(k.getId(), p);
 			if (k.isAnchor())
 			{
-				sb_anchors.append(k.getText().replace("_", " ")).append("|"); 
+				sb_anchors.append(k.getText().replace('_',' ')).append("|"); 
 			}
 			else
 			{
@@ -361,7 +361,7 @@ public class FeedReader {
 		String wholeText = StringUtils.stripAccents(doc.getContent()).toLowerCase(); 
 		boolean anchorFound = anchorPattern.matcher(wholeText).find();
 		System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - anchorPattern: "+anchorPattern.toString()
-				+"\n -- found? "+anchorFound+"\n "+wholeText);
+				+"\n -- found? "+anchorFound);
 		
 		
 		String[] paragraphs = doc.getContent().split("\n+");
