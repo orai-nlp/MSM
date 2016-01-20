@@ -340,7 +340,7 @@ public class FeedReader {
 					
 				}
 								
-				String updateComm = "UPDATE behagunea_app_feed"
+				String updateComm = "UPDATE behagunea_app_feed "
 						+ "SET last_fetch='"+dateFormat.format(currentDate)+"' WHERE id='"+fId+"'";
 				Statement st = DBconn.createStatement();			       
 				// execute the query, and get a java resultset
