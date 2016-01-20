@@ -157,17 +157,15 @@ public class FeedReader {
 			{
 				sb_anchors.append(k.getText().replace('_',' ').toLowerCase()).append("|"); 
 			}
-			else
+			
+			if (k.needsAnchor())
 			{
-				if (k.needsAnchor())
-				{
-					dependentkwrds.add(k);
-				}
-				else	
-				{
-					independentkwrds.add(k);
-				}
+				dependentkwrds.add(k);
 			}
+			else	
+			{
+				independentkwrds.add(k);
+			}			
 		} 
 		String anchPatt = sb_anchors.toString();
 		anchPatt=anchPatt.substring(0, anchPatt.length()-1)+")";
@@ -379,12 +377,15 @@ public class FeedReader {
 			//keywords that do not need any anchor
 			for (Keyword k : independentkwrds)
 			{				
-				System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key:"
-						+k.getText()+" l="+k.getLang()+" pattern:"+kwrdPatterns.get(k.getId()).toString());
-				if (k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(searchText).find())
+				if (k.getLang().equalsIgnoreCase(lang))
 				{
-					System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key found!!!: "+k.getText()+" id: "+k.getId());
-					result.add(k);
+					System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key:"
+							+k.getText()+" l="+k.getLang()+" pattern:"+kwrdPatterns.get(k.getId()).toString());
+					if( kwrdPatterns.get(k.getId()).matcher(searchText).find())
+					{	
+						System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key found!!!: "+k.getText()+" id: "+k.getId());
+						result.add(k);
+					}				
 				}
 			}			
 			//keywords that need and anchor, only if anchors where found
@@ -396,7 +397,7 @@ public class FeedReader {
 					{
 						System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - dependent key found!!!: "+k.getText()+" id: "+k.getId());						
 						result.add(k);
-					}
+					}					
 				}
 			}
 			
