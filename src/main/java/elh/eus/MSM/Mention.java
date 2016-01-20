@@ -21,6 +21,7 @@ package elh.eus.MSM;
 
 import java.util.List;
 import java.util.Date;
+import java.util.Set;
 
 import twitter4j.JSONObject;
 import twitter4j.Status;
@@ -34,7 +35,7 @@ public class Mention {
 	private String source_id;
 	private String text;
 	private String url;
-	private List<Keyword> keywords;
+	private Set<Keyword> keywords;
 	private String lang;
 	private Date date;
 	private String polarity;
@@ -85,11 +86,11 @@ public class Mention {
 		this.url = url;
 	}
 
-	public List<Keyword> getKeywords() {
+	public Set<Keyword> getKeywords() {
 		return keywords;
 	}
 
-	public void setKeywords(List<Keyword> keywords) {
+	public void setKeywords(Set<Keyword> keywords) {
 		this.keywords = keywords;
 	}
 

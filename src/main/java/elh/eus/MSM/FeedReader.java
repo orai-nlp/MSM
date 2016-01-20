@@ -32,8 +32,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.io.File;
@@ -78,9 +80,9 @@ public class FeedReader {
 	private LangDetect LID = new LangDetect();
 	private List<String> acceptedLangs;
 	private Connection DBconn;
-	private List<Keyword> kwrds;
-	private List<Keyword> independentkwrds = new ArrayList<Keyword>();
-	private List<Keyword> dependentkwrds = new ArrayList<Keyword>();
+	private Set<Keyword> kwrds;
+	private Set<Keyword> independentkwrds = new HashSet<Keyword>();
+	private Set<Keyword> dependentkwrds = new HashSet<Keyword>();
 	
 	private static Pattern anchorPattern; //pattern for anchor kwrds. they are usually general terms.
 	private HashMap<Integer,Pattern> kwrdPatterns = new HashMap<Integer,Pattern>(); //patterns for keywords.
@@ -355,7 +357,7 @@ public class FeedReader {
 	 */
 	private void parseArticleForKeywords(TextDocument doc, String lang, Date date, String link, int sId) {
 		
-		List<Keyword> result = new ArrayList<Keyword>();
+		Set<Keyword> result = new HashSet<Keyword>();
 		String wholeText = StringUtils.stripAccents(doc.getContent()); 
 		boolean anchorFound = anchorPattern.matcher(wholeText).find();
 		System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - anchorPattern: "+anchorPattern.toString()

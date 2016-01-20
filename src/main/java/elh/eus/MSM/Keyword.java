@@ -20,8 +20,10 @@ This file is part of MSM.
 package elh.eus.MSM;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 import java.sql.* ;  // for standard JDBC programs
 import java.io.File;
 import java.io.FileInputStream;
@@ -159,9 +161,9 @@ public class Keyword {
 	 * @throws NamingException
 	 * @throws SQLException
 	 */
-	public static List<Keyword> retrieveFromDB(Connection conn, String type, String lang) throws NamingException, SQLException {
+	public static Set<Keyword> retrieveFromDB(Connection conn, String type, String lang) throws NamingException, SQLException {
 
-		List<Keyword> result = new ArrayList<Keyword>(); 
+		Set<Keyword> result = new HashSet<Keyword>(); 
 		Statement stmt = conn.createStatement();
 		String langCondition = "";
 		if (!lang.equalsIgnoreCase("all"))
