@@ -149,7 +149,7 @@ public class FeedReader {
 		for (Keyword k : kwrds)
 		{
 			//create and store pattern;
-			Pattern p = Pattern.compile("(?i)\\b"+k.getText().replace('_',' ').toLowerCase());
+			Pattern p = Pattern.compile("\\b"+k.getText().replace('_',' ').toLowerCase());
 			System.err.println("elh-MSM::FeedReader::constructKeywordPatterns - currentPattern:"+p.toString());
 			
 			kwrdPatterns.put(k.getId(), p);
@@ -361,7 +361,7 @@ public class FeedReader {
 		String wholeText = StringUtils.stripAccents(doc.getContent()).toLowerCase(); 
 		boolean anchorFound = anchorPattern.matcher(wholeText).find();
 		System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - anchorPattern: "+anchorPattern.toString()
-				+"\n -- found? "+anchorFound+" lang: "+lang);
+				+"\n -- found? "+anchorFound+" lang: "+lang+" indep/dep:"+independentkwrds.size()+"/"+dependentkwrds.size());
 		
 		
 		String[] paragraphs = doc.getContent().split("\n+");
@@ -381,7 +381,7 @@ public class FeedReader {
 			{				
 				if (k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(searchText).find())
 				{
-					System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key found!!!: "+k.getText());
+					System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key found!!!: "+k.getText()+" id: "+k.getId());
 					result.add(k);
 				}
 			}			
