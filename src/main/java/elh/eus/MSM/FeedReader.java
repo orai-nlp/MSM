@@ -358,24 +358,27 @@ public class FeedReader {
 	private void parseArticleForKeywords(TextDocument doc, String lang, Date date, String link, int sId) {
 		
 		Set<Keyword> result = new HashSet<Keyword>();
-		String wholeText = StringUtils.stripAccents(doc.getContent()); 
+		String wholeText = StringUtils.stripAccents(doc.getContent()).toLowerCase(); 
 		boolean anchorFound = anchorPattern.matcher(wholeText).find();
 		System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - anchorPattern: "+anchorPattern.toString()
 				+"\n -- found? "+anchorFound+"\n "+wholeText);
 		
 		
-		//String[] paragraphs = text.split("\n+");
-		for (TextBlock b : doc.getTextBlocks())
+		String[] paragraphs = doc.getContent().split("\n+");
+		for (String par : paragraphs )
+		//for (TextBlock b : doc.getTextBlocks())
 		{
-			if (b.isContent())
-			{
-				String origText = b.getText();
-				String par = StringUtils.stripAccents(origText);
-			//Mention m = new Mention();
+			String searchText = StringUtils.stripAccents(par).toLowerCase();			
+
+			//if (b.isContent())
+			//{
+				//String origText = b.getText();
+				//String par = StringUtils.stripAccents(origText);
+			
 			//keywords that do not need any anchor
 			for (Keyword k : independentkwrds)
 			{				
-				if (k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(par).find())
+				if (k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(searchText).find())
 				{
 					System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key found!!!: "+k.getText());
 					result.add(k);
@@ -386,7 +389,7 @@ public class FeedReader {
 			{
 				for (Keyword k : dependentkwrds)
 				{
-					if (k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(par).find())
+					if (k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(searchText).find())
 					{
 						System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - dependent key found!!!: "+k.getText()+" id: "+k.getId());						
 						result.add(k);
@@ -396,7 +399,7 @@ public class FeedReader {
 			
 			if (result != null && !result.isEmpty())
 			{
-				Mention m = new Mention(lang,origText,date,link,String.valueOf(sId));
+				Mention m = new Mention(lang,par,date,link,String.valueOf(sId));
 				m.setKeywords(result);
 				m.mention2db(DBconn);
 				System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - mention2db: "+par);
