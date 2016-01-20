@@ -149,13 +149,13 @@ public class FeedReader {
 		for (Keyword k : kwrds)
 		{
 			//create and store pattern;
-			Pattern p = Pattern.compile("(?i)\\b"+k.getText().replace('_',' '));
+			Pattern p = Pattern.compile("(?i)\\b"+k.getText().replace('_',' ').toLowerCase());
 			System.err.println("elh-MSM::FeedReader::constructKeywordPatterns - currentPattern:"+p.toString());
 			
 			kwrdPatterns.put(k.getId(), p);
 			if (k.isAnchor())
 			{
-				sb_anchors.append(k.getText().replace('_',' ')).append("|"); 
+				sb_anchors.append(k.getText().replace('_',' ').toLowerCase()).append("|"); 
 			}
 			else
 			{
