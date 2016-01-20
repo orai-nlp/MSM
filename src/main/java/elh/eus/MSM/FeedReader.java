@@ -315,7 +315,7 @@ public class FeedReader {
 
 						// Hemen testuan gako hitzak bilatzeko kodea falta da, eta topatuz gero
 						// aipamen bat sortu eta datubasera sartzea.
-						String lang = LID.detectLanguage(doc.getText(true, false), langs);
+						String lang = LID.detectLanguage(doc.getContent(), langs);
 						
 						if (acceptedLangs.contains("all") || acceptedLangs.contains(lang))
 						{
@@ -361,13 +361,14 @@ public class FeedReader {
 		String wholeText = StringUtils.stripAccents(doc.getContent()).toLowerCase(); 
 		boolean anchorFound = anchorPattern.matcher(wholeText).find();
 		System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - anchorPattern: "+anchorPattern.toString()
-				+"\n -- found? "+anchorFound);
+				+"\n -- found? "+anchorFound+" lang: "+lang);
 		
 		
 		String[] paragraphs = doc.getContent().split("\n+");
 		for (String par : paragraphs )
 		//for (TextBlock b : doc.getTextBlocks())
 		{
+			result = new HashSet<Keyword>();
 			String searchText = StringUtils.stripAccents(par).toLowerCase();			
 			System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - search paragraph: "+searchText);						
 			//if (b.isContent())
