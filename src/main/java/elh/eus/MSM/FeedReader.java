@@ -27,6 +27,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -189,7 +190,7 @@ public class FeedReader {
 		//keyword loading: keywords to identify relevant mentions in articles.
 		try {
 			DBconn = Utils.DbConnection(params.getProperty("dbuser"),params.getProperty("dbpass"),params.getProperty("dbhost"),params.getProperty("dbname"));
-			kwrds = Keyword.retrieveFromDB(DBconn, "press", params.getProperty("langs", "all"));
+			kwrds = Keyword.retrieveFromDB(DBconn, "Press", params.getProperty("langs", "all"));
 			System.err.println("elh-MSM::FeedReader(config,store) - retrieved "+kwrds.size()+" keywords");
 			
 			// prepare patterns to match keywords
@@ -246,7 +247,7 @@ public class FeedReader {
 				// iterate through the java resultset
 				while (rs.next())
 				{
-					int id = rs.getInt("id");
+					int id = rs.getInt("source_id");
 					String url = rs.getString("url");
 					String lastFetch = rs.getString("last_fetch");
 					String langs = rs.getString("lang");
@@ -294,10 +295,11 @@ public class FeedReader {
 							pubDate = new Date();
 						}
 					}
-					DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");				
+					DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");				
 					String date = dateFormat.format(pubDate);
-					
-					if (lastFetchDate==null || lastFetchDate.equalsIgnoreCase("") || date.compareToIgnoreCase(lastFetchDate)>0)
+					Date lastFetchDate_date = dateFormat.parse(lastFetchDate); 
+							
+					if (pubDate.after(lastFetchDate_date))
 					{
 						
 						//com.robbypond version.
@@ -341,6 +343,9 @@ public class FeedReader {
 			} catch (BoilerpipeProcessingException | SAXException be){ //| URISyntaxException be) {			
 				be.printStackTrace();
 				System.out.println("FeadReader::getFeed ->  Boilerplate removal ERROR with"+url.toString()+" : "+be.getMessage());
+			} catch (ParseException de) {
+				System.out.println("FeadReader::getFeed ->  ERROR when parsing dates"+lastFetchDate+" : "+de.getMessage());
+				//de.printStackTrace();
 			}
 			if (!ok) {
 				System.out.println();
