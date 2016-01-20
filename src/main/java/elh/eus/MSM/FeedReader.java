@@ -282,6 +282,7 @@ public class FeedReader {
 
 				for (SyndEntry entry : feed.getEntries())
 				{
+					System.err.println("FeadReader::getFeed -> analysing entries");
 					link = entry.getLink();		
 					URL linkSrc = new URL(link);
 					Date pubDate = entry.getPublishedDate();
@@ -296,8 +297,9 @@ public class FeedReader {
 					DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");				
 					String date = dateFormat.format(pubDate);
 					
-					if (date.compareToIgnoreCase(lastFetchDate)>0)
+					if (lastFetchDate==null || lastFetchDate.equalsIgnoreCase("") || date.compareToIgnoreCase(lastFetchDate)>0)
 					{
+						
 						//com.robbypond version.
 						//final BoilerpipeExtractor extractor = CommonExtractors.ARTICLE_EXTRACTOR;
 						//final HtmlArticleExtractor htmlExtr = HtmlArticleExtractor.INSTANCE;
