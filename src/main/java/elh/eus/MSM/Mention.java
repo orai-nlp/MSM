@@ -221,6 +221,7 @@ public class Mention {
 			if (getKeywords()!=null && !getKeywords().isEmpty())
 			{
 				for (Keyword k: getKeywords()){
+					System.out.println("Mention2db: text: "+k.getText()+" id: "+k.getScreenTag());
 					stmtKM.setInt(1, k.getId());
 					stmtKM.setInt(2, getMention_id());
 					stmtKM.executeUpdate();
