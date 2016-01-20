@@ -345,8 +345,13 @@ public class FeedReader {
 		}
 		
 		
+
 	/**
-	 * @param text
+	 * @param doc
+	 * @param lang
+	 * @param date
+	 * @param link
+	 * @param sId
 	 */
 	private void parseArticleForKeywords(TextDocument doc, String lang, Date date, String link, int sId) {
 		
@@ -451,7 +456,7 @@ public class FeedReader {
 				
 				if (acceptedLangs.contains("all") || acceptedLangs.contains(lang))
 				{
-					parseArticleForKeywords(doc,lang, pubDate, link, 99999999);
+					parseArticleForKeywords(doc,lang, pubDate, link, 9999999);
 				}
 			}
 			ok = true;

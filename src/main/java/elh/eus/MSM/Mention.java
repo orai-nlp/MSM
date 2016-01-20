@@ -196,6 +196,7 @@ public class Mention {
 	        stmtM.setInt(1, id+1);
 	       // System.err.println("daaaaaaataaaaa: "+getDate());
 	        stmtM.setString(2, getDate().toString());
+	        System.err.println("source: "+getSource_id());
 	        stmtM.setString(3, getSource_id());
 	        stmtM.setString(4, getUrl());
 	        stmtM.setString(5, getText());
