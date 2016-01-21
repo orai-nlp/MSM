@@ -31,6 +31,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -50,12 +51,14 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.apache.commons.lang3.StringUtils;
 
+import com.rometools.rome.feed.WireFeed;
 import com.rometools.rome.feed.synd.SyndContent;
 import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.FeedException;
 import com.rometools.rome.io.SyndFeedInput;
 import com.rometools.rome.io.XmlReader;
+import com.rometools.utils.Dates;
 
 import de.l3s.boilerpipe.BoilerpipeExtractor;
 import de.l3s.boilerpipe.BoilerpipeProcessingException;
@@ -88,7 +91,10 @@ public class FeedReader {
 	private static Pattern anchorPattern; //pattern for anchor kwrds. they are usually general terms.
 	private HashMap<Integer,Pattern> kwrdPatterns = new HashMap<Integer,Pattern>(); //patterns for keywords.
 
-	
+	private static List<DateFormat> dateFormats= new ArrayList<DateFormat>(
+			Arrays.asList(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z"),
+						new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"),
+						new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z")));
 
 
 	/*public URL getFeedUrl() {
@@ -109,17 +115,19 @@ public class FeedReader {
 			DBconn = Utils.DbConnection(params.getProperty("dbuser"),params.getProperty("dbpass"),params.getProperty("dbhost"),params.getProperty("dbname"));
 			kwrds = Keyword.retrieveFromDB(DBconn, "press", params.getProperty("langs", "all"));
 			System.err.println("elh-MSM::FeedReader(config,store) - retrieved "+kwrds.size()+" keywords");
-
-			// prepare patterns to match keywords
-			constructKeywordsPatterns();
-
+			
 			DBconn.close();
 		}catch (Exception e)
 		{
 			System.err.println("elh-MSM::FeedReader(config,store) - DB Error when trying to load keywords");
 			e.printStackTrace();
-			System.exit(1);
+			
+			
+			//System.exit(1);
 		}
+
+		// prepare patterns to match keywords
+		constructKeywordsPatterns();
 
 		String[] urls = source.split(",");
 		for (int i=0; i<urls.length;i++)
@@ -275,6 +283,7 @@ public class FeedReader {
 			boolean ok = false;
 			String link = "";
 
+			
 			DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");				
 			Date currentDate = new Date();
 			
@@ -283,32 +292,45 @@ public class FeedReader {
 			
 			try {
 				SyndFeedInput input = new SyndFeedInput();
-				SyndFeed feed = input.build(new XmlReader(url));	
-
+				input.setPreserveWireFeed(true);
+				SyndFeed feed = input.build(new XmlReader(url));
+				String ftype =feed.getFeedType();
+				System.err.println("FeadReader::getFeed -> feed type: "+feed type);
 				for (SyndEntry entry : feed.getEntries())
 				{
 					//System.err.println("FeadReader::getFeed -> analysing entries");
 					link = entry.getLink();		
 					URL linkSrc = new URL(link);
 					Date pubDate = entry.getPublishedDate();
+					boolean nullDate=false;
 					if (pubDate==null)
 					{
-						pubDate = feed.getPublishedDate();
-						if (pubDate==null)
-						{
-							pubDate = currentDate;
-						}
+						
+						entry.getWireEntry();
+						pubDate = feed.getPublishedDate();						
 					}
 					String date = dateFormat.format(pubDate);
 					Date lastFetchDate_date = new Date();
-					try {
-						lastFetchDate_date = dateFormat.parse(lastFetchDate); 
-					}catch(ParseException de){
-						DateFormat alternative = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-						lastFetchDate = alternative.format(lastFetchDate_date);
+					for (DateFormat df : dateFormats)
+					{
+						try {
+							lastFetchDate_date = dateFormat.parse(lastFetchDate);
+							break;						
+						}catch(ParseException de){
+						//continue loop
+						}
+					}	
+					
+					if (pubDate==null)
+					{
+						Calendar c = Calendar.getInstance(); 
+						c.setTime(currentDate); 
+						c.add(Calendar.DATE, -1);
+						pubDate = c.getTime();
+						nullDate=true;
 					}
 					
-					if (pubDate.after(lastFetchDate_date))
+					if ((!nullDate && pubDate.after(lastFetchDate_date)) || (nullDate && lastFetchDate_date.before(pubDate)) )
 					{
 						System.err.println("FeadReader::getFeed -> new entry "+date+" vs."+lastFetchDate);
 						//com.robbypond version.
@@ -459,14 +481,17 @@ public class FeedReader {
 				Date pubDate = entry.getPublishedDate();
 				if (pubDate==null)
 				{
+					System.err.println("FeadReader::getFeed ->  entry pubdate is null: ");
 					pubDate = feed.getPublishedDate();
 					if (pubDate==null)
 					{
+						System.err.println("FeadReader::getFeed ->  feed pubdate is null: ");
 						pubDate= new Date();
 					}
 				}	
 				DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");				
 				String date = dateFormat.format(pubDate);
+				
 
 				//com.robbypond version.
 				//final BoilerpipeExtractor extractor = CommonExtractors.ARTICLE_EXTRACTOR;

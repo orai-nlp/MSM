@@ -168,8 +168,7 @@ public class CLI {
 		
 		if ((url!=null) && (url.length() > 0))
 		{		
-			FeedReader feedReader = new FeedReader(url);
-			feedReader.closeDBConnection();
+			FeedReader feedReader = new FeedReader(url);			
 		}
 		else
 		{

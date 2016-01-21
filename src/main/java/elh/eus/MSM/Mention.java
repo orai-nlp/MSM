@@ -19,6 +19,8 @@ This file is part of MSM.
 
 package elh.eus.MSM;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Date;
 import java.util.Set;
@@ -196,6 +198,8 @@ public class Mention {
 	        stmtM = conn.prepareStatement(mentionIns, Statement.RETURN_GENERATED_KEYS);
 	        stmtM.setInt(1, id+1);
 	       // System.err.println("daaaaaaataaaaa: "+getDate());
+			DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");				
+	        String dateString = dateFormat.format(getDate());
 	        stmtM.setString(2, getDate().toString());
 	        System.err.println("source: "+getSource_id());
 	        stmtM.setString(3, getSource_id());
