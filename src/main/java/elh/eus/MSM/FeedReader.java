@@ -295,7 +295,7 @@ public class FeedReader {
 				input.setPreserveWireFeed(true);
 				SyndFeed feed = input.build(new XmlReader(url));
 				String ftype =feed.getFeedType();
-				System.err.println("FeadReader::getFeed -> feed type: "+feed type);
+				//System.err.println("FeadReader::getFeed -> feed type: "+feed type);
 				for (SyndEntry entry : feed.getEntries())
 				{
 					//System.err.println("FeadReader::getFeed -> analysing entries");
