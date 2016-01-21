@@ -295,11 +295,39 @@ public class FeedReader {
 				input.setPreserveWireFeed(true);
 				SyndFeed feed = input.build(new XmlReader(url));
 				String ftype =feed.getFeedType();
+				
+				if (ftype.matches("rss"))
+				{
+					sdfasdfsa
+				}
+				else if(ftype.matches("atom"))
+				{
+					
+				}
 				//System.err.println("FeadReader::getFeed -> feed type: "+feed type);
 				for (SyndEntry entry : feed.getEntries())
 				{
 					//System.err.println("FeadReader::getFeed -> analysing entries");
 					link = entry.getLink();		
+					
+					String query = "SELECT count(*) FROM "
+							+ "behagunea_app_mention "
+							+ "WHERE url='"+link+"'";
+					
+					Statement st = DBconn.createStatement();			       
+					// execute the query, and get a java resultset
+					ResultSet rs = st.executeQuery(query);
+					int urlKop = 0 ;
+					while (rs.next()){
+						urlKop = rs.getInt(1); 
+					}
+					//if the url already exist do not parse the entry
+					if (urlKop > 0){
+						System.err.println("FeadReader::getFeed -> entry already parsed "+link);
+						continue;
+					}
+					st.close();
+					
 					URL linkSrc = new URL(link);
 					Date pubDate = entry.getPublishedDate();
 					boolean nullDate=false;
@@ -349,6 +377,7 @@ public class FeedReader {
 						// Hemen testuan gako hitzak bilatzeko kodea falta da, eta topatuz gero
 						// aipamen bat sortu eta datubasera sartzea.
 						String lang = LID.detectLanguage(doc.getContent(), langs);
+						
 						
 						if (acceptedLangs.contains("all") || acceptedLangs.contains(lang))
 						{
