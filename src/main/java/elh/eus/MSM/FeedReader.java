@@ -296,14 +296,14 @@ public class FeedReader {
 				SyndFeed feed = input.build(new XmlReader(url));
 				String ftype =feed.getFeedType();
 				
-				if (ftype.matches("rss"))
-				{
-					sdfasdfsa
-				}
-				else if(ftype.matches("atom"))
-				{
+				//if (ftype.matches("rss"))
+				//{
 					
-				}
+				//}
+				//else if(ftype.matches("atom"))
+				//{
+					
+				//}
 				//System.err.println("FeadReader::getFeed -> feed type: "+feed type);
 				for (SyndEntry entry : feed.getEntries())
 				{
