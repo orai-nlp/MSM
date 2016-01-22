@@ -201,7 +201,7 @@ public class Mention {
 			DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");				
 	        String dateString = dateFormat.format(getDate());
 	        stmtM.setString(2, dateString);
-	        System.err.println("source: "+getSource_id());
+	        //System.err.println("source: "+getSource_id());
 	        stmtM.setString(3, getSource_id());
 	        stmtM.setString(4, getUrl());
 	        stmtM.setString(5, getText());

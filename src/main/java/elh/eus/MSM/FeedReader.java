@@ -332,12 +332,10 @@ public class FeedReader {
 					Date pubDate = entry.getPublishedDate();
 					boolean nullDate=false;
 					if (pubDate==null)
-					{
-						
+					{					
 						entry.getWireEntry();
 						pubDate = feed.getPublishedDate();						
 					}
-					String date = dateFormat.format(pubDate);
 					Date lastFetchDate_date = new Date();
 					for (DateFormat df : dateFormats)
 					{
@@ -357,7 +355,7 @@ public class FeedReader {
 						pubDate = c.getTime();
 						nullDate=true;
 					}
-					
+
 					if ((!nullDate && pubDate.after(lastFetchDate_date)) || (nullDate && lastFetchDate_date.before(pubDate)) )
 					{
 						System.err.println("FeadReader::getFeed -> new entry "+date+" vs."+lastFetchDate);
