@@ -355,6 +355,7 @@ public class FeedReader {
 						pubDate = c.getTime();
 						nullDate=true;
 					}
+					String date = dateFormat.format(pubDate);
 
 					if ((!nullDate && pubDate.after(lastFetchDate_date)) || (nullDate && lastFetchDate_date.before(pubDate)) )
 					{
