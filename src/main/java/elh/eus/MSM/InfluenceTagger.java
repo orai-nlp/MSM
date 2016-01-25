@@ -53,13 +53,14 @@ public class InfluenceTagger {
 		} catch (IOException ioe){
 			System.err.println("elh-MSM::InfluenceTagger - Config file could not read "+config);
 			System.exit(1);
-		} 
+		} 				
 		
 		KloutKey = params.getProperty("KloutKey", "none");
 		if (KloutKey.equalsIgnoreCase("none"))
 		{
 			System.err.println("MSM::InfluenceTagger WARNING - no Klout Key could be found, Klout index won't be retrieved");
 		}
+
 		
 		PRKey = params.getProperty("PRKey", "none");
 		if (PRKey.equalsIgnoreCase("none"))
@@ -77,13 +78,13 @@ public class InfluenceTagger {
 	{
 		try	{	
 			// get klout id          
-			JSONObject json=readJsonFromUrl("http://api.klout.com/v2/identity.json/twitter?screenName="+userId+"&key="+KloutKey);
+			JSONObject json=Utils.readJsonFromUrl("http://api.klout.com/v2/identity.json/twitter?screenName="+userId+"&key="+KloutKey);
 
 			// if the json object contains the user id ask for its score (Klout has the user tracked).
 			if (json.has("id"))
 			{
 				String kloutId = json.getString("id");
-				json=readJsonFromUrl("http://api.klout.com/v2/user.json/"+kloutId+"/score?key="+KloutKey);
+				json=Utils.readJsonFromUrl("http://api.klout.com/v2/user.json/"+kloutId+"/score?key="+KloutKey);
 				if (json.has("score"))
 				{
 					return (double)json.getLong("score");
@@ -103,8 +104,7 @@ public class InfluenceTagger {
          return 0;
 
 	}
-	
-	
+		
 	
 	/** websites - PageRank
      * Key Rate Limits : - 10 Calls per second | 20,000 Calls per day
@@ -116,30 +116,6 @@ public class InfluenceTagger {
 	}
 	
 	
-	/**
-	 * Function to read a JSON object from an url (this function probably should not be here...)
-	 * 
-	 * @param url
-	 * @return
-	 * @throws IOException
-	 * @throws JSONException
-	 */
-	public static JSONObject readJsonFromUrl(String url) throws IOException, JSONException {
-		BufferedReader reader = null;
-		
-		URL urlObj = new URL(url);
-		BufferedReader rd = new BufferedReader(new InputStreamReader(urlObj.openStream()));
-		StringBuilder sb = new StringBuilder();
-		int cp;
-		while ((cp = rd.read()) != -1) 
-		{
-			sb.append((char) cp);
-		}
-		JSONObject json = new JSONObject(sb.toString());	
-	     
-		return json;
-	  }
-
 	
 }
 

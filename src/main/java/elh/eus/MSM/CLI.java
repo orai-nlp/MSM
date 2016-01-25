@@ -235,13 +235,18 @@ public class CLI {
 	{
 		influenceTaggerParser.addArgument("-s", "--sources")
 		.required(false)
-		.help("Configuration file that contains the necessary parameters to connect to Influence APIs\n");
+		.setDefault("db")
+		.help("web domain (pageRank or twitter screen name (KloutIndex) to look for its influence for."
+				+ "Many sources may be introduced separated by ',' char."
+				+ "If you want to retrieve sources from the database left this option empty or use the 'db' value\n");
 		influenceTaggerParser.addArgument("-c", "--config")		
 		.required(true)
-		.help("Whether tweets shall be stored in a database or printed to stdout (default).\n");
+		.help("Configuration file that contains the necessary parameters to connect to Influence APIs "
+				+ "and Database you want to interact with the database\n");
 		influenceTaggerParser.addArgument("-db", "--database")		
 		.action(Arguments.storeTrue())
-		.help("Whether tweets shall be stored in a database or printed to stdout (default).\n");
+		.help("Whether influences shall be stored in a database or printed to stdout (default). "
+				+ "Database parameters must be given in the configuration file.\n");
 	}
 	
 

@@ -32,6 +32,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.net.URL;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -43,6 +44,9 @@ import java.util.Map;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
+
+import twitter4j.JSONException;
+import twitter4j.JSONObject;
 
 import com.google.common.base.Optional;
 import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
@@ -206,5 +210,30 @@ public final class Utils {
 			Connection conn = ds.getConnection();
 			return conn;		
 	}
+	
+	/**
+	 * Function to read a JSON object from an url
+	 * 
+	 * @param url
+	 * @return
+	 * @throws IOException
+	 * @throws JSONException
+	 */
+	public static JSONObject readJsonFromUrl(String url) throws IOException, JSONException {
+		BufferedReader reader = null;
+		
+		URL urlObj = new URL(url);
+		BufferedReader rd = new BufferedReader(new InputStreamReader(urlObj.openStream()));
+		StringBuilder sb = new StringBuilder();
+		int cp;
+		while ((cp = rd.read()) != -1) 
+		{
+			sb.append((char) cp);
+		}
+		JSONObject json = new JSONObject(sb.toString());	
+	     
+		return json;
+	  }
+	
 	
 }
