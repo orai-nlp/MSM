@@ -29,7 +29,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Properties;
+
+import javax.naming.NamingException;
 
 import twitter4j.JSONException;
 import twitter4j.JSONObject;
@@ -42,6 +46,7 @@ public class InfluenceTagger {
 
 	private String KloutKey;
 	private String PRKey;
+	private Connection DBconn;
 
 	public InfluenceTagger (String config, boolean db)
 	{
@@ -67,6 +72,18 @@ public class InfluenceTagger {
 		{
 			System.err.println("MSM::InfluenceTagger WARNING - no PageRank Key could be found, PageRank index won't be retrieved");
 		}
+		
+		if (db)
+		{
+			try {
+				DBconn = Utils.DbConnection(params.getProperty("dbuser"),params.getProperty("dbpass"),params.getProperty("dbhost"),params.getProperty("dbname"));
+				
+			} catch (NamingException | SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+			
 	}
 	
 	
