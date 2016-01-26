@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -120,14 +121,40 @@ public class InfluenceTagger {
      */
 	private double PageRankIndex (String id) 
 	{
-        //url baten pagerank-a lortzeko objektua
-        //my $pr = WWW::Google::PageRank->new;
-        //my $prscore=scalar($pr->get($src));
-        //my $em=sprintf("%.2f", $prscore*10);  # PageRank score range is [1..10] we normalize it to [1..100] to be comparable with klout
-        //print STDERR "$src - $srcType - $prscore\n";
-        //return $em;
-        
-        return 0;
+		String result = "";
+
+		JenkinsHash jenkinsHash = new JenkinsHash();
+		long hash = jenkinsHash.hash(("info:" + id).getBytes());
+
+		//Append a 6 in front of the hashing value.
+		String url = "http://toolbarqueries.google.com/tbr?client=navclient-auto&hl=en&"
+		   + "ch=6" + hash + "&ie=UTF-8&oe=UTF-8&features=Rank&q=info:" + id;
+
+		System.out.println("Sending request to : " + url);
+
+		try {
+			URLConnection conn = new URL(url).openConnection();
+
+			BufferedReader br = new BufferedReader(new InputStreamReader(
+				conn.getInputStream()));
+
+			String input;
+			while ((input = br.readLine()) != null) {
+
+				// What Google returned? Example : Rank_1:1:9, PR = 9
+				System.out.println(input);
+				result = input.substring(input.lastIndexOf(":") + 1);
+			}
+
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
+		}
+
+		if ("".equals(result)) {
+			return 0;
+		} else {
+			return Double.valueOf(result);
+		}
 	}
 	
 	/**
