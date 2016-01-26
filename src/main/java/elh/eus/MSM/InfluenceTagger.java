@@ -32,11 +32,14 @@ import java.nio.charset.Charset;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Properties;
+import java.util.Set;
 
 import javax.naming.NamingException;
 
 import twitter4j.JSONException;
 import twitter4j.JSONObject;
+
+import org.apache.commons.validator.routines.UrlValidator;
 
 
 
@@ -46,7 +49,6 @@ public class InfluenceTagger {
 
 	private String KloutKey;
 	private String PRKey;
-	private Connection DBconn;
 
 	public InfluenceTagger (String config, boolean db)
 	{
@@ -71,18 +73,7 @@ public class InfluenceTagger {
 		if (PRKey.equalsIgnoreCase("none"))
 		{
 			System.err.println("MSM::InfluenceTagger WARNING - no PageRank Key could be found, PageRank index won't be retrieved");
-		}
-		
-		if (db)
-		{
-			try {
-				DBconn = Utils.DbConnection(params.getProperty("dbuser"),params.getProperty("dbpass"),params.getProperty("dbhost"),params.getProperty("dbname"));
-				
-			} catch (NamingException | SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
+		}		
 			
 	}
 	
@@ -129,10 +120,45 @@ public class InfluenceTagger {
      */
 	private double PageRankIndex (String id) 
 	{
-		return 0;
+        //url baten pagerank-a lortzeko objektua
+        //my $pr = WWW::Google::PageRank->new;
+        //my $prscore=scalar($pr->get($src));
+        //my $em=sprintf("%.2f", $prscore*10);  # PageRank score range is [1..10] we normalize it to [1..100] to be comparable with klout
+        //print STDERR "$src - $srcType - $prscore\n";
+        //return $em;
+        
+        return 0;
 	}
 	
+	/**
+	 * Tag the influence of the sources in the given list. 
+	 * Function returns the same list with the influence property filled. 
+	 * 
+	 * 
+	 * @param srcList
+	 * @return
+	 */
+	public Set<Source> tagInfluence(Set<Source> srcList){
+		
+		for (Source src : srcList)
+		{
+			if (src.getType().equalsIgnoreCase("Twitter"))
+			{
+				src.setInfluence(KloutIndex(src.getScreenName()));
+			}
+			else
+			{
+				src.setInfluence(PageRankIndex(src.getDomain()));
+			}
+		}
+		return srcList;
+	}
 	
+	public int influence2db(Set<Source> srcList)
+	{
+		int count = 0;
+		return count;
+	}
 	
 }
 

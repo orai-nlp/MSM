@@ -24,14 +24,18 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.sql.Connection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
@@ -186,13 +190,58 @@ public class CLI {
 		String cfg = parsedArguments.getString("config");	
 		String sources = parsedArguments.getString("sources");	
 		boolean db = parsedArguments.getBoolean("database");
+		String type = parsedArguments.getString("type");
 		
+		Properties params = new Properties();
 		try {
-			InfluenceTagger infTagger = new InfluenceTagger(cfg, db);
+			params.load(new FileInputStream(new File(cfg)));
+		} catch (FileNotFoundException fe){
+			System.err.println("elh-MSM::InfluenceTagger - Config file not found "+cfg);
+			System.exit(1);
+		} catch (IOException ioe){
+			System.err.println("elh-MSM::InfluenceTagger - Config file could not read "+cfg);
+			System.exit(1);
+		} 				
+		
+		
+		Set<Source> sourceList = new HashSet<Source>();
+		InfluenceTagger infTagger = new InfluenceTagger(cfg, db);
+		try {
+			
+			if (sources.equalsIgnoreCase("db"))
+			{
+				Connection conn = Utils.DbConnection(params.getProperty("dbuser"),
+													params.getProperty("dbpass"),
+													params.getProperty("dbhost"),
+													params.getProperty("dbname"));
+				sourceList = Source.retrieveFromDB(conn,type);
+				infTagger.tagInfluence(sourceList);
+			}
+			else
+			{
+				String[] srcSplit = sources.split("\\s*,\\s*");
+				for (String src : srcSplit)
+				{
+					sourceList.add(new Source(src));
+				}
+			}
 		} catch (Exception e) {			
 			e.printStackTrace();
 		} 
 		
+		if (db) // print the message to stdout
+		{
+			int count = infTagger.influence2db(sourceList);
+			System.out.println("influence for "+count+" sources stored in the database");
+		}
+		else
+		{
+			for (Source src : sourceList)
+			{
+				System.out.println("Src: "+src.getScreenName()+" - influence:"+src.getInfluence());
+			}
+		}
+				
 	}
 
 	
@@ -247,6 +296,13 @@ public class CLI {
 		.action(Arguments.storeTrue())
 		.help("Whether influences shall be stored in a database or printed to stdout (default). "
 				+ "Database parameters must be given in the configuration file.\n");
+		influenceTaggerParser.addArgument("-t", "--type")
+		.choices("twitter", "domain", "all")
+		.setDefault("all")
+		.help("type of the sources to look for its influence for:"
+				+ "\t - \"twitter\" : sources are twitter user screen names\n"
+				+ "\t - \"domain\" : sources are web domains\n"
+				+ "\t - \"all\" : sources are mixed (default) system will detect the source type for each source\n");
 	}
 	
 
