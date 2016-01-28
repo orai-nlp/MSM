@@ -167,6 +167,7 @@ public class InfluenceTagger {
 	 */
 	public Set<Source> tagInfluence(Set<Source> srcList){
 		
+		//kk
 		for (Source src : srcList)
 		{
 			if (src.getType().equalsIgnoreCase("Twitter"))
