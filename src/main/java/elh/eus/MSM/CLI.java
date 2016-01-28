@@ -31,11 +31,14 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+
+import javax.naming.NamingException;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
@@ -216,6 +219,7 @@ public class CLI {
 													params.getProperty("dbname"));
 				sourceList = Source.retrieveFromDB(conn,type);
 				infTagger.tagInfluence(sourceList);
+				conn.close();
 			}
 			else
 			{
@@ -224,15 +228,28 @@ public class CLI {
 				{
 					sourceList.add(new Source(src));
 				}
+				infTagger.tagInfluence(sourceList);				
 			}
+			
+			
 		} catch (Exception e) {			
 			e.printStackTrace();
 		} 
 		
 		if (db) // print the message to stdout
 		{
-			int count = infTagger.influence2db(sourceList);
-			System.out.println("influence for "+count+" sources stored in the database");
+			try {
+				Connection conn = Utils.DbConnection(params.getProperty("dbuser"),
+						params.getProperty("dbpass"),
+						params.getProperty("dbhost"),
+						params.getProperty("dbname"));
+				int count = infTagger.influence2db(sourceList, conn);
+				System.out.println("influence for "+count+" sources stored in the database");
+				conn.close();
+			} catch (NamingException | SQLException e) {
+				System.err.println("elh-MSM::InfluenceTagger - Error when storing influence in the DB ");
+				e.printStackTrace();
+			} 					
 		}
 		else
 		{

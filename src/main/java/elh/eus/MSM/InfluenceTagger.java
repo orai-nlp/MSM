@@ -31,7 +31,9 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Properties;
 import java.util.Set;
 
@@ -182,9 +184,21 @@ public class InfluenceTagger {
 		return srcList;
 	}
 	
-	public int influence2db(Set<Source> srcList)
+	public int influence2db(Set<Source> srcList, Connection conn) throws SQLException 
 	{
+		PreparedStatement infUpdate = conn.prepareStatement("UPDATE behagunea_app_source SET influence=? where source_id=? and type=?");
+
 		int count = 0;
+		for (Source src : srcList)
+		{
+			infUpdate.setDouble(1, src.getInfluence());
+			infUpdate.setInt(2, src.getId());
+			infUpdate.setString(3, src.getType());
+			
+			infUpdate.executeUpdate();
+			count++;			
+		}
+		infUpdate.close();
 		return count;
 	}
 	
