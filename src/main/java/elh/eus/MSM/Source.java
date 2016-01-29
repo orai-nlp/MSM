@@ -113,7 +113,7 @@ public class Source {
 		
 		try{	
 			while (rs.next()) {
-				Source src = new Source(rs.getInt("id"), rs.getString("screen_tag"),rs.getString("type"),rs.getString("domain"));				
+				Source src = new Source(rs.getInt("id"), rs.getString("screen_tag"),rs.getString("type"),rs.getString("domain"),rs.getDouble("influence"));				
 				result.add(src);
 			}
 			stmt.close();

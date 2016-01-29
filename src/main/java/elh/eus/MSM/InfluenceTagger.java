@@ -105,10 +105,12 @@ public class InfluenceTagger {
 		catch (JSONException je)
 		{
 			System.err.println("MSM::InflucenceTagger - JSON error when trying to get the Klout index");
+			je.printStackTrace();
 		}
 		catch (IOException ioe)
 		{
 			System.err.println("MSM::InflucenceTagger - Reading error when trying to read the JSON object of the Klout index");
+			ioe.printStackTrace();
 		}
 		
          //if there is no id or it has no score return 0;
