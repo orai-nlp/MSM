@@ -64,6 +64,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 
 
 public class TwitterStreamClient {
@@ -72,8 +73,14 @@ public class TwitterStreamClient {
 	private String store = "";
 	private List<String> acceptedLangs;
 	private Set<Keyword> keywords;
-	private HashMap<Integer,Pattern> kwrdPatterns;
 	private LangDetect LID;
+	
+	private Set<Keyword> independentkwrds = new HashSet<Keyword>();
+	private Set<Keyword> dependentkwrds = new HashSet<Keyword>();
+
+	private static Pattern anchorPattern; //pattern for anchor kwrds. they are usually general terms.
+	private HashMap<Integer,Pattern> kwrdPatterns = new HashMap<Integer,Pattern>(); //patterns for keywords.
+
 	
 	private static Pattern retweetPattern = Pattern.compile("^RT[^\\p{L}\\p{M}\\p{Nd}]+.*");
 	
@@ -147,7 +154,8 @@ public class TwitterStreamClient {
 							System.err.println("elh-MSM::TwitterStreamClient - error when storing mention");
 							e.printStackTrace();
 						}
-
+						break;
+					case "stout": System.out.println("------ Mention found! ------ \n"+m.print()+"---------\n"); break;
 					case "solr": success = m.mention2solr(); break;
 					}
 				}
@@ -325,28 +333,6 @@ public class TwitterStreamClient {
 			System.exit(1);
 		}
 
-		/*while (!client.isDone()) 
-		{
-			String message = "";
-			try {
-                message = msgQueue.take();
-                processMsg(message);
-            } catch (InterruptedException e) {                
-                e.printStackTrace();              
-            }			
-			switch (store) // print the message to stdout
-			{
-			case "stout": System.out.println(message); break;
-			case "db": System.out.println(message); break;
-			case "solr": System.out.println(message); break;
-			} 
-		 }*/
-		
-		//client.stop();
-	
-		//After we have created a Client, we can connect and process messages:
-		//client.connect();
-
 	}
 
 	private void loadAcceptedLangs(String property) {
@@ -356,10 +342,10 @@ public class TwitterStreamClient {
 	
 	
 	/**
-	 * This void creates Patterns for all the keywords and stores them in two structures depending if the keywords are anchors or not.
-	 * @param kwrds2
-	 */
-	
+	 * This void creates Patterns for all the keywords and stores them in two structures depending
+	 * if the keywords need anchors or not.
+	 * 
+	 */	
 	private void constructKeywordsPatterns() {
 		if (this.keywords == null || this.keywords.isEmpty())
 		{
@@ -368,12 +354,31 @@ public class TwitterStreamClient {
 		}
 
 		StringBuilder sb_anchors = new StringBuilder();
-		sb_anchors.append("(?i)\\b(");
+		sb_anchors.append("\\b(");
 		for (Keyword k : keywords)
 		{
-			Pattern p = Pattern.compile("(?i)\\b"+k.getText().replace("_", " ")); 			
-			kwrdPatterns.put(k.getId(), p);			
+			//create and store pattern;
+			Pattern p = Pattern.compile("\\b"+k.getText().replace('_',' ').toLowerCase());
+			//System.err.println("elh-MSM::FeedReader::constructKeywordPatterns - currentPattern:"+p.toString());
+
+			kwrdPatterns.put(k.getId(), p);
+			if (k.isAnchor())
+			{
+				sb_anchors.append(k.getText().replace('_',' ').toLowerCase()).append("|"); 
+			}
+
+			if (k.needsAnchor())
+			{
+				dependentkwrds.add(k);
+			}
+			else	
+			{
+				independentkwrds.add(k);
+			}			
 		} 
+		String anchPatt = sb_anchors.toString();
+		anchPatt=anchPatt.substring(0, anchPatt.length()-1)+")";
+		anchorPattern = Pattern.compile(anchPatt);
 	}
 	
 	
@@ -387,148 +392,34 @@ public class TwitterStreamClient {
 	private Set<Keyword> parseTweetForKeywords(String text, String lang) {
 
 		Set<Keyword> result = new HashSet<Keyword>();
-		
-		//Mention m = new Mention();
+		String searchText = StringUtils.stripAccents(text).toLowerCase(); 
+		boolean anchorFound = anchorPattern.matcher(searchText).find();
+	
 		//keywords that do not need any anchor
-		for (Keyword  k : keywords)
-		{
-			if (k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(text).matches())
-			{
+		for (Keyword k : independentkwrds)
+		{				
+			//System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key:"
+			//	+k.getText()+" l="+k.getLang()+" pattern:"+kwrdPatterns.get(k.getId()).toString());
+			if(k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(searchText).find())
+			{	
+				//System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key found!!!: "+k.getText()+" id: "+k.getId());
 				result.add(k);
+			}								
+		}			
+		//keywords that need and anchor, only if anchors where found
+		if (anchorFound)
+		{
+			for (Keyword k : dependentkwrds)
+			{
+				if (k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(searchText).find())
+				{
+					//System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - dependent key found!!!: "+k.getText()+" id: "+k.getId());						
+					result.add(k);
+				}					
 			}
-		}		
+		}	
 		return result;
 	}
-	
-	/*sub store_tweet_toDB
-	{
-	    my $status = shift;
-
-	    my $time = `date`;
-	    print STDERR "\ntweet captured - $time - ";
-
-	    foreach $i (%{$status})
-	    {
-	        print STDERR "$i\t";
-	    } 
-	    
-	    my $langTwitter = $status->{lang};
-	    my $text = $status->{text};
-	    $text=~s/\n/ /g;
-	    print STDERR "\ntweet: $text - ";
-	    my $utf=encode_utf8($text);   
-	    
-	    print STDERR "\n\nTWEET UTF8: $utf - \n\n";
-
-	    my $langId = &langDetect($lang, $langTwitter, $utf);
-
-	    # mention language is accepted
-	    if ("$langId" ne "unk")
-	    {
-		print STDERR " correct lang! store mention to DB if any keyword matches  - $lang - $langId -\n";
-		
-		# open DB connection
-		my $kon=DBI->connect("DBI:mysql:DSS2016_MoodMap_DB:localhost","Ireom","ireom862admin");
-		$kon->do(qq{SET NAMES 'utf8';});
-
-		# get the max id up until now
-		my $sth = $kon->prepare("SELECT max(id) FROM mention");
-		$sth->execute();
-		my @results= $sth->fetchrow_array();
-		my $id=$results[0];      
-		$id++;
-		$sth->finish;
-
-		print STDERR " id for the next mention: $id\n";
-
-		# Extract desired fields from twitter status 
-		my $tweetId=$status->{id};
-		my $author=$status->{user}{screen_name};
-		my $date=$status->{created_at};
-		#Standarize date format
-		my @dateFields=split /\s+/, $date;
-		$date=$dateFields[5]."-".$dateFields[1]."-".$dateFields[2]." ".$dateFields[3]." ".$dateFields[4];
-		#months to numeric values
-		$date=~s/Jan/01/;
-		$date=~s/Feb/02/;
-		$date=~s/Mar/03/;
-		$date=~s/Apr/04/;
-		$date=~s/May/05/;
-		$date=~s/Jun/06/;
-		$date=~s/Jul/07/;
-		$date=~s/Aug/08/;
-		$date=~s/Sep/09/;
-		$date=~s/Oct/10/;
-		$date=~s/Nov/11/;
-		$date=~s/Dec/12/;
-		my $url="https://twitter.com/".$status->{id_str}."/status/".$tweetId;   
-
-		# prepare the sql statements to insert the mention in the DB and insert.
-		my $sth_mention=$kon->prepare("insert ignore into mention (id, date, source_id, url, text, lang, polarity) values (?,?,?,?,?,?,NULL)") || die "Couldn't prepare: " . $sth_mention->errstr;
-		#my $sth_keyword=$kon->prepare("insert ignore into keyword (term) values (?)") || die "Couldn't prepare: " . $sth_keyword->errstr;	
-		my $sth_keywordMention=$kon->prepare("insert ignore into keyword_mention (mention_id, keyword_term, keyword_lang) values (?,?,?)") || die "Couldn't prepare: " . $sth_keywordMention->errstr;
-		#my $sth_userkeyword=$kon->prepare("insert ignore into user_keyword (user_nickname, user_pass, keyword_term) values (?,?,?)") || die "Couldn't prepare: " . $sth_userKeyword->errstr;
-		my $sth_source=$kon->prepare("insert ignore into source (id, type, influence) values (?,?,NULL)") || die "Couldn't prepare: " . $sth_source->errstr;
-
-
-		#insert keywords into DB -- 
-		# PROBLEM!!! -> keywords are not always in the tweet. What to do in such cases?
-		#               - For the time being if no keyword is found discard the mention
-		my $utflc=lc($utf);
-		$utflc=" ".$utflc." ";
-		my @keysToStore;
-		for my $key (@keywords)
-		{
-		    $key=~s/^\s+//;
-		    $key=~s/\s+$//;
-		    $keylc=lc($key);
-		    # insert keyword to db (no matter if the keyword is not used here)
-		    #$sth_keyword->execute($keylc) || die "Couldn't execute statement: " . $sth_keyword->errstr;
-		    # keyword must be a whole word (#key, @key or ' key ') shall much, except for basque tweets where suffixes are admitted.
-		    if ($utflc=~/[#@\s]$keylc[\s\!-\(\[\)\]\?\.\,\;\:]/)
-		    {
-			push(@keysToStore,$key);       	
-		    }
-		    elsif ($langId eq "eu")
-		    {
-			if ($utflc=~/[#@\s]$keylc/)
-			{
-			    push(@keysToStore,$key);       	
-			}	
-		    }
-		}
-		
-		# store the mention in the DB unless no keyword is found to link the mention with.
-		if (($#keysToStore) < 0)
-		{
-		    print STDERR " lang is correct but no keyword could be found, tweet discarded! \n";
-		}
-		else
-		{
-		    # insert the mention into DB	    
-		    $sth_mention->execute($id, $date, $author, $url, $utf, $langId) || die "Couldn't execute statement: " . $sth_mention->errstr;
-		    $sth_mention->finish;
-		    
-		    for my $k (@keysToStore)
-		    {
-			$sth_keywordMention->execute($id, $k, $langId) || die "Couldn't execute statement: " . $sth_keywordMention->errstr;
-			#$sth_userkeyword->execute($user, $pass, $k) || die "Couldn't execute statement: " . $sth_userkeyword->errstr;
-			$sth_source->execute($author,'Twitter') || die "Couldn't execute statement: " . $sth_source->errstr;
-		    }
-		}       
-		$sth_keywordMention->finish;
-		#$sth_userkeyword->finish;
-		$sth_source->finish;
-
-		$kon->disconnect;
-	    }
-	    else
-	    {
-		print STDERR " other lang! - $lang - $langId - \n";
-		#return 2;
-	    }
-	    #print OUT "$langId";
-	}*/
 	    
 	
 }

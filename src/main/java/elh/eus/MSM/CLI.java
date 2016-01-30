@@ -166,8 +166,8 @@ public class CLI {
 		} 		
 	}
 	
-	
-	public final void feedReader()
+	@Deprecated
+	public final void feedReaderOld()
 	{
 		String cfg = parsedArguments.getString("config");
 		String store = parsedArguments.getString("store");
@@ -186,6 +186,79 @@ public class CLI {
 				e.printStackTrace();
 			}
 		}
+	}
+	
+	public final void feedReader()
+	{
+		String cfg = parsedArguments.getString("config");
+		String store = parsedArguments.getString("store");
+		String url = parsedArguments.getString("url");
+		
+
+		Properties params = new Properties();
+		try {
+			params.load(new FileInputStream(new File(cfg)));
+		} catch (FileNotFoundException fe){
+			System.err.println("elh-MSM::CLI (feedReader) - Config file not found "+cfg);
+			System.exit(1);
+		} catch (IOException ioe){
+			System.err.println("elh-MSM::CLI (feedReader) - Config file could not read "+cfg);
+			System.exit(1);
+		} 				
+		
+		
+		Set<Keyword> kwrdList = new HashSet<Keyword>();
+		Set<Feed> feedList = new HashSet<Feed>();
+
+		try {
+			// load feeds from db
+			if (url.equalsIgnoreCase("db"))
+			{
+				Connection conn = Utils.DbConnection(params.getProperty("dbuser"),
+													params.getProperty("dbpass"),
+													params.getProperty("dbhost"),
+													params.getProperty("dbname"));
+				feedList = Feed.retrieveFromDB(conn);
+				kwrdList = Keyword.retrieveFromDB(conn, "press", params.getProperty("langs", "all"));
+				conn.close();
+			}
+			else //load feeds from command line
+			{
+				String[] srcSplit = url.split("\\s*,\\s*");
+				for (String feed : srcSplit)
+				{
+					feedList.add(new Feed(feed));
+				}				
+			}
+			//last resort try to load feed from config file
+			if (feedList.isEmpty())
+			{
+				String fsource = params.getProperty("feedURL", "none");
+				String[] srcSplit = fsource.split("\\s*,\\s*");
+				for (String feed : srcSplit)
+				{
+					feedList.add(new Feed(feed));
+				}	
+			}
+			
+			if (feedList.isEmpty() || kwrdList.isEmpty())
+			{
+				System.err.println("ERROR: either there no feed or no keywords were specified."
+						+ "Feed reader can not continue.");
+				System.exit(1);
+			}
+			else
+			{
+				System.err.println("elh-MSM::FeedReader - "+feedList.size()+" feeds and "+kwrdList.size()+" keywords");
+				FeedReader fReader = new FeedReader(cfg, feedList, kwrdList, store);
+				fReader.processFeeds();
+			}
+			
+		} catch (Exception e) {			
+			e.printStackTrace();
+		} 
+		
+		
 	}
 	
 	public final void tagInfluence()
@@ -236,7 +309,7 @@ public class CLI {
 			e.printStackTrace();
 		} 
 		
-		if (db) // print the message to stdout
+		if (db) // store influences into the database
 		{
 			try {
 				Connection conn = Utils.DbConnection(params.getProperty("dbuser"),
@@ -251,7 +324,7 @@ public class CLI {
 				e.printStackTrace();
 			} 					
 		}
-		else
+		else // print influence to stdout
 		{
 			for (Source src : sourceList)
 			{
@@ -286,6 +359,7 @@ public class CLI {
 
 		feedReaderParser.addArgument("-u", "--url")
 		.required(false)
+		.setDefault("db")
 		.help("URL(s) of the feed(s) we want to crawl. Feeds must be separated with ',' chars.\n"
 				+ "e.g. : java -jar MSM-1.0.jar feed -u 'url1,url2,...'");
 		feedReaderParser.addArgument("-s", "--store")		

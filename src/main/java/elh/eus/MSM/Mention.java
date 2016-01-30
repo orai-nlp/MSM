@@ -271,6 +271,11 @@ public class Mention {
 		return 1;
 	}
 	
+	public void print()
+	{
+		System.out.println("\ntext: "+text+"\nlang: "+lang+"\nkeywords: "+keywords.toString());
+	}
+	
 	public int mention2solr(){
 		return 1;
 	}
