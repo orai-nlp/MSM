@@ -155,7 +155,11 @@ public class TwitterStreamClient {
 							e.printStackTrace();
 						}
 						break;
-					case "stout": System.out.println("------ Mention found! ------ \n"+m.print()+"---------\n"); break;
+					case "stout": 
+						System.out.println("------ Mention found! ------ \n");
+						m.print();
+						System.out.println("---------\n");
+						break;
 					case "solr": success = m.mention2solr(); break;
 					}
 				}

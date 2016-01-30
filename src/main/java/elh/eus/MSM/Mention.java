@@ -271,6 +271,11 @@ public class Mention {
 		return 1;
 	}
 	
+	/**
+	 *  Function prints a mention to the stout;
+	 * 
+	 * @return
+	 */
 	public void print()
 	{
 		System.out.println("\ntext: "+text+"\nlang: "+lang+"\nkeywords: "+keywords.toString());
