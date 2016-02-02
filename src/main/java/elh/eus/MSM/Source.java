@@ -13,7 +13,7 @@ import org.apache.commons.validator.routines.UrlValidator;
 
 public class Source {
 
-	private int id;	
+	private long id;	
 	private String screenName;
 	private String type;
 	private String domain;
@@ -21,11 +21,11 @@ public class Source {
 	
 
 
-	public int getId() {
+	public long getId() {
 		return id;
 	}
 	
-	public void setId(int id) {
+	public void setId(long id) {
 		this.id = id;
 	}
 	
@@ -80,7 +80,7 @@ public class Source {
 		}
 	}
 	
-	public Source(int id, String screenName, String type, String domain,double inf){
+	public Source(long id, String screenName, String type, String domain,double inf){
 		setId(id);
 		setScreenName(screenName);
 		setType(type);
@@ -113,7 +113,7 @@ public class Source {
 		
 		try{	
 			while (rs.next()) {
-				Source src = new Source(rs.getInt("id"), rs.getString("screen_tag"),rs.getString("type"),rs.getString("domain"),rs.getDouble("influence"));				
+				Source src = new Source(rs.getLong("source_id"), rs.getString("source_name"),rs.getString("type"),rs.getString("domain"),rs.getDouble("influence"));				
 				result.add(src);
 			}
 			stmt.close();

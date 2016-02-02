@@ -194,7 +194,7 @@ public class InfluenceTagger {
 		for (Source src : srcList)
 		{
 			infUpdate.setDouble(1, src.getInfluence());
-			infUpdate.setInt(2, src.getId());
+			infUpdate.setLong(2, src.getId());
 			infUpdate.setString(3, src.getType());
 			
 			infUpdate.executeUpdate();
