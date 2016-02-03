@@ -267,6 +267,7 @@ public class CLI {
 		String sources = parsedArguments.getString("sources");	
 		boolean db = parsedArguments.getBoolean("database");
 		String type = parsedArguments.getString("type");
+		String opt = parsedArguments.getString("which");
 		
 		Properties params = new Properties();
 		try {
@@ -290,7 +291,7 @@ public class CLI {
 													params.getProperty("dbpass"),
 													params.getProperty("dbhost"),
 													params.getProperty("dbname"));
-				sourceList = Source.retrieveFromDB(conn,type);
+				sourceList = Source.retrieveFromDB(conn,type,opt);
 				//System.err.println("elh-MSM::Influcence CLI (db): sources found to look for their influence: "+sourceList.size());				
 				infTagger.tagInfluence(sourceList);
 				conn.close();
@@ -396,6 +397,14 @@ public class CLI {
 				+ "\t - \"twitter\" : sources are twitter user screen names\n"
 				+ "\t - \"domain\" : sources are web domains\n"
 				+ "\t - \"all\" : sources are mixed (default) system will detect the source type for each source\n");
+		influenceTaggerParser.addArgument("-w", "--which")
+		.choices("null", "error", "all")
+		.setDefault("null")
+		.help("which sources to look for its influence for (only for database interaction):"
+				+ "\t - \"null\" : sources that have not been yet processed at all\n"
+				+ "\t - \"error\" : sources that have been processed but no influence could be retrieved\n"
+				+ "\t - \"all\" : all sources.\n\t\tWARNING: this will override values in the database.\n"
+				+ "\t\tWARNING2:Depending on the number of sources in the database this could take \n");
 	}
 	
 

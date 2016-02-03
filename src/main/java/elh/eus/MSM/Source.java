@@ -108,23 +108,37 @@ public class Source {
 	 * @throws NamingException
 	 * @throws SQLException
 	 */
-	public static Set<Source> retrieveFromDB(Connection conn, String type) throws NamingException, SQLException {
+	public static Set<Source> retrieveFromDB(Connection conn, String type, String opt) throws NamingException, SQLException {
 
 		Set<Source> result = new HashSet<Source>(); 
 		Statement stmt = conn.createStatement();
-		String typeCondition = "";
+		StringBuilder sb = new StringBuilder();
+		sb.append("SELECT * FROM behagunea_app_source");
+		switch (opt)
+		{
+		case "null": sb.append(" where influence is NULL or influence='NULL' or influence=''");break;
+		case "error":  sb.append(" where influence=-1");break;
+		case "all":  break;
+		}
+		
+		String andWhere = " where ";
+		if (sb.toString().contains(" where "))
+		{
+			andWhere=" and ";
+		}
+		
 		if (type.equalsIgnoreCase("twitter"))
 		{			
-			typeCondition ="and type='Twitter'";
+			sb.append(andWhere).append("type='Twitter'");
 		}
 		else if (type.equalsIgnoreCase("feed"))
 		{
-			typeCondition ="and type='press'";			
+			sb.append(andWhere).append("type='press'");
 		}
 		
 		//limited to 500 sources per call not to exceed rate limit.
-		String query = "SELECT * FROM behagunea_app_source where influence='-1' "+typeCondition+" limit 500";
-		//System.err.println("elh-MSM::Keyword::retrieveFromDB - query:"+query);
+		String query = sb.append(" limit 500").toString();
+		System.err.println("elh-MSM::Keyword::retrieveFromDB - query:"+query);
 		ResultSet rs = stmt.executeQuery(query);		
 		
 		try{	

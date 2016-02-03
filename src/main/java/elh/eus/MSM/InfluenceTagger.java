@@ -202,20 +202,19 @@ public class InfluenceTagger {
 		int count = 0;
 		for (Source src : srcList)
 		{
-			if (src.getInfluence() != 0.0)
-			{
-				infUpdate.setDouble(1, src.getInfluence());
-				infUpdate.setLong(2, src.getId());
-				infUpdate.setString(3, src.getType());
-			
-				infUpdate.executeUpdate();
-				count++;
-			}
-			else
+			if (src.getInfluence() == 0.0)
 			{
 				System.err.println("elh-MSM::InfluenceTagger::influence2db - 0 influence for source "+src.getScreenName()
 						+" - -1 will be stored in the database");
+				src.setInfluence(-1);
 			}
+			
+			infUpdate.setDouble(1, src.getInfluence());
+			infUpdate.setLong(2, src.getId());
+			infUpdate.setString(3, src.getType());
+				
+			infUpdate.executeUpdate();
+			count++;
 		}
 		infUpdate.close();
 		return count;
