@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import javax.naming.NamingException;
 
@@ -19,6 +20,7 @@ public class Source {
 	private String domain;
 	private double influence;
 	
+	private final Pattern httpProt = Pattern.compile("^[hf]t?tps?://", Pattern.CASE_INSENSITIVE);
 
 
 	public long getId() {
@@ -66,15 +68,24 @@ public class Source {
 	public Source(String src){
 		//URL normalization
 		UrlValidator defaultValidator = new UrlValidator(UrlValidator.ALLOW_ALL_SCHEMES);
-				
-		if (defaultValidator.isValid(src)) 
+		
+		//add protocol since defaultvalidator wont't work without it.
+		String check = src;
+		if (!httpProt.matcher(check).find())
 		{
-			setDomain(src);
-			setScreenName(domain);			
-			setType("domain");
+			check ="http://"+src;
+		}
+		//System.err.println("Source: new source: "+check);
+		if (defaultValidator.isValid(check)) 
+		{
+			//System.err.println("Source: new web source: "+src);
+			setDomain(check);
+			setScreenName(src);			
+			setType("feed");
 		}
 		else
 		{
+			//System.err.println("Source: new twitter source: "+src);			
 			setScreenName(src);
 			setType("twitter");
 		}
@@ -102,12 +113,17 @@ public class Source {
 		Set<Source> result = new HashSet<Source>(); 
 		Statement stmt = conn.createStatement();
 		String typeCondition = "";
-		if (type.equalsIgnoreCase("twitter") || type.equalsIgnoreCase("domain"))
+		if (type.equalsIgnoreCase("twitter"))
+		{			
+			typeCondition ="and type='Twitter'";
+		}
+		else if (type.equalsIgnoreCase("feed"))
 		{
-			typeCondition ="and type='"+type+"'";
+			typeCondition ="and type='press'";			
 		}
 		
-		String query = "SELECT * FROM behagunea_app_source where influence='-1' "+typeCondition;
+		//limited to 500 sources per call not to exceed rate limit.
+		String query = "SELECT * FROM behagunea_app_source where influence='-1' "+typeCondition+" limit 500";
 		//System.err.println("elh-MSM::Keyword::retrieveFromDB - query:"+query);
 		ResultSet rs = stmt.executeQuery(query);		
 		

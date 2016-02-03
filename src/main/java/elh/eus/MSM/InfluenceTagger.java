@@ -98,19 +98,20 @@ public class InfluenceTagger {
 				json=Utils.readJsonFromUrl("http://api.klout.com/v2/user.json/"+kloutId+"/score?key="+KloutKey);
 				if (json.has("score"))
 				{
-					return (double)json.getLong("score");
+					System.err.println("MSM::InfluenceTagger - Success!! retrieved the Klout index for source "+userId);					
+					return Double.valueOf(json.getString("score"));
 				}        	
 			}
 		} 
 		catch (JSONException je)
 		{
-			System.err.println("MSM::InflucenceTagger - JSON error when trying to get the Klout index");
-			je.printStackTrace();
+			System.err.println("MSM::InfluenceTagger - JSON error when trying to get the Klout index for source "+userId);
+			//je.printStackTrace();
 		}
 		catch (IOException ioe)
 		{
-			System.err.println("MSM::InflucenceTagger - Reading error when trying to read the JSON object of the Klout index");
-			ioe.printStackTrace();
+			System.err.println("MSM::InfluenceTagger - Reading error when trying to read the JSON object of the Klout index for source "+userId);
+			//ioe.printStackTrace();
 		}
 		
          //if there is no id or it has no score return 0;
@@ -155,9 +156,16 @@ public class InfluenceTagger {
 		}
 
 		if ("".equals(result)) {
-			return 0;
+			if (id.endsWith(".eus"))
+			{
+				return PageRankIndex(id.replaceAll("\\.eus$", ".info"));
+			}
+			else
+			{
+				return 0;
+			}
 		} else {
-			return Double.valueOf(result);
+			return Double.valueOf(result)*10;
 		}
 	}
 	
@@ -174,7 +182,8 @@ public class InfluenceTagger {
 		//kk
 		for (Source src : srcList)
 		{
-			if (src.getType().equalsIgnoreCase("Twitter"))
+			//System.err.println("MSM::InfluenceTagger::tagInfluence - name: "+src.getScreenName()+" type: "+src.getType());
+			if (src.getType().equalsIgnoreCase("twitter"))
 			{
 				src.setInfluence(KloutIndex(src.getScreenName()));
 			}
@@ -193,12 +202,20 @@ public class InfluenceTagger {
 		int count = 0;
 		for (Source src : srcList)
 		{
-			infUpdate.setDouble(1, src.getInfluence());
-			infUpdate.setLong(2, src.getId());
-			infUpdate.setString(3, src.getType());
+			if (src.getInfluence() != 0.0)
+			{
+				infUpdate.setDouble(1, src.getInfluence());
+				infUpdate.setLong(2, src.getId());
+				infUpdate.setString(3, src.getType());
 			
-			infUpdate.executeUpdate();
-			count++;			
+				infUpdate.executeUpdate();
+				count++;
+			}
+			else
+			{
+				System.err.println("elh-MSM::InfluenceTagger::influence2db - 0 influence for source "+src.getScreenName()
+						+" - -1 will be stored in the database");
+			}
 		}
 		infUpdate.close();
 		return count;

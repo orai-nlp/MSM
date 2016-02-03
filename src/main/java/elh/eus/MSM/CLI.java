@@ -291,6 +291,7 @@ public class CLI {
 													params.getProperty("dbhost"),
 													params.getProperty("dbname"));
 				sourceList = Source.retrieveFromDB(conn,type);
+				//System.err.println("elh-MSM::Influcence CLI (db): sources found to look for their influence: "+sourceList.size());				
 				infTagger.tagInfluence(sourceList);
 				conn.close();
 			}
@@ -301,6 +302,7 @@ public class CLI {
 				{
 					sourceList.add(new Source(src));
 				}
+				//System.err.println("elh-MSM::Influcence CLI (commandline): sources found to look for their influence: "+sourceList.size());
 				infTagger.tagInfluence(sourceList);				
 			}
 			
@@ -388,7 +390,7 @@ public class CLI {
 		.help("Whether influences shall be stored in a database or printed to stdout (default). "
 				+ "Database parameters must be given in the configuration file.\n");
 		influenceTaggerParser.addArgument("-t", "--type")
-		.choices("twitter", "domain", "all")
+		.choices("twitter", "feed", "all")
 		.setDefault("all")
 		.help("type of the sources to look for its influence for:"
 				+ "\t - \"twitter\" : sources are twitter user screen names\n"
