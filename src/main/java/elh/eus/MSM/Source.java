@@ -1,6 +1,7 @@
 package elh.eus.MSM;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -157,4 +158,49 @@ public class Source {
 		return result;
 	}
 	
+	
+	public boolean existsInDB (Connection conn)
+	{
+		int result = 0;
+		try {
+			Statement stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery("SELECT count(*) FROM behagunea_app_source where source_id="+getId());
+			if(rs.next()){
+	            result = rs.getInt(1);
+	        }
+			stmt.close();
+		} catch (SQLException e){
+			
+		}
+		return (result >0);
+	}
+	
+	/**
+	 * Store mention into the database.
+	 * 
+	 * @param conn
+	 * @return
+	 */
+	public int source2db(Connection conn) {	
+
+		PreparedStatement stmtM = null;
+		
+		int success = 0;
+		//PreparedStatement stmtS = null;		
+		try {	
+			String sourceIns = "insert ignore into behagunea_app_source (source_id, type, source_name, user_id) values (?,?,?,?)";
+			stmtM = conn.prepareStatement(sourceIns, Statement.RETURN_GENERATED_KEYS);
+			stmtM.setLong(1, getId());
+			stmtM.setString(2, "Twitter");
+			stmtM.setString(3, getScreenName());
+			stmtM.setInt(4, 1); //BEWARE: user_id is always given '1'. This must be reviewed in the future.	        
+
+			stmtM.executeUpdate();
+			stmtM.close();
+			success=1;
+		}catch (SQLException e){
+			System.err.println("elh-MSM::Source source2db - Error when trying to store source into db.");
+		}
+		return success;
+	}
 }

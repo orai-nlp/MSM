@@ -16,7 +16,7 @@ import org.apache.commons.validator.routines.UrlValidator;
 public class Feed {
 
 	private int id;	
-	private int srcId;
+	private long srcId;
 	private String feedURL;
 	private String lastFetchDate;
 	private String langs;
@@ -32,11 +32,11 @@ public class Feed {
 		this.id = id;
 	}
 
-	public int getSrcId() {
+	public long getSrcId() {
 		return srcId;
 	}
 	
-	public void setSrcId(int srcId) {
+	public void setSrcId(long srcId) {
 		this.srcId = srcId;
 	}
 
@@ -103,7 +103,7 @@ public class Feed {
 	 * @param domain
 	 * @param inf
 	 */
-	public Feed(int id, int srcId,String furl, String lfDate, String langs, double inf){
+	public Feed(int id, long srcId,String furl, String lfDate, String langs, double inf){
 		setId(id);
 		setSrcId(srcId);
 		setFeedURL(furl);
@@ -137,7 +137,7 @@ public class Feed {
 		// iterate through the java resultset
 		while (rs.next())
 		{
-			int sid = rs.getInt("behagunea_app_feed.source_id");
+			long sid = rs.getLong("behagunea_app_feed.source_id");
 			int fid = rs.getInt("id");
 			String url = rs.getString("url");
 			String lastFetch = rs.getString("behagunea_app_feed.last_fetch");

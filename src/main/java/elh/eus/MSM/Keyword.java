@@ -224,6 +224,26 @@ public class Keyword {
 		return rslt;
 	}*/
 	
-	
+	/**
+	 * Retrieve keywords from database. Normally in order to launch a crawler or search engine queries
+	 * 
+	 * @param conn
+	 * @param type (twitter|press|behagune)
+	 * @return
+	 * @throws NamingException
+	 * @throws SQLException
+	 */
+	public static Set<Keyword> createFromList(List<String> keyList, List<String> langs) 
+	{
+		Set<Keyword> result = new HashSet<Keyword>(); 
+		for (String key : keyList)
+		{
+			for (String l: langs)
+			{
+				result.add(new Keyword(key,l,false,false));				 
+			}
+		}
+		return result;
+	}
 	
 }

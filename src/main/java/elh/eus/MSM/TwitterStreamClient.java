@@ -125,7 +125,7 @@ public class TwitterStreamClient {
 			lang = LID.detectLanguage(text, lang);
 			
 			//language must be accepted and tweet must not be a retweet
-			if ((acceptedLangs.contains("all") || acceptedLangs.contains(lang)) && (! retweetPattern.matcher(text).matches()))
+			if ((acceptedLangs.contains("all") || acceptedLangs.contains(lang) || lang.equalsIgnoreCase("unk")))// && (! retweetPattern.matcher(text).matches()))
 			{
 				Set<Keyword> kwrds = parseTweetForKeywords(text,lang);
 				//if no keyword is found in the tweet it is discarded. 
@@ -144,7 +144,14 @@ public class TwitterStreamClient {
 									params.getProperty("dbpass"),
 									params.getProperty("dbhost"),
 									params.getProperty("dbname"));
+							Source author = new Source(status.getUser().getId(), status.getUser().getScreenName(), "Twitter","",-1);
+							int authorStored = 0;
+							if (!author.existsInDB(conn))
+							{
+								authorStored = author.source2db(conn);
+							}
 							success = m.mention2db(conn);
+							System.err.println("elh-MSM::TwitterStreamClient - mention stored into the DB!"	);
 							conn.close();
 							break;
 						} catch (SQLException sqle) {
@@ -163,6 +170,10 @@ public class TwitterStreamClient {
 					case "solr": success = m.mention2solr(); break;
 					}
 				}
+			}
+			else
+			{
+				System.err.println("elh-MSM::TwitterStreamClient - mention discarded because of lang requirements. lang: "+lang+" - "+acceptedLangs.toString());				
 			}
 			
 		}
@@ -277,7 +288,7 @@ public class TwitterStreamClient {
 			kwrdSet.remove("");
 			terms = new ArrayList<String>(kwrdSet);
 			//searchTerms = Arrays.asList(kwrdSet).toString().replaceAll("(^\\[|\\]$)", "").replace(", ", ",").toLowerCase();
-			
+						
 		} catch (Exception e){
 			System.err.println("elh-MSM::TwitterStreamClient - connection with the DB could not be established,"
 					+ "MSM will try to read search terms from config file.");
@@ -287,11 +298,16 @@ public class TwitterStreamClient {
 		// If no search terms could be retrieved from DB read them from config file.
 		if (terms.isEmpty())
 		{
-			terms = Arrays.asList(params.getProperty("searchTerms").split(","));			
+			terms = Arrays.asList(params.getProperty("searchTerms").split(","));	
+			keywords = Keyword.createFromList(terms,acceptedLangs);
 		}
 		
+		System.err.println("elh-MSM::TwitterStreamClient - retrieved "+keywords.size()+" keywords");
+
+		constructKeywordsPatterns();
+
 		System.err.println("elh-MSM::TwitterStreamClient - Search terms: "+terms.toString());
-				
+			
 		//hosebirdEndpoint.followings(followings);
 		hosebirdEndpoint.trackTerms(terms);
 		
@@ -396,17 +412,22 @@ public class TwitterStreamClient {
 	private Set<Keyword> parseTweetForKeywords(String text, String lang) {
 
 		Set<Keyword> result = new HashSet<Keyword>();
-		String searchText = StringUtils.stripAccents(text).toLowerCase(); 
+		String searchText = StringUtils.stripAccents(text).toLowerCase().replace('\n', ' '); 
 		boolean anchorFound = anchorPattern.matcher(searchText).find();
 	
+		System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent:"+independentkwrds.size()
+				+" - dependent: "+dependentkwrds.size()+"\n - searchText:"+searchText);
+				
+		
 		//keywords that do not need any anchor
 		for (Keyword k : independentkwrds)
 		{				
 			//System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key:"
 			//	+k.getText()+" l="+k.getLang()+" pattern:"+kwrdPatterns.get(k.getId()).toString());
-			if(k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(searchText).find())
+			if((k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(searchText).find())|| 
+					(k.getLang().equalsIgnoreCase("all") && kwrdPatterns.get(k.getId()).matcher(searchText).find()))
 			{	
-				//System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key found!!!: "+k.getText()+" id: "+k.getId());
+				System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key found!!!: "+k.getText()+" id: "+k.getId());
 				result.add(k);
 			}								
 		}			
@@ -415,13 +436,17 @@ public class TwitterStreamClient {
 		{
 			for (Keyword k : dependentkwrds)
 			{
-				if (k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(searchText).find())
+				if ((k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(searchText).find())||
+				(k.getLang().equalsIgnoreCase("all") && kwrdPatterns.get(k.getId()).matcher(searchText).find()))
 				{
-					//System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - dependent key found!!!: "+k.getText()+" id: "+k.getId());						
+					System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - dependent key found!!!: "+k.getText()+" id: "+k.getId());						
 					result.add(k);
 				}					
 			}
 		}	
+		
+		System.err.println("elh-MSM::TwitteStreamClient::parseTweetForKeywords - keywords found: "+result.size());						
+		
 		return result;
 	}
 	    

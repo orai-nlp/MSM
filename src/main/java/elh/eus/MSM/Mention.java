@@ -34,7 +34,7 @@ import java.math.* ; // for BigDecimal and BigInteger support
 public class Mention {
 
 	private int mention_id;
-	private String source_id;
+	private long source_id;
 	private String text;
 	private String url;
 	private Set<Keyword> keywords;
@@ -56,11 +56,11 @@ public class Mention {
 		this.mention_id = mention_id;
 	}
 
-	public String getSource_id() {
+	public long getSource_id() {
 		return source_id;
 	}
 
-	public void setSource_id(String l) {
+	public void setSource_id(long l) {
 		this.source_id = l;
 	}
 
@@ -141,7 +141,7 @@ public class Mention {
 		mentionFromTweet(statusTwitter4j,lang);
 	}
 	
-	public Mention(String lang, String text, Date date, String url, String source_id) {
+	public Mention(String lang, String text, Date date, String url, long source_id) {
 		setLang(lang);
 		setText(text);
 		setDate(date);
@@ -158,7 +158,7 @@ public class Mention {
 		setUrl("https://twitter.com/"+statusTwitter4j.getUser().getScreenName()+"/status/"+statusTwitter4j.getId());
 		setRetweets(statusTwitter4j.getRetweetCount());
 		setFavourites(statusTwitter4j.getFavoriteCount());
-		setSource_id("tw_"+statusTwitter4j.getUser().getId());
+		setSource_id(statusTwitter4j.getUser().getId());
 		setPolarity("NULL");
 	}
 	
@@ -202,7 +202,7 @@ public class Mention {
 	        String dateString = dateFormat.format(getDate());
 	        stmtM.setString(2, dateString);
 	        //System.err.println("source: "+getSource_id());
-	        stmtM.setString(3, getSource_id());
+	        stmtM.setLong(3, getSource_id());
 	        stmtM.setString(4, getUrl());
 	        stmtM.setString(5, getText());
 	        stmtM.setString(6, getLang());	        

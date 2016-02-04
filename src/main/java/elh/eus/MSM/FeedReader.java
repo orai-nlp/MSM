@@ -485,7 +485,7 @@ public class FeedReader {
 	 * 
 	 * @deprecated
 	 */
-	private void getFeed (URL url, String lastFetchDate, String langs, int sId, int fId, String store){
+	private void getFeed (URL url, String lastFetchDate, String langs, long sId, int fId, String store){
 
 		System.err.println("FeadReader::getFeed -> parse feed "+url.toString()+" lastFetched: "+lastFetchDate);
 		boolean ok = false;
@@ -639,7 +639,7 @@ public class FeedReader {
 	 * @param link
 	 * @param sId
 	 */
-	private void parseArticleForKeywords(TextDocument doc, String lang, Date date, String link, int sId, String store) {
+	private void parseArticleForKeywords(TextDocument doc, String lang, Date date, String link, long sId, String store) {
 
 		Set<Keyword> result = new HashSet<Keyword>();
 		String wholeText = StringUtils.stripAccents(doc.getContent()).toLowerCase(); 
@@ -686,7 +686,7 @@ public class FeedReader {
 
 			if (result != null && !result.isEmpty())
 			{
-				Mention m = new Mention(lang,par,date,link,String.valueOf(sId));
+				Mention m = new Mention(lang,par,date,link,sId);
 				m.setKeywords(result);
 				if (store.equalsIgnoreCase("db"))
 				{
