@@ -99,9 +99,13 @@ public class FeedReader {
 
 
 	public Set<Feed> getFeeds(){
-		return feeds;
+		return this.feeds;
 	}
 
+	public void setFeeds(Set<Feed> flist){
+		this.feeds=flist;
+	}
+	
 	public FeedReader(String source) {
 
 		//Language identification
@@ -291,11 +295,20 @@ public class FeedReader {
 
 		//keyword loading: keywords to identify relevant mentions in articles.
 		kwrds = kwrdList;
-		feeds = feedList;
+		setFeeds(feedList);
 
 		// prepare patterns to match keywords
 		constructKeywordsPatterns();
-
+		
+		if (store.equalsIgnoreCase("db"))
+		{
+			try {
+				DBconn = Utils.DbConnection(params.getProperty("dbuser"),params.getProperty("dbpass"),params.getProperty("dbhost"),params.getProperty("dbname"));
+			} catch (NamingException | SQLException e) {
+				System.err.println("elh-MSM::FeedReader - Database connection could not be stablished.");
+				System.exit(1);
+			}
+		}
 
 	}//end constructor
 

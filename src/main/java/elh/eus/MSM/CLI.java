@@ -249,7 +249,7 @@ public class CLI {
 			}
 			else
 			{
-				System.err.println("elh-MSM::FeedReader - "+feedList.size()+" feeds and "+kwrdList.size()+" keywords");
+				System.err.println("elh-MSM::FeedReader (CLI) - "+feedList.size()+" feeds and "+kwrdList.size()+" keywords");
 				FeedReader fReader = new FeedReader(cfg, feedList, kwrdList, store);
 				fReader.processFeeds();
 			}
@@ -348,8 +348,8 @@ public class CLI {
 		.choices("stout", "db", "solr")
 		.setDefault("stout")
 		.help("Whether tweets shall be stored in a database, an Apache solr Index or printed to stdout (default).\n"
-				+ "\t - \"stout\" : standard output"
-				+ "\t - \"db\" : standard output"
+				+ "\t - \"stout\" : standard output\n"
+				+ "\t - \"db\" : standard output\n"
 				+ "\t - \"solr\" : standard output\n");
 	}
 	
@@ -369,8 +369,8 @@ public class CLI {
 		.choices("stout", "db", "solr")
 		.setDefault("stout")
 		.help("Whether mentions shall be stored in a database, an Apache solr Index or printed to stdout (default).\n"
-				+ "\t - \"stout\" : standard output"
-				+ "\t - \"db\" : standard output"
+				+ "\t - \"stout\" : standard output\n"
+				+ "\t - \"db\" : standard output\n"
 				+ "\t - \"solr\" : standard output\n");
 	}
 	

@@ -137,7 +137,7 @@ public class Source {
 		}
 		
 		//limited to 500 sources per call not to exceed rate limit.
-		String query = sb.append(" limit 500").toString();
+		String query = sb.append(" order by source_id desc limit 500").toString();
 		System.err.println("elh-MSM::Keyword::retrieveFromDB - query:"+query);
 		ResultSet rs = stmt.executeQuery(query);		
 		
