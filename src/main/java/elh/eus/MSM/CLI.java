@@ -251,7 +251,7 @@ public class CLI {
 			{
 				System.err.println("elh-MSM::FeedReader (CLI) - "+feedList.size()+" feeds and "+kwrdList.size()+" keywords");
 				FeedReader fReader = new FeedReader(cfg, feedList, kwrdList, store);
-				fReader.processFeeds();
+				fReader.processFeeds(store);
 			}
 			
 		} catch (Exception e) {			

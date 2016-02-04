@@ -4,7 +4,7 @@
 	<groupId>elh.eus</groupId>
 	<artifactId>MSM</artifactId>
 	<packaging>jar</packaging>
-	<version>1.0</version>
+	<version>0.8</version>
 	<name>elh-MSM</name>
 	<description>MSM, crawler solution developed by ELhuyar Foundation (elhuyar.eus). Mainly twitter stream connection</description>
 	<developers>
