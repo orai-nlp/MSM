@@ -365,6 +365,7 @@ public class FeedReader {
 			System.err.println("FeadReader::getFeed ->  Feed ERROR with"+f.getFeedURL()+" : "+fe.getMessage());
 		} 
 		
+		int newEnts =0;
 		//System.err.println("FeadReader::getFeed -> feed type: "+feed type);
 		for (SyndEntry entry : feed.getEntries())
 		{
@@ -419,6 +420,7 @@ public class FeedReader {
 
 				if ((!nullDate && pubDate.after(lastFetchDate_date)) || (nullDate && lastFetchDate_date.before(pubDate)) )
 				{
+					newEnts++;
 					System.err.println("FeadReader::getFeed -> new entry "+date+" vs."+f.getLastFetchDate());
 					//com.robbypond version.
 					//final BoilerpipeExtractor extractor = CommonExtractors.ARTICLE_EXTRACTOR;
@@ -434,7 +436,7 @@ public class FeedReader {
 					//text = text.replaceAll("(?i)<p>", "").replaceAll("(?i)</p>", "\n\n").replaceAll("(?i)<br\\/?>","\n");
 
 					//detect language
-					String lang = LID.detectLanguage(doc.getContent(), f.getLangs());
+					String lang = LID.detectFeedLanguage(doc.getContent(), f.getLangs());
 
 					//if language accepted parse article for mentions. If found store them to DB or print them
 					if (acceptedLangs.contains("all") || acceptedLangs.contains(lang))
@@ -442,10 +444,10 @@ public class FeedReader {
 						parseArticleForKeywords(doc,lang, pubDate, link, f.getSrcId(), store);
 					}
 				}
-				else
-				{
-					System.err.println("FeadReader::getFeed -> no new entries ");
-				}
+			//	else
+			//	{
+			//		System.err.println("FeadReader::getFeed -> no new entries ");
+			//	}
 
 			} catch (IOException ioe) {	        
 				ioe.printStackTrace();
@@ -456,7 +458,8 @@ public class FeedReader {
 			}
 
 		}
-		
+		System.err.println("FeadReader::getFeed -> found "+newEnts+" new entries ");
+
 		try {
 			//update last fetch date in the DB.
 			if (store.equalsIgnoreCase("db"))
@@ -581,9 +584,9 @@ public class FeedReader {
 					ArticleExtractor.INSTANCE.process(doc);
 					//text = text.replaceAll("(?i)<p>", "").replaceAll("(?i)</p>", "\n\n").replaceAll("(?i)<br\\/?>","\n");
 
-					// Hemen testuan gako hitzak bilatzeko kodea falta da, eta topatuz gero
-					// aipamen bat sortu eta datubasera sartzea.
-					String lang = LID.detectLanguage(doc.getContent(), langs);
+					
+					// language detection.
+					String lang = LID.detectFeedLanguage(doc.getContent(), langs);
 
 
 					if (acceptedLangs.contains("all") || acceptedLangs.contains(lang))
@@ -755,7 +758,7 @@ public class FeedReader {
 				// Hemen testuan gako hitzak bilatzeko kodea falta da, eta topatuz gero
 				// aipamen bat sortu eta datubasera sartzea.
 				//System.err.println("--------------------\n"+doc.getContent()+"\n----------------\n");
-				String lang = LID.detectLanguage(doc.getContent(), langs);
+				String lang = LID.detectFeedLanguage(doc.getContent(), langs);
 
 				if (acceptedLangs.contains("all") || acceptedLangs.contains(lang))
 				{

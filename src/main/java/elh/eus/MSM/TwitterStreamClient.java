@@ -122,7 +122,7 @@ public class TwitterStreamClient {
 			String text = status.getText();
 			String lang = status.getLang();			
 			//we do not blindly trust twitter language identification, so we do our own checking.
-			lang = LID.detectLanguage(text, lang);
+			lang = LID.detectTwtLanguage(text, lang);
 			
 			//language must be accepted and tweet must not be a retweet
 			if ((acceptedLangs.contains("all") || acceptedLangs.contains(lang) || lang.equalsIgnoreCase("unk")))// && (! retweetPattern.matcher(text).matches()))
@@ -369,7 +369,7 @@ public class TwitterStreamClient {
 	private void constructKeywordsPatterns() {
 		if (this.keywords == null || this.keywords.isEmpty())
 		{
-			System.err.println ("elh-MSM::FeedReader - No keywords loaded");
+			System.err.println ("elh-MSM::TwitterStreamClient - No keywords loaded");
 			System.exit(1);
 		}
 
@@ -379,7 +379,7 @@ public class TwitterStreamClient {
 		{
 			//create and store pattern;
 			Pattern p = Pattern.compile("\\b"+k.getText().replace('_',' ').toLowerCase());
-			//System.err.println("elh-MSM::FeedReader::constructKeywordPatterns - currentPattern:"+p.toString());
+			//System.err.println("elh-MSM::TwitterStreamClient::constructKeywordPatterns - currentPattern:"+p.toString());
 
 			kwrdPatterns.put(k.getId(), p);
 			if (k.isAnchor())
@@ -415,19 +415,22 @@ public class TwitterStreamClient {
 		String searchText = StringUtils.stripAccents(text).toLowerCase().replace('\n', ' '); 
 		boolean anchorFound = anchorPattern.matcher(searchText).find();
 	
-		System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent:"+independentkwrds.size()
+		System.err.println("elh-MSM::TwitterStreamClientReader::parseTweetForKeywords - independent:"+independentkwrds.size()
 				+" - dependent: "+dependentkwrds.size()+"\n - searchText:"+searchText);
 				
 		
 		//keywords that do not need any anchor
 		for (Keyword k : independentkwrds)
 		{				
-			//System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key:"
+			//System.err.println("elh-MSM::TwitterStreamClient::parseTweetForKeywords - independent key:"
 			//	+k.getText()+" l="+k.getLang()+" pattern:"+kwrdPatterns.get(k.getId()).toString());
-			if((k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(searchText).find())|| 
-					(k.getLang().equalsIgnoreCase("all") && kwrdPatterns.get(k.getId()).matcher(searchText).find()))
+			String kLang = k.getLang();
+			if ((kwrdPatterns.get(k.getId()).matcher(searchText).find()) && 
+					(kLang.equalsIgnoreCase(lang)|| kLang.equalsIgnoreCase("all") || lang.equalsIgnoreCase("unk")))
+			//if((k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(searchText).find())|| 
+			//		(k.getLang().equalsIgnoreCase("all") && kwrdPatterns.get(k.getId()).matcher(searchText).find()))
 			{	
-				System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key found!!!: "+k.getText()+" id: "+k.getId());
+				System.err.println("elh-MSM::TwitterStreamClient::parseTweetForKeywords - independent key found!!!: "+k.getText()+" id: "+k.getId());
 				result.add(k);
 			}								
 		}			
@@ -436,10 +439,13 @@ public class TwitterStreamClient {
 		{
 			for (Keyword k : dependentkwrds)
 			{
-				if ((k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(searchText).find())||
-				(k.getLang().equalsIgnoreCase("all") && kwrdPatterns.get(k.getId()).matcher(searchText).find()))
+				String kLang = k.getLang();
+				//if ((k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(searchText).find())||
+				//(k.getLang().equalsIgnoreCase("all") && kwrdPatterns.get(k.getId()).matcher(searchText).find()))
+				if ((kwrdPatterns.get(k.getId()).matcher(searchText).find()) && 
+							(kLang.equalsIgnoreCase(lang)|| kLang.equalsIgnoreCase("all") || lang.equalsIgnoreCase("unk")))
 				{
-					System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - dependent key found!!!: "+k.getText()+" id: "+k.getId());						
+					System.err.println("elh-MSM::TwitterStreamClient::parseTweetForKeywords - dependent key found!!!: "+k.getText()+" id: "+k.getId());						
 					result.add(k);
 				}					
 			}
