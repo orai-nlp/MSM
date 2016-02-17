@@ -202,6 +202,7 @@ public class TwitterStreamClient {
         public void onException(Exception ex) {
             ex.printStackTrace();
         }        
+
         
     };
     
@@ -226,7 +227,10 @@ public class TwitterStreamClient {
 		public void onException(Exception e) {}
 
 		@Override
-		public void onDisconnectMessage(DisconnectMessage message) {}
+		public void onDisconnectMessage(DisconnectMessage message) {
+		        System.err.println("MSM::TwitterStreamClient - Got disconnected from the stream:" + message);
+			System.exit(5);
+		}
 
 		@Override
 		public void onStallWarningMessage(StallWarningMessage warning) {}
