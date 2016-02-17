@@ -228,7 +228,7 @@ public class TwitterStreamClient {
 
 		@Override
 		public void onDisconnectMessage(DisconnectMessage message) {
-		        System.err.println("MSM::TwitterStreamClient - Got disconnected from the stream:" + message);
+			System.err.println("MSM::TwitterStreamClient - Got disconnected from the stream:" + message);
 			System.exit(5);
 		}
 
