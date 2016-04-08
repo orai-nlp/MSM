@@ -43,6 +43,7 @@ public class Mention {
 	private String polarity;
 	private int retweets;
 	private int favourites;
+	private String geoInfo;
 	
 	/**
 	 * Setter and getter functions  
@@ -132,6 +133,13 @@ public class Mention {
 		this.favourites = favourites;
 	}
 	
+	public String getGeoInfo() {
+		return geoInfo;
+	}
+
+	public void setGeoInfo(String geo) {
+		this.geoInfo = geo;
+	}
 	
 	public Mention(JSONObject json) {
 		
@@ -160,6 +168,13 @@ public class Mention {
 		setFavourites(statusTwitter4j.getFavoriteCount());
 		setSource_id(statusTwitter4j.getUser().getId());
 		setPolarity("NULL");
+		
+		//geoInformation
+		try {
+			setGeoInfo(statusTwitter4j.getGeoLocation().toString());
+		} catch (NullPointerException npe) {
+			setGeoInfo(statusTwitter4j.getPlace().getBoundingBoxCoordinates().toString());
+		}
 	}
 	
 	/**
@@ -194,7 +209,7 @@ public class Mention {
 			stmt.close();
 			
 			// prepare the sql statements to insert the mention in the DB and insert.
-	        String mentionIns = "insert ignore into behagunea_app_mention (mention_id, date, source_id, url, text, lang, polarity, favourites, retweets) values (?,?,?,?,?,?,?,?,?)";
+	        String mentionIns = "insert ignore into behagunea_app_mention (mention_id, date, source_id, url, text, lang, polarity, favourites, retweets, geoinfo) values (?,?,?,?,?,?,?,?,?,?)";
 	        stmtM = conn.prepareStatement(mentionIns, Statement.RETURN_GENERATED_KEYS);
 	        stmtM.setInt(1, id+1);
 	       // System.err.println("daaaaaaataaaaa: "+getDate());
@@ -209,6 +224,7 @@ public class Mention {
 	        stmtM.setString(7, getPolarity());
 	        stmtM.setInt(8, getRetweets());
 	        stmtM.setInt(9, getFavourites());
+	        stmtM.setString(10, getGeoInfo());
 						
 	        stmtM.executeUpdate();
 			//ResultSet rs = stmtM.getGeneratedKeys();

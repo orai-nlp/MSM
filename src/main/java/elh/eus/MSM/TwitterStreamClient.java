@@ -26,6 +26,8 @@ import com.twitter.hbc.core.Client;
 import com.twitter.hbc.core.Constants;
 import com.twitter.hbc.core.Hosts;
 import com.twitter.hbc.core.HttpHosts;
+import com.twitter.hbc.core.endpoint.Location;
+import com.twitter.hbc.core.endpoint.Location.Coordinate;
 import com.twitter.hbc.core.endpoint.StatusesFilterEndpoint;
 import com.twitter.hbc.core.endpoint.StatusesSampleEndpoint;
 import com.twitter.hbc.core.event.Event;
@@ -73,6 +75,7 @@ public class TwitterStreamClient {
 	private String store = "";
 	private List<String> acceptedLangs;
 	private Set<Keyword> keywords;
+	private List<Location> locations = new ArrayList<Location>();
 	private LangDetect LID;
 	
 	private Set<Keyword> independentkwrds = new HashSet<Keyword>();
@@ -126,14 +129,54 @@ public class TwitterStreamClient {
 			
 			//language must be accepted and tweet must not be a retweet
 			if ((acceptedLangs.contains("all") || acceptedLangs.contains(lang) || lang.equalsIgnoreCase("unk")))// && (! retweetPattern.matcher(text).matches()))
-			{
+			{				
 				Set<Keyword> kwrds = parseTweetForKeywords(text,lang);
 				//if no keyword is found in the tweet it is discarded. 
-				// This discard some valid tweets, as the keyword maybe in an attached link. 
+				// This discards some valid tweets, as the keyword maybe in an attached link. 
 				if (kwrds != null && !kwrds.isEmpty())
 				{
 					Mention m = new Mention (status, lang);
 					m.setKeywords(kwrds);
+					int success =1;
+					switch (getStore()) // print the message to stdout
+					{				
+					case "db":
+						try {
+							Connection conn = Utils.DbConnection(
+									params.getProperty("dbuser"),
+									params.getProperty("dbpass"),
+									params.getProperty("dbhost"),
+									params.getProperty("dbname"));
+							Source author = new Source(status.getUser().getId(), status.getUser().getScreenName(), "Twitter","",-1);
+							int authorStored = 0;
+							if (!author.existsInDB(conn))
+							{
+								authorStored = author.source2db(conn);
+							}
+							success = m.mention2db(conn);
+							System.err.println("elh-MSM::TwitterStreamClient - mention stored into the DB!"	);
+							conn.close();
+							break;
+						} catch (SQLException sqle) {
+							System.err.println("elh-MSM::TwitterStreamClient - connection with the DB could not be established");
+							sqle.printStackTrace();
+						} catch (Exception e) {
+							System.err.println("elh-MSM::TwitterStreamClient - error when storing mention");
+							e.printStackTrace();
+						}
+						break;
+					case "stout": 
+						System.out.println("------ Mention found! ------ \n");
+						m.print();
+						System.out.println("---------\n");
+						break;
+					case "solr": success = m.mention2solr(); break;
+					}
+				}
+				//if there is no keywords but locations exist store all tweets in the database.
+				else if (!locations.isEmpty())
+				{
+					Mention m = new Mention (status, lang);
 					int success =1;
 					switch (getStore()) // print the message to stdout
 					{				
@@ -300,20 +343,44 @@ public class TwitterStreamClient {
 		}
 		
 		// If no search terms could be retrieved from DB read them from config file.
-		if (terms.isEmpty())
+		if (terms.isEmpty() && !params.getProperty("searchTerms","none").equalsIgnoreCase("none"))
 		{
 			terms = Arrays.asList(params.getProperty("searchTerms").split(","));	
 			keywords = Keyword.createFromList(terms,acceptedLangs);
-		}
-		
-		System.err.println("elh-MSM::TwitterStreamClient - retrieved "+keywords.size()+" keywords");
+			
+			System.err.println("elh-MSM::TwitterStreamClient - retrieved "+keywords.size()+" keywords");
 
-		constructKeywordsPatterns();
+			constructKeywordsPatterns();
+
+		}
 
 		System.err.println("elh-MSM::TwitterStreamClient - Search terms: "+terms.toString());
 			
 		//hosebirdEndpoint.followings(followings);
-		hosebirdEndpoint.trackTerms(terms);
+		
+		//tracking terms
+		if (!terms.isEmpty())
+		{
+			hosebirdEndpoint.trackTerms(terms);
+		}
+		
+		//location parameters 
+		if (!params.getProperty("location", "none").equalsIgnoreCase("none"))
+		{			
+			List<String> locs = Arrays.asList(params.getProperty("location").split("::"));
+			for (String s : locs)
+			{
+				System.err.println("elh-MSM::TwitterStreamClient - location: "+s);
+				String[] coords = s.split(",");
+				Location loc = new Location(
+						new Coordinate(Double.parseDouble(coords[0]),Double.parseDouble(coords[1])),
+						new Coordinate(Double.parseDouble(coords[2]),Double.parseDouble(coords[3]))
+						);
+				locations.add(loc);
+			}
+			hosebirdEndpoint.locations(locations);
+		}
+		
 		
 		try {
 			// These secrets should be read from a config file		
@@ -374,7 +441,8 @@ public class TwitterStreamClient {
 		if (this.keywords == null || this.keywords.isEmpty())
 		{
 			System.err.println ("elh-MSM::TwitterStreamClient - No keywords loaded");
-			System.exit(1);
+			return;
+			//System.exit(1);
 		}
 
 		StringBuilder sb_anchors = new StringBuilder();
@@ -414,8 +482,13 @@ public class TwitterStreamClient {
 	 * @return
 	 */
 	private Set<Keyword> parseTweetForKeywords(String text, String lang) {
-
+				
 		Set<Keyword> result = new HashSet<Keyword>();
+		
+		if (anchorPattern == null)
+		{
+			return result;
+		}
 		String searchText = StringUtils.stripAccents(text).toLowerCase().replace('\n', ' '); 
 		boolean anchorFound = anchorPattern.matcher(searchText).find();
 	
