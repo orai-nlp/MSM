@@ -2,6 +2,7 @@ SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='TRADITIONAL,ALLOW_INVALID_DATES';
 
+DROP SCHEMA IF EXISTS `prendi2_db` ;
 CREATE SCHEMA IF NOT EXISTS `prendi2_db` DEFAULT CHARACTER SET utf8mb4 ;
 USE `prendi2_db` ;
 
@@ -43,11 +44,11 @@ COLLATE = utf8_unicode_ci;
 
 
 -- -----------------------------------------------------
--- Table `prendi2_db`.`cluster`
+-- Table `prendi2_db`.`behagunea_app_cluster`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `prendi2_db`.`cluster` ;
+DROP TABLE IF EXISTS `prendi2_db`.`behagunea_app_cluster` ;
 
-CREATE TABLE IF NOT EXISTS `prendi2_db`.`cluster` (
+CREATE TABLE IF NOT EXISTS `prendi2_db`.`behagunea_app_cluster` (
   `cluster_id` INT(11) NOT NULL,
   `name` VARCHAR(45) NULL,
   PRIMARY KEY (`cluster_id`))
@@ -72,16 +73,16 @@ CREATE TABLE IF NOT EXISTS `prendi2_db`.`behagunea_app_mention` (
   `corrected` TINYINT(1) NOT NULL,
   `manual_polarity` VARCHAR(10) CHARACTER SET 'utf8mb4' NOT NULL,
   `geoinfo` VARCHAR(45) NULL,
-  `cluster_cluster_id` INT NOT NULL,
-  PRIMARY KEY (`mention_id`, `cluster_cluster_id`),
+  `cluster_id` INT NULL,
+  PRIMARY KEY (`mention_id`),
   INDEX `behagunea_app_mention_0afd9202` (`source_id` ASC),
-  INDEX `fk_behagunea_app_mention_cluster1_idx` (`cluster_cluster_id` ASC),
+  INDEX `fk_behagunea_app_mention_cluster1_idx` (`cluster_id` ASC),
   CONSTRAINT `behagunea_app_mention_source_id_40597b0b4f5263a7_fk`
     FOREIGN KEY (`source_id`)
     REFERENCES `prendi2_db`.`behagunea_app_source` (`source_id`),
   CONSTRAINT `fk_behagunea_app_mention_cluster1`
-    FOREIGN KEY (`cluster_cluster_id`)
-    REFERENCES `prendi2_db`.`cluster` (`cluster_id`)
+    FOREIGN KEY (`cluster_id`)
+    REFERENCES `prendi2_db`.`behagunea_app_cluster` (`cluster_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB
@@ -113,11 +114,11 @@ COLLATE = utf8_unicode_ci;
 
 
 -- -----------------------------------------------------
--- Table `prendi2_db`.`cluster_has_behagunea_app_keyword`
+-- Table `prendi2_db`.`behagunea_app_cluster_keyword`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `prendi2_db`.`cluster_has_behagunea_app_keyword` ;
+DROP TABLE IF EXISTS `prendi2_db`.`behagunea_app_cluster_keyword` ;
 
-CREATE TABLE IF NOT EXISTS `prendi2_db`.`cluster_has_behagunea_app_keyword` (
+CREATE TABLE IF NOT EXISTS `prendi2_db`.`behagunea_app_cluster_keyword` (
   `cluster_id` INT(11) NOT NULL,
   `keyword_id` INT(11) NOT NULL,
   PRIMARY KEY (`cluster_id`, `keyword_id`),
@@ -125,7 +126,7 @@ CREATE TABLE IF NOT EXISTS `prendi2_db`.`cluster_has_behagunea_app_keyword` (
   INDEX `fk_cluster_has_behagunea_app_keyword_cluster1_idx` (`cluster_id` ASC),
   CONSTRAINT `fk_cluster_has_behagunea_app_keyword_cluster1`
     FOREIGN KEY (`cluster_id`)
-    REFERENCES `prendi2_db`.`cluster` (`cluster_id`)
+    REFERENCES `prendi2_db`.`behagunea_app_cluster` (`cluster_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_cluster_has_behagunea_app_keyword_behagunea_app_keyword1`
