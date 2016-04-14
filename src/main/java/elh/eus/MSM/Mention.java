@@ -231,9 +231,9 @@ public class Mention {
 	        stmtM = conn.prepareStatement(mentionIns, Statement.RETURN_GENERATED_KEYS);
 	        stmtM.setInt(1, id+1);
 	       // System.err.println("daaaaaaataaaaa: "+getDate());
-			//DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");				
-	        //String dateString = dateFormat.format(getDate());
-	        stmtM.setDate(2, new java.sql.Date(getDate().getTime()));
+			DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");				
+	        String dateString = dateFormat.format(getDate());
+	        stmtM.setString(2, dateString);
 	        //System.err.println("source: "+getSource_id());
 	        stmtM.setLong(3, getSource_id());
 	        stmtM.setString(4, getUrl());
