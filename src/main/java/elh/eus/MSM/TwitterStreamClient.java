@@ -173,7 +173,7 @@ public class TwitterStreamClient {
 					case "solr": success = m.mention2solr(); break;
 					}
 				}
-				//if there is no keywords but locations exist store all tweets in the database.
+				//if there is no keywords but locations exist. Store all tweets in the database.
 				else if (!locations.isEmpty())
 				{
 					Mention m = new Mention (status, lang);

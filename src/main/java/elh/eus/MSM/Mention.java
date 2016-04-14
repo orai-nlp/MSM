@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Date;
 import java.util.Set;
 
+import twitter4j.GeoLocation;
 import twitter4j.JSONObject;
 import twitter4j.Status;
 
@@ -171,9 +172,26 @@ public class Mention {
 		
 		//geoInformation
 		try {
-			setGeoInfo(statusTwitter4j.getGeoLocation().toString());
+			String geoStr = "";
+			geoStr = geoStr+"long="+String.valueOf(statusTwitter4j.getGeoLocation().getLongitude());
+			geoStr = geoStr+"_lat="+String.valueOf(statusTwitter4j.getGeoLocation().getLatitude());
+			setGeoInfo(geoStr);
 		} catch (NullPointerException npe) {
-			setGeoInfo(statusTwitter4j.getPlace().getBoundingBoxCoordinates().toString());
+			GeoLocation[][] geo =statusTwitter4j.getPlace().getBoundingBoxCoordinates();
+			String geoStr = "";
+			geoStr = geoStr+"long="+String.valueOf(geo[0][0].getLongitude());
+			geoStr = geoStr+"_lat="+String.valueOf(geo[0][0].getLatitude());
+			geoStr = geoStr+";long="+String.valueOf(geo[0][2].getLongitude());
+			geoStr = geoStr+"_lat="+String.valueOf(geo[0][2].getLatitude());			
+			
+			/*for (int i=0; i<geo.length;i++)
+			{
+				for (int j=0; j<geo[i].length;j++)
+				{
+					System.err.println("geo["+i+"]"+"["+j+"]"+geo[i][j].toString());
+				}
+			}*/
+			setGeoInfo(geoStr);
 		}
 	}
 	
@@ -213,9 +231,9 @@ public class Mention {
 	        stmtM = conn.prepareStatement(mentionIns, Statement.RETURN_GENERATED_KEYS);
 	        stmtM.setInt(1, id+1);
 	       // System.err.println("daaaaaaataaaaa: "+getDate());
-			DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");				
-	        String dateString = dateFormat.format(getDate());
-	        stmtM.setString(2, dateString);
+			//DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");				
+	        //String dateString = dateFormat.format(getDate());
+	        stmtM.setDate(2, new java.sql.Date(getDate().getTime()));
 	        //System.err.println("source: "+getSource_id());
 	        stmtM.setLong(3, getSource_id());
 	        stmtM.setString(4, getUrl());

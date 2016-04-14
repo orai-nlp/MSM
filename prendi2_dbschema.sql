@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS `prendi2_db`.`behagunea_app_mention` (
   `source_id` BIGINT(20) NULL DEFAULT NULL,
   `corrected` TINYINT(1) NOT NULL,
   `manual_polarity` VARCHAR(10) CHARACTER SET 'utf8mb4' NOT NULL,
-  `geoinfo` VARCHAR(45) NULL,
+  `geoinfo` VARCHAR(80) NULL,
   `cluster_id` INT NULL,
   PRIMARY KEY (`mention_id`),
   INDEX `behagunea_app_mention_0afd9202` (`source_id` ASC),
