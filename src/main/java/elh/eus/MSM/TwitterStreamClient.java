@@ -154,7 +154,32 @@ public class TwitterStreamClient {
 								authorStored = author.source2db(conn);
 							}
 							success = m.mention2db(conn);
+							
 							System.err.println("elh-MSM::TwitterStreamClient - mention stored into the DB!"	);
+							
+							//mention is a retweet, so store the original tweet as well, or update it in case 
+							//it is already in the database							
+							if (m.getIsRetweet())
+							{
+								System.err.println("elh-MSM::TwitterStreamClient - retweet found!!!"	);
+								Mention m2 = new Mention(status.getRetweetedStatus(),lang);
+								long mId = m2.existsInDB(conn);
+								if (mId>=0)
+								{
+									m2.updateRetweetFavouritesInDB(conn, mId);									
+								}
+								else
+								{
+									Source author2 = new Source(status.getUser().getId(), status.getUser().getScreenName(), "Twitter","",-1);
+									int authorStored2 = 0;
+									if (!author.existsInDB(conn))
+									{
+										authorStored2 = author.source2db(conn);
+									}
+									success = m2.mention2db(conn);									
+								}
+								System.err.println("elh-MSM::TwitterStreamClient - retweeted mention stored into the DB!"	);
+							}
 							conn.close();
 							break;
 						} catch (SQLException sqle) {
@@ -194,14 +219,38 @@ public class TwitterStreamClient {
 								authorStored = author.source2db(conn);
 							}
 							success = m.mention2db(conn);
-							System.err.println("elh-MSM::TwitterStreamClient - mention stored into the DB!"	);
+							System.err.println("elh-MSM::TwitterStreamClient - location -  mention stored into the DB!"	);
+							
+							//mention is a retweet, so store the original tweet as well, or update it in case 
+							//it is already in the database							
+							if (m.getIsRetweet())
+							{
+								System.err.println("elh-MSM::TwitterStreamClient - location - retweet found!!!"	);								
+								Mention m2 = new Mention(status.getRetweetedStatus(),lang);
+								long mId = m2.existsInDB(conn);
+								if (mId>=0)
+								{
+									m2.updateRetweetFavouritesInDB(conn, mId);									
+								}
+								else
+								{
+									Source author2 = new Source(status.getUser().getId(), status.getUser().getScreenName(), "Twitter","",-1);
+									int authorStored2 = 0;
+									if (!author.existsInDB(conn))
+									{
+										authorStored2 = author.source2db(conn);
+									}
+									success = m2.mention2db(conn);									
+								}
+								System.err.println("elh-MSM::TwitterStreamClient - location - retweeted mention stored into the DB!"	);
+							}
 							conn.close();
 							break;
 						} catch (SQLException sqle) {
-							System.err.println("elh-MSM::TwitterStreamClient - connection with the DB could not be established");
+							System.err.println("elh-MSM::TwitterStreamClient - location  - connection with the DB could not be established");
 							sqle.printStackTrace();
 						} catch (Exception e) {
-							System.err.println("elh-MSM::TwitterStreamClient - error when storing mention");
+							System.err.println("elh-MSM::TwitterStreamClient - location  - error when storing mention");
 							e.printStackTrace();
 						}
 						break;

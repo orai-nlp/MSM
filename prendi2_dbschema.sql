@@ -38,6 +38,8 @@ CREATE TABLE IF NOT EXISTS `prendi2_db`.`behagunea_app_source` (
   `user_id` INT(11) NULL DEFAULT NULL,
   `domain` LONGTEXT CHARACTER SET 'utf8' COLLATE 'utf8_unicode_ci' NOT NULL,
   `geoinfo` VARCHAR(80) NULL,
+  `followers` INT(11) NULL,
+  `friends` INT(11) NULL,
   PRIMARY KEY (`source_id`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8
@@ -71,13 +73,17 @@ CREATE TABLE IF NOT EXISTS `prendi2_db`.`behagunea_app_mention` (
   `favourites` INT(11) NOT NULL,
   `retweets` INT(11) NOT NULL,
   `source_id` BIGINT(20) NULL DEFAULT NULL,
-  `corrected` TINYINT(1) NOT NULL,
-  `manual_polarity` VARCHAR(10) CHARACTER SET 'utf8mb4' NOT NULL,
+  `corrected` TINYINT(1) NOT NULL DEFAULT 0,
+  `manual_polarity` VARCHAR(10) CHARACTER SET 'utf8mb4' NULL,
   `geoinfo` VARCHAR(80) NULL,
   `cluster_id` INT NULL,
+  `native_id` BIGINT(30) NULL,
+  `retweet_id` BIGINT(30) NULL,
   PRIMARY KEY (`mention_id`),
   INDEX `behagunea_app_mention_0afd9202` (`source_id` ASC),
   INDEX `fk_behagunea_app_mention_cluster1_idx` (`cluster_id` ASC),
+  UNIQUE INDEX `orig_tweet_id_UNIQUE` (`native_id` ASC),
+  UNIQUE INDEX `retweet_id_UNIQUE` (`retweet_id` ASC),
   CONSTRAINT `behagunea_app_mention_source_id_40597b0b4f5263a7_fk`
     FOREIGN KEY (`source_id`)
     REFERENCES `prendi2_db`.`behagunea_app_source` (`source_id`),
