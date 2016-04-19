@@ -84,19 +84,27 @@ public class CLI {
 	 */
 	private Subparsers subParsers = argParser.addSubparsers().help(
 			"sub-command help");
+	
 	/**
 	 * The parser that manages the twitter crawler sub-command.
 	 */
 	private Subparser tweetCrawlParser;
+	
 	/**
 	 * The parser that manages the feed reader sub-command.
-	 */
+	 */	
 	private Subparser feedReaderParser;
+	
 	/**
 	 * The parser that manages the influence tagger sub-command.
 	 */
 	private Subparser influenceTaggerParser;
 
+	/**
+	 * The parser that manages the twitter user info sub-command.
+	 */
+	private Subparser twitterUserParser;
+	
 	/**
 	 * Construct a CLI object with the three sub-parsers to manage the command
 	 * line parameters.
@@ -108,6 +116,9 @@ public class CLI {
 		loadFeedReaderParameters();
 		influenceTaggerParser = subParsers.addParser("influence").help("Influence tagger CLI");
 		loadInfluenceTaggerParameters();
+		twitterUserParser = subParsers.addParser("twtUser").help("Twitter user info CLI");
+		loadTwitterUserInfoParameters();
+
 	}
 	
 	
@@ -146,10 +157,13 @@ public class CLI {
 			else if (args[0].equals("influence")) {
 				tagInfluence();
 			}
+			else if (args[0].equals("twtUser")) {
+				twtUserUInfo();
+			}
 		} catch (ArgumentParserException e) {
 			argParser.handleError(e);
 			System.out.println("Run java -jar target/elh-crawler-" + version
-					+ ".jar (twitter|feed|influence) -help for details");
+					+ ".jar (twitter|feed|influence|twtUser) -help for details");
 			System.exit(1);
 		}
 	}
@@ -158,9 +172,10 @@ public class CLI {
 	{
 		String cfg = parsedArguments.getString("config");
 		String store = parsedArguments.getString("store");
+		String params = parsedArguments.getString("params");
 		
 		try {
-			TwitterStreamClient twitterClient = new TwitterStreamClient(cfg, store);
+			TwitterStreamClient twitterClient = new TwitterStreamClient(cfg, store,params);
 		} catch (Exception e) {			
 			e.printStackTrace();
 		} 		
@@ -337,6 +352,19 @@ public class CLI {
 				
 	}
 
+	public final void twtUserUInfo()
+	{
+		String cfg = parsedArguments.getString("config");
+		String store = parsedArguments.getString("store");
+		//String params = parsedArguments.getString("params");
+		
+		try {
+			TwtUserInfo userInfoClient = new TwtUserInfo(cfg, store);
+		} catch (Exception e) {			
+			e.printStackTrace();
+		} 		
+	}
+	
 	
 	public final void loadTwitterCrawlerParameters()
 	{
@@ -344,6 +372,15 @@ public class CLI {
 		.required(true)
 		.help("Configuration file that contains the necessary parameters to connect to the twitter public "
 				+ "stream for crawling.\n");
+		tweetCrawlParser.addArgument("-p", "--params")		
+		.choices("terms", "users", "geo", "all")
+		.setDefault("all")
+		.help("Search parameters to use when connecting to the Twitter Streaming API. Parameter values are"
+				+ "either stored in the database or specified in the configuration file.\n"
+				+ "\t - \"terms\" : terms to track.\n"
+				+ "\t - \"users\" : users to follow.\n"
+				+ "\t - \"geo\" : bounding boxes defining geographic areas\n"
+				+ "\t - \"all\" : check for all of the previous parameters\n");
 		tweetCrawlParser.addArgument("-s", "--store")		
 		.choices("stout", "db", "solr")
 		.setDefault("stout")
@@ -407,6 +444,28 @@ public class CLI {
 				+ "\t\tWARNING2:Depending on the number of sources in the database this could take \n");
 	}
 	
-
+	public final void loadTwitterUserInfoParameters()
+	{
+		twitterUserParser.addArgument("-c", "--config")
+		.required(true)
+		.help("Configuration file that contains the necessary parameters to connect to "
+				+ "the twitter REST API 1.1.\n");
+		/*tweetCrawlParser.addArgument("-p", "--params")		
+		.choices("terms", "users", "geo", "all")
+		.setDefault("all")
+		.help("Search parameters to use when connecting to the Twitter Streaming API. Parameter values are"
+				+ "either stored in the database or specified in the configuration file.\n"
+				+ "\t - \"terms\" : terms to track.\n"
+				+ "\t - \"users\" : users to follow.\n"
+				+ "\t - \"geo\" : bounding boxes defining geographic areas\n"
+				+ "\t - \"all\" : check for all of the previous parameters\n");*/
+		twitterUserParser.addArgument("-s", "--store")		
+		.choices("stout", "db", "solr")
+		.setDefault("stout")
+		.help("Whether tweets shall be stored in a database, an Apache solr Index or printed to stdout (default).\n"
+				+ "\t - \"stout\" : standard output\n"
+				+ "\t - \"db\" : standard output\n"
+				+ "\t - \"solr\" : standard output\n");
+	}
 	
 }

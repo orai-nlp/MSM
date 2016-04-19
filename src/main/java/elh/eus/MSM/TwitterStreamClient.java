@@ -289,7 +289,7 @@ public class TwitterStreamClient {
 	 * @param config
 	 * @param store
 	 */
-	public TwitterStreamClient (String config, String store)
+	public TwitterStreamClient (String config, String store, String parameters)
 	{
 		try {
 			params.load(new FileInputStream(new File(config)));
@@ -315,72 +315,122 @@ public class TwitterStreamClient {
 		Hosts hosebirdHosts = new HttpHosts(Constants.STREAM_HOST);
 		StatusesFilterEndpoint hosebirdEndpoint = new StatusesFilterEndpoint();
 		
-		//get search terms from the DB
-		List<String> terms = new ArrayList<String>();
-		try{
-			Connection conn = Utils.DbConnection(
+		/** TWITTER STREAMING API PARAMETER HANDLING */		
+		//tracking terms
+		if (parameters.equals("all") || parameters.equals("terms"))
+		{
+			//get search terms from the DB
+			List<String> terms = new ArrayList<String>();
+			try{
+				Connection conn = Utils.DbConnection(
 						params.getProperty("dbuser"), 
 						params.getProperty("dbpass"), 
 						params.getProperty("dbhost"), 
 						params.getProperty("dbname")); 
-			keywords= Keyword.retrieveFromDB(conn,"Twitter",params.getProperty("langs", "all"));			
-			Set<String> kwrdSet = new HashSet<String>();
-			for (Keyword k : keywords)
+				keywords= Keyword.retrieveFromDB(conn,"Twitter",params.getProperty("langs", "all"));			
+				Set<String> kwrdSet = new HashSet<String>();
+				for (Keyword k : keywords)
+				{
+					kwrdSet.add(k.getText());				
+				}
+
+				// null object and empty string ("") may be here due to the fields in DB. Remove them from keyword set. 
+				kwrdSet.remove(null);
+				kwrdSet.remove("");
+				terms = new ArrayList<String>(kwrdSet);
+				//searchTerms = Arrays.asList(kwrdSet).toString().replaceAll("(^\\[|\\]$)", "").replace(", ", ",").toLowerCase();
+
+			} catch (Exception e){
+				System.err.println("elh-MSM::TwitterStreamClient - connection with the DB could not be established,"
+						+ "MSM will try to read search terms from config file.");
+				//e.printStackTrace();			
+			}
+
+			// If no search terms could be retrieved from DB read them from config file.
+			if (terms.isEmpty() && !params.getProperty("searchTerms","none").equalsIgnoreCase("none"))
 			{
-				kwrdSet.add(k.getText());				
+				terms = Arrays.asList(params.getProperty("searchTerms").split(","));	
+				keywords = Keyword.createFromList(terms,acceptedLangs);
+
+				System.err.println("elh-MSM::TwitterStreamClient - retrieved "+keywords.size()+" keywords");
+
+				constructKeywordsPatterns();
+
+			}
+
+			System.err.println("elh-MSM::TwitterStreamClient - Search terms: "+terms.toString());
+
+			//hosebirdEndpoint.followings(followings);
+
+			//tracking terms
+			if (!terms.isEmpty())
+			{
+				hosebirdEndpoint.trackTerms(terms);
+			}
+			else if (parameters.equals("terms"))
+			{
+				System.err.println("elh-MSM::TwitterStreamClient - WARNING: no search terms could be found."
+						+ "this can result in an Flood of tweets...");
+			}
+
+		} //tracking terms handling end
+		
+		//location parameters 		
+		if (parameters.equals("all") || parameters.equals("geo"))
+		{
+			if (!params.getProperty("location", "none").equalsIgnoreCase("none"))
+			{			
+				List<String> locs = Arrays.asList(params.getProperty("location").split("::"));
+				for (String s : locs)
+				{
+					System.err.println("elh-MSM::TwitterStreamClient - location: "+s);
+					String[] coords = s.split(",");
+					Location loc = new Location(
+							new Coordinate(Double.parseDouble(coords[0]),Double.parseDouble(coords[1])),
+							new Coordinate(Double.parseDouble(coords[2]),Double.parseDouble(coords[3]))
+							);
+					locations.add(loc);
+				}
 			}
 			
-			// null object and empty string ("") may be here due to the fields in DB. Remove them from keyword set. 
-			kwrdSet.remove(null);
-			kwrdSet.remove("");
-			terms = new ArrayList<String>(kwrdSet);
-			//searchTerms = Arrays.asList(kwrdSet).toString().replaceAll("(^\\[|\\]$)", "").replace(", ", ",").toLowerCase();
-						
-		} catch (Exception e){
-			System.err.println("elh-MSM::TwitterStreamClient - connection with the DB could not be established,"
-					+ "MSM will try to read search terms from config file.");
-			//e.printStackTrace();			
-		}
-		
-		// If no search terms could be retrieved from DB read them from config file.
-		if (terms.isEmpty() && !params.getProperty("searchTerms","none").equalsIgnoreCase("none"))
-		{
-			terms = Arrays.asList(params.getProperty("searchTerms").split(","));	
-			keywords = Keyword.createFromList(terms,acceptedLangs);
-			
-			System.err.println("elh-MSM::TwitterStreamClient - retrieved "+keywords.size()+" keywords");
-
-			constructKeywordsPatterns();
-
-		}
-
-		System.err.println("elh-MSM::TwitterStreamClient - Search terms: "+terms.toString());
-			
-		//hosebirdEndpoint.followings(followings);
-		
-		//tracking terms
-		if (!terms.isEmpty())
-		{
-			hosebirdEndpoint.trackTerms(terms);
-		}
-		
-		//location parameters 
-		if (!params.getProperty("location", "none").equalsIgnoreCase("none"))
-		{			
-			List<String> locs = Arrays.asList(params.getProperty("location").split("::"));
-			for (String s : locs)
+			if (!locations.isEmpty())
 			{
-				System.err.println("elh-MSM::TwitterStreamClient - location: "+s);
-				String[] coords = s.split(",");
-				Location loc = new Location(
-						new Coordinate(Double.parseDouble(coords[0]),Double.parseDouble(coords[1])),
-						new Coordinate(Double.parseDouble(coords[2]),Double.parseDouble(coords[3]))
-						);
-				locations.add(loc);
+				hosebirdEndpoint.locations(locations);								
 			}
-			hosebirdEndpoint.locations(locations);
+			else if (parameters.equals("geo"))
+			{
+				System.err.println("elh-MSM::TwitterStreamClient - WARNING: no geolocations could be found."
+						+ "this can result in an Flood of tweets...");
+			}
+			
 		}
-		
+
+		//users to follow parameters 		
+		if (parameters.equals("all") || parameters.equals("users"))
+		{
+			List<Long> users = new ArrayList<Long>();			
+			if (!params.getProperty("followings", "none").equalsIgnoreCase("none"))
+			{			
+				String[] follows = params.getProperty("followings").split(",");
+				for (String s : follows)
+				{
+					System.err.println("elh-MSM::TwitterStreamClient - followings: "+s);
+					users.add(Long.parseLong(s));
+				}				
+			}
+			
+			if (!users.isEmpty())
+			{
+				hosebirdEndpoint.followings(users);				
+			}
+			else if (parameters.equals("users"))
+			{
+				System.err.println("elh-MSM::TwitterStreamClient - WARNING: no users to follow could be found."
+						+ "this can result in an Flood of tweets...");
+			}
+		}
+
+		//END OF FILTER STREAM API PARAMETER HANDLING
 		
 		try {
 			// These secrets should be read from a config file		

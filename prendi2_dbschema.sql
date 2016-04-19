@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS `prendi2_db`.`behagunea_app_source` (
   `last_fetch` LONGTEXT CHARACTER SET 'utf8' COLLATE 'utf8_unicode_ci' NOT NULL,
   `user_id` INT(11) NULL DEFAULT NULL,
   `domain` LONGTEXT CHARACTER SET 'utf8' COLLATE 'utf8_unicode_ci' NOT NULL,
+  `geoinfo` VARCHAR(80) NULL,
   PRIMARY KEY (`source_id`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8

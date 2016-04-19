@@ -176,7 +176,7 @@ public class Source {
 	}
 	
 	/**
-	 * Store mention into the database.
+	 * Store source into the database.
 	 * 
 	 * @param conn
 	 * @return
