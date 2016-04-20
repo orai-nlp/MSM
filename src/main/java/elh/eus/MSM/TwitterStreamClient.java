@@ -76,6 +76,7 @@ public class TwitterStreamClient {
 	private List<String> acceptedLangs;
 	private Set<Keyword> keywords;
 	private List<Location> locations = new ArrayList<Location>();
+	private List<Long> users = new ArrayList<Long>();
 	private LangDetect LID;
 	
 	private Set<Keyword> independentkwrds = new HashSet<Keyword>();
@@ -198,8 +199,10 @@ public class TwitterStreamClient {
 					case "solr": success = m.mention2solr(); break;
 					}
 				}
-				//if there is no keywords but locations exist. Store all tweets in the database.
-				else if (!locations.isEmpty())
+				// If there is no keywords but locations or users are not empty,
+				// it means we are not doing a keyword based crawling. 
+				// In that case store all tweets in the database.
+				else if (!locations.isEmpty() || !users.isEmpty())
 				{
 					Mention m = new Mention (status, lang);
 					int success =1;
@@ -212,7 +215,7 @@ public class TwitterStreamClient {
 									params.getProperty("dbpass"),
 									params.getProperty("dbhost"),
 									params.getProperty("dbname"));
-							Source author = new Source(status.getUser().getId(), status.getUser().getScreenName(), "Twitter","",-1);
+							Source author = new Source(status.getUser());
 							int authorStored = 0;
 							if (!author.existsInDB(conn))
 							{
@@ -225,20 +228,24 @@ public class TwitterStreamClient {
 							//it is already in the database							
 							if (m.getIsRetweet())
 							{
+								Status rtStatus = status.getRetweetedStatus();
 								System.err.println("elh-MSM::TwitterStreamClient - location - retweet found!!!"	);								
-								Mention m2 = new Mention(status.getRetweetedStatus(),lang);
+								Mention m2 = new Mention(rtStatus,lang);								
 								long mId = m2.existsInDB(conn);
 								if (mId>=0)
 								{
+									System.err.println("elh-MSM::TwitterStreamClient - location - retweet  - original already in DB"	);																	
 									m2.updateRetweetFavouritesInDB(conn, mId);									
 								}
 								else
 								{
-									Source author2 = new Source(status.getUser().getId(), status.getUser().getScreenName(), "Twitter","",-1);
+									System.err.println("elh-MSM::TwitterStreamClient - location - retweet  - original new, add to DB"	);																	
+									//m2.setKeywords(kwrds);
+									Source author2 = new Source(rtStatus.getUser());
 									int authorStored2 = 0;
-									if (!author.existsInDB(conn))
+									if (!author2.existsInDB(conn))
 									{
-										authorStored2 = author.source2db(conn);
+										authorStored2 = author2.source2db(conn);
 									}
 									success = m2.mention2db(conn);									
 								}
@@ -456,8 +463,7 @@ public class TwitterStreamClient {
 
 		//users to follow parameters 		
 		if (parameters.equals("all") || parameters.equals("users"))
-		{
-			List<Long> users = new ArrayList<Long>();			
+		{				
 			if (!params.getProperty("followings", "none").equalsIgnoreCase("none"))
 			{			
 				String[] follows = params.getProperty("followings").split(",");

@@ -203,21 +203,24 @@ public class Mention {
 		
 		
 		//geoInformation
-		try {
-			String geoStr = "";
+		String geoStr = "unknown";
+		if(statusTwitter4j.getGeoLocation() != null)
+		{			
+			geoStr = "";
 			geoStr = geoStr+"long="+String.valueOf(statusTwitter4j.getGeoLocation().getLongitude());
 			geoStr = geoStr+"_lat="+String.valueOf(statusTwitter4j.getGeoLocation().getLatitude());
 			setGeoInfo(geoStr);
-		} catch (NullPointerException npe) {
+		} 
+		else if (statusTwitter4j.getPlace() != null )
+		{
 			GeoLocation[][] geo =statusTwitter4j.getPlace().getBoundingBoxCoordinates();
-			String geoStr = "";
+			geoStr = "";
 			geoStr = geoStr+"long="+String.valueOf(geo[0][0].getLongitude());
 			geoStr = geoStr+"_lat="+String.valueOf(geo[0][0].getLatitude());
 			geoStr = geoStr+";long="+String.valueOf(geo[0][2].getLongitude());
-			geoStr = geoStr+"_lat="+String.valueOf(geo[0][2].getLatitude());			
-			
-			setGeoInfo(geoStr);
+			geoStr = geoStr+"_lat="+String.valueOf(geo[0][2].getLatitude());									
 		}
+		setGeoInfo(geoStr);
 		
 		if (statusTwitter4j.isRetweet())
 		{
@@ -262,11 +265,11 @@ public class Mention {
 			System.err.println("mention2db: current id "+getMention_id());
 			
 			// prepare the sql statements to insert the mention in the DB and insert.
-	        String mentionIns = "insert ignore into behagunea_app_mention (mention_id, date, source_id, url, text, lang, polarity, favourites, retweets, geoinfo, native_id, retweet_id) values (?,?,?,?,?,?,?,?,?,?,?,?)";
+	        String mentionIns = "insert into behagunea_app_mention (mention_id, date, source_id, url, text, lang, polarity, favourites, retweets, geoinfo, native_id, retweet_id) values (?,?,?,?,?,?,?,?,?,?,?,?)";
 	        stmtM = conn.prepareStatement(mentionIns, Statement.RETURN_GENERATED_KEYS);
 	        stmtM.setInt(1, getMention_id());
 	       // System.err.println("daaaaaaataaaaa: "+getDate());
-			DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");				
+			DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");				
 	        String dateString = dateFormat.format(getDate());
 	        stmtM.setString(2, dateString);
 	        //System.err.println("source: "+getSource_id());

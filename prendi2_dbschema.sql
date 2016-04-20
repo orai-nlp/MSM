@@ -32,7 +32,7 @@ DROP TABLE IF EXISTS `prendi2_db`.`behagunea_app_source` ;
 CREATE TABLE IF NOT EXISTS `prendi2_db`.`behagunea_app_source` (
   `source_id` BIGINT(20) NOT NULL DEFAULT '0',
   `type` VARCHAR(10) CHARACTER SET 'utf8' COLLATE 'utf8_unicode_ci' NOT NULL,
-  `influence` DOUBLE NOT NULL,
+  `influence` DOUBLE NULL DEFAULT NULL,
   `source_name` VARCHAR(45) CHARACTER SET 'utf8' COLLATE 'utf8_unicode_ci' NOT NULL,
   `last_fetch` LONGTEXT CHARACTER SET 'utf8' COLLATE 'utf8_unicode_ci' NOT NULL,
   `user_id` INT(11) NULL DEFAULT NULL,
@@ -83,7 +83,6 @@ CREATE TABLE IF NOT EXISTS `prendi2_db`.`behagunea_app_mention` (
   INDEX `behagunea_app_mention_0afd9202` (`source_id` ASC),
   INDEX `fk_behagunea_app_mention_cluster1_idx` (`cluster_id` ASC),
   UNIQUE INDEX `orig_tweet_id_UNIQUE` (`native_id` ASC),
-  UNIQUE INDEX `retweet_id_UNIQUE` (`retweet_id` ASC),
   CONSTRAINT `behagunea_app_mention_source_id_40597b0b4f5263a7_fk`
     FOREIGN KEY (`source_id`)
     REFERENCES `prendi2_db`.`behagunea_app_source` (`source_id`),
@@ -143,14 +142,6 @@ CREATE TABLE IF NOT EXISTS `prendi2_db`.`behagunea_app_cluster_keyword` (
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
-SET SQL_MODE = '';
-GRANT USAGE ON *.* TO prendi2;
- DROP USER prendi2;
-SET SQL_MODE='TRADITIONAL,ALLOW_INVALID_DATES';
 CREATE USER 'prendi2' IDENTIFIED BY 'prendi$Admin';
-
+GRANT USAGE ON *.* TO prendi2;
 GRANT ALL ON `prendi2_db`.* TO 'prendi2';
-
-SET SQL_MODE=@OLD_SQL_MODE;
-SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
