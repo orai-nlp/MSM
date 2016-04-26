@@ -197,8 +197,9 @@ public class InfluenceTagger {
 	 * 
 	 * @param srcList
 	 * @return
+	 * @throws InterruptedException 
 	 */
-	public Set<Source> tagInfluence(Set<Source> srcList){
+	public Set<Source> tagInfluence(Set<Source> srcList) throws InterruptedException{
 		
 		//kk
 		for (Source src : srcList)
@@ -211,6 +212,7 @@ public class InfluenceTagger {
 			else
 			{
 				src.setInfluence(webDomainIndex(src.getDomain()));
+				Thread.sleep(1000);
 			}
 		}
 		return srcList;
