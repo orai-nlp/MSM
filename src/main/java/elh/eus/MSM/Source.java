@@ -180,9 +180,19 @@ public class Source {
 		ResultSet rs = stmt.executeQuery(query);		
 		
 		try{	
-			while (rs.next()) {
-				Source src = new Source(rs.getLong("source_id"), rs.getString("source_name"),rs.getString("type"),rs.getString("domain"),rs.getDouble("influence"), rs.getInt("followers"), rs.getInt("friends"));				
-				result.add(src);
+			if (type.equalsIgnoreCase("feed"))
+			{
+				while (rs.next()) {
+					Source src = new Source(rs.getLong("source_id"), rs.getString("source_name"),rs.getString("type"),rs.getString("domain"),rs.getDouble("influence"));				
+					result.add(src);
+				}
+			}
+			else
+			{
+				while (rs.next()) {
+					Source src = new Source(rs.getLong("source_id"), rs.getString("source_name"),rs.getString("type"),rs.getString("domain"),rs.getDouble("influence"), rs.getInt("followers"), rs.getInt("friends"));				
+					result.add(src);
+				}
 			}
 			stmt.close();
 		} catch (SQLException sqle ) {
