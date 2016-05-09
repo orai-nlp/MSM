@@ -34,9 +34,9 @@ CREATE TABLE IF NOT EXISTS `prendi2_db`.`behagunea_app_source` (
   `type` VARCHAR(10) CHARACTER SET 'utf8' COLLATE 'utf8_unicode_ci' NOT NULL,
   `influence` DOUBLE NULL DEFAULT NULL,
   `source_name` VARCHAR(45) CHARACTER SET 'utf8' COLLATE 'utf8_unicode_ci' NOT NULL,
-  `last_fetch` LONGTEXT CHARACTER SET 'utf8' COLLATE 'utf8_unicode_ci' NOT NULL,
+  `last_fetch` LONGTEXT CHARACTER SET 'utf8' COLLATE 'utf8_unicode_ci' NULL DEFAULT NULL,
   `user_id` INT(11) NULL DEFAULT NULL,
-  `domain` LONGTEXT CHARACTER SET 'utf8' COLLATE 'utf8_unicode_ci' NOT NULL,
+  `domain` LONGTEXT CHARACTER SET 'utf8' COLLATE 'utf8_unicode_ci' NULL DEFAULT NULL,
   `geoinfo` VARCHAR(80) NULL,
   `followers` INT(11) NULL,
   `friends` INT(11) NULL,
@@ -101,10 +101,9 @@ DEFAULT CHARACTER SET = utf8mb4;
 DROP TABLE IF EXISTS `prendi2_db`.`behagunea_app_keyword_mention` ;
 
 CREATE TABLE IF NOT EXISTS `prendi2_db`.`behagunea_app_keyword_mention` (
-  `id` INT(11) NOT NULL AUTO_INCREMENT,
   `keyword_id` INT(11) NOT NULL,
   `mention_id` INT(11) NOT NULL,
-  PRIMARY KEY (`id`),
+  PRIMARY KEY (`keyword_id`, `mention_id`),
   INDEX `behagune_keyword_id_e1d999f2_fk_behagunea_app_keyword_keyword_id` (`keyword_id` ASC),
   INDEX `behagunea_app_keyword_mention_31e0dc7e` (`mention_id` ASC),
   CONSTRAINT `behagune_keyword_id_e1d999f2_fk_behagunea_app_keyword_keyword_id`
@@ -142,6 +141,7 @@ CREATE TABLE IF NOT EXISTS `prendi2_db`.`behagunea_app_cluster_keyword` (
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
-CREATE USER 'prendi2' IDENTIFIED BY 'prendi$Admin';
 GRANT USAGE ON *.* TO prendi2;
+CREATE USER 'prendi2' IDENTIFIED BY 'prendi$Admin';
+
 GRANT ALL ON `prendi2_db`.* TO 'prendi2';
