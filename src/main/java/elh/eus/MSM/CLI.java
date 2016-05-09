@@ -255,8 +255,8 @@ public class CLI {
 					feedList.add(new Feed(feed));
 				}	
 			}
-			
-			if (feedList.isEmpty() || kwrdList.isEmpty())
+						
+			if (feedList.isEmpty())
 			{
 				System.err.println("ERROR: either there no feed or no keywords were specified."
 						+ "Feed reader can not continue.");
@@ -264,6 +264,20 @@ public class CLI {
 			}
 			else
 			{
+				if (kwrdList.isEmpty())
+				{
+					String kwrds = params.getProperty("searchTerms", "none");
+					if (!kwrds.equalsIgnoreCase("none"))
+					{
+						String[] kwrdSplit = kwrds.split("\\s*,\\s*");
+						for (String kwrd : kwrdSplit)
+						{
+							kwrdList.add(new Keyword(kwrd,"all"));
+						}
+					}
+				}
+				
+				
 				System.err.println("elh-MSM::FeedReader (CLI) - "+feedList.size()+" feeds and "+kwrdList.size()+" keywords");
 				FeedReader fReader = new FeedReader(cfg, feedList, kwrdList, store);
 				fReader.processFeeds(store);

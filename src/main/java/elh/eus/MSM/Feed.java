@@ -86,6 +86,7 @@ public class Feed {
 		if (defaultValidator.isValid(src)) 
 		{
 			setFeedURL(src);
+			setLastFetchDate("1950-01-01 00:00:00 +0000");
 		}
 		else
 		{
