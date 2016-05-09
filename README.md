@@ -115,6 +115,31 @@ MSM provides 3 main funcionalities:
    - **twitter**: Twitter Public stream crawling.
    - **feed**: Syndication feed crawling (RSS, Atom, ...). Feed types supported by ROME tools (http://rometools.github.io/rome/)  
    - **influence**: looks for the influence of a given list of sources. Klout index for twitter users and PageRank for websites.
+   - **twtUser**: asks Twitter for the user profiles of a given list of Twitter users and return their follower and friend information.
+
+Command line examples
+==========================
+
+   - You can get general help by calling:
+````shell
+java -jar MSM-1.0.jar -help
+```` 
+
+   - **twitter**: Twitter Public stream crawling. Call Example:
+````shell
+java -jar MSM-1.0.jar twitter -c config.cfg -s stout 2>> MSM-twitter.log
+````
+
+   - **feed**: Syndication feed crawling (RSS, Atom, ...). Feed types supported by ROME tools (http://rometools.github.io/rome/)  
+````shell
+java -jar MSM-1.0.jar feed -c config.cfg -u http://feeds2.feedburner.com/example
+````
+         
+   - **influence**: looks for the influence of a given list of sources. Klout index for twitter users and PageRank for websites.
+````shell
+java -jar MSM-1.0.jar influence -c config.cfg -db 2>> MSM-Influence.log
+````
+
 
 
 GENERATING JAVADOC
