@@ -164,6 +164,7 @@ public class TwitterStreamClient {
 							{
 								//System.err.println("elh-MSM::TwitterStreamClient - retweet found!!!"	);
 								Mention m2 = new Mention(status.getRetweetedStatus(),lang);
+								m2.setKeywords(kwrds);
 								long mId = m2.existsInDB(conn);
 								if (mId>=0)
 								{
