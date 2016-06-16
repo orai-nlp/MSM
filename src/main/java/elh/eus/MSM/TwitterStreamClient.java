@@ -590,13 +590,17 @@ public class TwitterStreamClient {
 	private Set<Keyword> parseTweetForKeywords(String text, String lang) {
 				
 		Set<Keyword> result = new HashSet<Keyword>();
-		
+				
+		String searchText = StringUtils.stripAccents(text).toLowerCase().replace('\n', ' ');
+		boolean anchorFound = false;
 		if (anchorPattern == null)
 		{
-			return result;
+			anchorFound=false;
 		}
-		String searchText = StringUtils.stripAccents(text).toLowerCase().replace('\n', ' '); 
-		boolean anchorFound = anchorPattern.matcher(searchText).find();
+		else
+		{
+			anchorFound = anchorPattern.matcher(searchText).find();
+		}
 	
 		System.err.println("elh-MSM::TwitterStreamClientReader::parseTweetForKeywords - independent:"+independentkwrds.size()
 				+" - dependent: "+dependentkwrds.size()+"\n - searchText:"+searchText);
