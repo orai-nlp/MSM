@@ -544,6 +544,9 @@ public class TwitterStreamClient {
 	 * 
 	 */	
 	private void constructKeywordsPatterns() {
+		
+		boolean anchors = false;
+		
 		if (this.keywords == null || this.keywords.isEmpty())
 		{
 			System.err.println ("elh-MSM::TwitterStreamClient - No keywords loaded");
@@ -556,13 +559,23 @@ public class TwitterStreamClient {
 		for (Keyword k : keywords)
 		{
 			//create and store pattern;
-			Pattern p = Pattern.compile("\\b"+k.getText().replace('_',' ').toLowerCase());
-			//System.err.println("elh-MSM::TwitterStreamClient::constructKeywordPatterns - currentPattern:"+p.toString());
+			String pstr;
+			if (k.getText().startsWith("#"))
+			{
+				pstr = k.getText().replace('_',' ').toLowerCase();
+			}
+			else
+			{
+				pstr = "\\b"+k.getText().replace('_',' ').toLowerCase();
+			}
+			Pattern p = Pattern.compile(pstr);
+			System.err.println("elh-MSM::TwitterStreamClient::constructKeywordPatterns - currentPattern:"+p.toString());
 
 			kwrdPatterns.put(k.getId(), p);
 			if (k.isAnchor())
 			{
-				sb_anchors.append(k.getText().replace('_',' ').toLowerCase()).append("|"); 
+				sb_anchors.append(k.getText().replace('_',' ').toLowerCase()).append("|");
+				anchors=true;
 			}
 
 			if (k.needsAnchor())
@@ -574,9 +587,14 @@ public class TwitterStreamClient {
 				independentkwrds.add(k);
 			}			
 		} 
-		String anchPatt = sb_anchors.toString();
-		anchPatt=anchPatt.substring(0, anchPatt.length()-1)+")";
-		anchorPattern = Pattern.compile(anchPatt);
+		
+		// if anchor keywords found construct the anchor pattern
+		if (anchors)
+		{
+			String anchPatt = sb_anchors.toString();		
+			anchPatt=anchPatt.substring(0, anchPatt.length()-1)+")";
+			anchorPattern = Pattern.compile(anchPatt);
+		}
 	}
 	
 	
