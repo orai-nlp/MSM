@@ -21,8 +21,6 @@ This file is part of MSM.
 package elh.eus.MSM;
 
 import com.google.common.collect.Lists;
-
-
 import com.twitter.hbc.ClientBuilder;
 import com.twitter.hbc.core.Client;
 import com.twitter.hbc.core.Constants;
@@ -71,7 +69,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 
 
-public class TwitterStreamClient {
+public class gPlusClient {
 
 	private Properties params = new Properties();	
 	private String store = "";
@@ -124,7 +122,7 @@ public class TwitterStreamClient {
 			} 
         }
 
-        private void storeMention(Status status) {   
+        private void storeMention(Status status) {        	
 			String text = status.getText();
 			String lang = status.getLang();			
 			//we do not blindly trust twitter language identification, so we do our own checking.
@@ -348,7 +346,7 @@ public class TwitterStreamClient {
 	 * @param config
 	 * @param store
 	 */
-	public TwitterStreamClient (String config, String store, String parameters)
+	public gPlusClient (String config, String store, String parameters)
 	{
 		try {
 			params.load(new FileInputStream(new File(config)));

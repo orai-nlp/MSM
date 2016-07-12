@@ -47,7 +47,10 @@ public class Mention {
 	private int favourites;
 	private String geoInfo;
 	private boolean isRetweet;
+	private boolean isQuote;
+	private boolean inReply; 
 	private long origTweetId;
+	private long quotedTweetId;
 	
 	/**
 	 * Setter and getter functions  
@@ -169,6 +172,23 @@ public class Mention {
 		this.origTweetId = twtId;
 	}
 	
+	public boolean getIsQuote() {
+		return isQuote;
+	}
+
+	public void setIsQuote(boolean q) {
+		this.isQuote = q;
+	}
+	
+	public long getQuotedTweetId() {
+		return quotedTweetId;
+	}
+
+	public void setQuotedTweetId(long twtId) {
+		this.quotedTweetId = twtId;
+	}
+		
+	
 	//END OF GETTERS AND SETTERS
 	
 	//CONSTRUCTORS
@@ -228,6 +248,14 @@ public class Mention {
 			setOrigTweetId(statusTwitter4j.getRetweetedStatus().getId());
 			//statusTwitter4j = statusTwitter4j.getRetweetedStatus();
 		}
+		
+		if (statusTwitter4j.getQuotedStatusId()>0)
+		{
+			setIsQuote(true);
+			setQuotedTweetId(statusTwitter4j.getQuotedStatus().getId());
+			//statusTwitter4j = statusTwitter4j.getRetweetedStatus();
+		}
+		
 	}
 	
 	/**
