@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Date;
 import java.util.Set;
 
+import twitter4j.GeoLocation;
 import twitter4j.JSONObject;
 import twitter4j.Status;
 
@@ -35,6 +36,7 @@ public class Mention {
 
 	private int mention_id;
 	private long source_id;
+	private long nativeId;
 	private String text;
 	private String url;
 	private Set<Keyword> keywords;
@@ -43,6 +45,9 @@ public class Mention {
 	private String polarity;
 	private int retweets;
 	private int favourites;
+	private String geoInfo;
+	private boolean isRetweet;
+	private long origTweetId;
 	
 	/**
 	 * Setter and getter functions  
@@ -62,6 +67,14 @@ public class Mention {
 
 	public void setSource_id(long l) {
 		this.source_id = l;
+	}
+
+	public long getNativeId() {
+		return nativeId;
+	}
+
+	public void setNativeId(long l) {
+		this.nativeId = l;
 	}
 
 	public String getText() {
@@ -132,10 +145,33 @@ public class Mention {
 		this.favourites = favourites;
 	}
 	
-	
-	public Mention(JSONObject json) {
-		
+	public String getGeoInfo() {
+		return geoInfo;
 	}
+
+	public void setGeoInfo(String geo) {
+		this.geoInfo = geo;
+	}
+	
+	public boolean getIsRetweet() {
+		return isRetweet;
+	}
+
+	public void setIsRetweet(boolean rt) {
+		this.isRetweet = rt;
+	}
+	
+	public long getOrigTweetId() {
+		return origTweetId;
+	}
+
+	public void setOrigTweetId(long twtId) {
+		this.origTweetId = twtId;
+	}
+	
+	//END OF GETTERS AND SETTERS
+	
+	//CONSTRUCTORS
 	
 	public Mention(Status statusTwitter4j, String lang) {
 		mentionFromTweet(statusTwitter4j,lang);
@@ -149,17 +185,49 @@ public class Mention {
 		//setKeywords(kwrds);
 		setSource_id(source_id);
 		setPolarity("NULL");
+		setIsRetweet(false);
 	}
 
+	//END OF CONSTRUCTORS
+	
 	private void mentionFromTweet(Status statusTwitter4j, String lang) {
-		setLang(lang);
+		setLang(lang);			
 		setText(statusTwitter4j.getText());
 		setDate(statusTwitter4j.getCreatedAt());
+		setNativeId(statusTwitter4j.getId());
 		setUrl("https://twitter.com/"+statusTwitter4j.getUser().getScreenName()+"/status/"+statusTwitter4j.getId());
 		setRetweets(statusTwitter4j.getRetweetCount());
 		setFavourites(statusTwitter4j.getFavoriteCount());
 		setSource_id(statusTwitter4j.getUser().getId());
 		setPolarity("NULL");
+		
+		
+		//geoInformation
+		String geoStr = "unknown";
+		if(statusTwitter4j.getGeoLocation() != null)
+		{			
+			geoStr = "";
+			geoStr = geoStr+"long="+String.valueOf(statusTwitter4j.getGeoLocation().getLongitude());
+			geoStr = geoStr+"_lat="+String.valueOf(statusTwitter4j.getGeoLocation().getLatitude());
+			setGeoInfo(geoStr);
+		} 
+		else if (statusTwitter4j.getPlace() != null )
+		{
+			GeoLocation[][] geo =statusTwitter4j.getPlace().getBoundingBoxCoordinates();
+			geoStr = "";
+			geoStr = geoStr+"long="+String.valueOf(geo[0][0].getLongitude());
+			geoStr = geoStr+"_lat="+String.valueOf(geo[0][0].getLatitude());
+			geoStr = geoStr+";long="+String.valueOf(geo[0][2].getLongitude());
+			geoStr = geoStr+"_lat="+String.valueOf(geo[0][2].getLatitude());									
+		}
+		setGeoInfo(geoStr);
+		
+		if (statusTwitter4j.isRetweet())
+		{
+			setIsRetweet(true);
+			setOrigTweetId(statusTwitter4j.getRetweetedStatus().getId());
+			//statusTwitter4j = statusTwitter4j.getRetweetedStatus();
+		}
 	}
 	
 	/**
@@ -184,8 +252,8 @@ public class Mention {
 		try {	
 			
 			//retrieve id of the last mention in db
-			Statement stmt = conn.createStatement();
-			ResultSet rs1 = stmt.executeQuery("SELECT max(mention_id) AS maxid FROM behagunea_app_mention");
+			Statement stmt = conn.createStatement();			
+			ResultSet rs1 = stmt.executeQuery("SELECT max(mention_id) AS maxid FROM behagunea_app_mention");						
 			int id = 0;
 			while (rs1.next()){
 				id = rs1.getInt("maxid");
@@ -193,12 +261,15 @@ public class Mention {
 			rs1.close();
 			stmt.close();
 			
+			setMention_id(id+1);
+			System.err.println("mention2db: current id "+getMention_id());
+			
 			// prepare the sql statements to insert the mention in the DB and insert.
-	        String mentionIns = "insert ignore into behagunea_app_mention (mention_id, date, source_id, url, text, lang, polarity, favourites, retweets) values (?,?,?,?,?,?,?,?,?)";
+	        String mentionIns = "insert into behagunea_app_mention (mention_id, date, source_id, url, text, lang, polarity, favourites, retweets, geoinfo, native_id, retweet_id) values (?,?,?,?,?,?,?,?,?,?,?,?)";
 	        stmtM = conn.prepareStatement(mentionIns, Statement.RETURN_GENERATED_KEYS);
-	        stmtM.setInt(1, id+1);
+	        stmtM.setInt(1, getMention_id());
 	       // System.err.println("daaaaaaataaaaa: "+getDate());
-			DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");				
+			DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");				
 	        String dateString = dateFormat.format(getDate());
 	        stmtM.setString(2, dateString);
 	        //System.err.println("source: "+getSource_id());
@@ -209,7 +280,10 @@ public class Mention {
 	        stmtM.setString(7, getPolarity());
 	        stmtM.setInt(8, getRetweets());
 	        stmtM.setInt(9, getFavourites());
-						
+	        stmtM.setString(10, getGeoInfo());
+	        stmtM.setLong(11, getNativeId());
+	        stmtM.setLong(12, getOrigTweetId());
+	        
 	        stmtM.executeUpdate();
 			//ResultSet rs = stmtM.getGeneratedKeys();
 			//retrieve the generated mention id, in order to use it in the keyword_mention table.
@@ -218,8 +292,7 @@ public class Mention {
 				//System.out.println("Generated Emp Id: "+rs.getInt(1));
 			//}
 			stmtM.close();
-				
-			setMention_id(id+1);
+						
 			//connect mention to keywords
 			String keywordMentionIns = "insert ignore into behagunea_app_keyword_mention (keyword_id, mention_id) values (?,?)";			
 			stmtKM = conn.prepareStatement(keywordMentionIns, Statement.RETURN_GENERATED_KEYS);	        
@@ -255,7 +328,7 @@ public class Mention {
 		//PreparedStatement stmtS = null;		
 		try {			
 			// prepare the sql statements to insert the mention in the DB and insert.						
-			String keywordMentionIns = "insert ignore into keyword_mention (mention_id, keyword_id) values (?,?)";			
+			String keywordMentionIns = "insert ignore into behagunea_app_keyword_mention (mention_id, keyword_id) values (?,?)";			
 			
 			//connect mention to keywords
 			stmtKM.setInt(1, getMention_id());
@@ -270,6 +343,56 @@ public class Mention {
 
 		return 1;
 	}
+	
+	/**
+	 *  Function looks if the current mention exists in the DB based on each
+	 *  native id (Twitter status id, for example)
+	 *  
+	 * 
+	 * @param conn
+	 * @return
+	 */
+	public long existsInDB (Connection conn)
+	{
+		long result = -1;
+		try {
+			Statement stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery("SELECT mention_id FROM behagunea_app_mention where native_id="+getNativeId());
+			if(rs.next()){
+	            result = rs.getLong(1);
+	        }
+			stmt.close();
+		} catch (SQLException e){
+			e.printStackTrace();
+		}
+		return (result);
+	}
+	
+	/**
+	 *  Function looks if the current mention exists in the DB based on each
+	 *  native id (Twitter status id, for example)
+	 *  
+	 * 
+	 * @param conn
+	 * @return
+	 */
+	public int updateRetweetFavouritesInDB (Connection conn, long mId)
+	{
+		int success = 1;
+		try {
+			Statement stmt = conn.createStatement();
+			String updateComm = "UPDATE behagunea_app_mention "
+					+ "SET retweets="+getRetweets()+", favourites="+getFavourites()+" WHERE mention_id="+mId;
+			// execute update
+			stmt.executeUpdate(updateComm);
+			stmt.close();
+		} catch (SQLException e){
+			e.printStackTrace();
+			success=0;
+		}
+		return (success);
+	}
+	
 	
 	/**
 	 *  Function prints a mention to the stout;

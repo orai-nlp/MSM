@@ -13,6 +13,8 @@ import javax.naming.NamingException;
 
 import org.apache.commons.validator.routines.UrlValidator;
 
+import twitter4j.User;
+
 public class Source {
 
 	private long id;	
@@ -20,6 +22,8 @@ public class Source {
 	private String type;
 	private String domain;
 	private double influence;
+	private int followers;
+	private int friends;
 	
 	private final Pattern httpProt = Pattern.compile("^[hf]t?tps?://", Pattern.CASE_INSENSITIVE);
 
@@ -65,6 +69,22 @@ public class Source {
 		this.influence = influence;
 	}
 	
+	public int getFollowers() {
+		return followers;
+	}
+	
+	public void setFollowers(int id) {
+		this.followers = id;
+	}
+
+	public int getFriends() {
+		return friends;
+	}
+	
+	public void setFriends(int id) {
+		this.friends = id;
+	}
+	
 	
 	public Source(String src){
 		//URL normalization
@@ -98,6 +118,23 @@ public class Source {
 		setType(type);
 		setDomain(domain);
 		setInfluence(inf);
+		setFollowers(-1);
+		setFriends(-1);
+	}
+	
+	public Source(long id, String screenName, String type, String domain,double inf, int ff,int fr){
+		this(id, screenName,type,domain,inf);
+		setFollowers(ff);
+		setFriends(fr);
+	}
+	
+	/**
+	 *  Constructor from twitter4j.User 
+	 * @param u
+	 */
+	public Source(User u)
+	{
+		this(u.getId(), u.getScreenName(),"Twitter","",-1,u.getFollowersCount(),u.getFriendsCount());
 	}
 	
 	/**
@@ -143,9 +180,19 @@ public class Source {
 		ResultSet rs = stmt.executeQuery(query);		
 		
 		try{	
-			while (rs.next()) {
-				Source src = new Source(rs.getLong("source_id"), rs.getString("source_name"),rs.getString("type"),rs.getString("domain"),rs.getDouble("influence"));				
-				result.add(src);
+			if (type.equalsIgnoreCase("feed"))
+			{
+				while (rs.next()) {
+					Source src = new Source(rs.getLong("source_id"), rs.getString("source_name"),rs.getString("type"),rs.getString("domain"),rs.getDouble("influence"));				
+					result.add(src);
+				}
+			}
+			else
+			{
+				while (rs.next()) {
+					Source src = new Source(rs.getLong("source_id"), rs.getString("source_name"),rs.getString("type"),rs.getString("domain"),rs.getDouble("influence"), rs.getInt("followers"), rs.getInt("friends"));				
+					result.add(src);
+				}
 			}
 			stmt.close();
 		} catch (SQLException sqle ) {
@@ -176,7 +223,7 @@ public class Source {
 	}
 	
 	/**
-	 * Store mention into the database.
+	 * Store source into the database.
 	 * 
 	 * @param conn
 	 * @return
@@ -188,18 +235,20 @@ public class Source {
 		int success = 0;
 		//PreparedStatement stmtS = null;		
 		try {	
-			String sourceIns = "insert ignore into behagunea_app_source (source_id, type, source_name, user_id) values (?,?,?,?)";
+			String sourceIns = "insert ignore into behagunea_app_source (source_id, type, source_name, user_id, followers,friends) values (?,?,?,?,?,?)";
 			stmtM = conn.prepareStatement(sourceIns, Statement.RETURN_GENERATED_KEYS);
 			stmtM.setLong(1, getId());
 			stmtM.setString(2, "Twitter");
 			stmtM.setString(3, getScreenName());
 			stmtM.setInt(4, 1); //BEWARE: user_id is always given '1'. This must be reviewed in the future.	        
-
+			stmtM.setInt(5, getFollowers());
+			stmtM.setInt(6, getFriends());
 			stmtM.executeUpdate();
 			stmtM.close();
 			success=1;
 		}catch (SQLException e){
 			System.err.println("elh-MSM::Source source2db - Error when trying to store source into db.");
+			e.printStackTrace();
 		}
 		return success;
 	}

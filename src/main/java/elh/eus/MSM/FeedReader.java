@@ -152,7 +152,8 @@ public class FeedReader {
 		if (this.kwrds == null || this.kwrds.isEmpty())
 		{
 			System.err.println ("elh-MSM::FeedReader - No keywords loaded");
-			System.exit(1);
+			return;
+			//System.exit(1);
 		}
 
 		StringBuilder sb_anchors = new StringBuilder();
@@ -183,6 +184,10 @@ public class FeedReader {
 		anchorPattern = Pattern.compile(anchPatt);
 	}
 
+	/** 
+	 *  Old Constructor. Not used anymore, keywords are passed directly to the constructor.
+	 * */
+	@Deprecated 
 	public FeedReader(String config, String store) {
 		try {
 			params.load(new FileInputStream(new File(config)));
@@ -321,7 +326,12 @@ public class FeedReader {
 			getFeed(f, store);
 		}
 		
-		closeDBConnection();
+		try{
+			closeDBConnection();			
+		}catch(NullPointerException ne){
+			//no connection to close.
+		}
+
 	}
 
 
@@ -345,7 +355,7 @@ public class FeedReader {
 			try {
 				lastFetchDate_date = df.parse(f.getLastFetchDate());
 				break;						
-			}catch(ParseException de){
+			}catch(ParseException pe){
 				//continue loop
 			}
 		}	
@@ -441,7 +451,15 @@ public class FeedReader {
 					//if language accepted parse article for mentions. If found store them to DB or print them
 					if (acceptedLangs.contains("all") || acceptedLangs.contains(lang))
 					{
-						parseArticleForKeywords(doc,lang, pubDate, link, f.getSrcId(), store);
+						if (kwrds.isEmpty())
+						{
+							System.err.println("MSM::FeadReader::getFeed ->no keywords provided full articles will be returned");
+							processFullArticle(doc,lang, pubDate, link, f.getSrcId(), store);
+						}
+						else
+						{
+							parseArticleForKeywords(doc,lang, pubDate, link, f.getSrcId(), store);
+						}
 					}
 				}
 			//	else
@@ -699,8 +717,7 @@ public class FeedReader {
 				else
 				{
 					System.out.println("elh-MSM::FeedReader::parseArticleForKeywords - mention found!: "+par);
-					m.print();
-					System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - mention 2 stout: "+par);
+					m.print();		
 				}
 			}			
 		}				
@@ -787,12 +804,47 @@ public class FeedReader {
 		}	
 	}
 
-
+	/**
+	 * @param doc
+	 * @param lang
+	 * @param date
+	 * @param link
+	 * @param sId
+	 */
+	private void processFullArticle(TextDocument doc, String lang, Date date, String link, long sId, String store) 
+	{
+		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");				
+		
+		if (store.equalsIgnoreCase("db"))
+		{
+			System.err.println("elh-MSM::FeedReader::processFullArticle - 2db not implemented yet. "+link);
+		}
+		else
+		{
+			System.err.println("elh-MSM::FeedReader::processFullArticle - article to stout: "+link);
+			StringBuilder tp = new StringBuilder();
+			tp.append("<doc>\n").append("<url>").append(link).append("</url>\n");
+			tp.append("<lang>").append(lang).append("</lang>\n");
+			tp.append("<date>").append(dateFormat.format(date)).append("</date>\n");
+			tp.append("<title>").append(doc.getTitle()).append("</title>\n");
+			tp.append("<text>").append(doc.getText(true, true)).append("</text>\n");
+			tp.append("</doc>\n");			
+			System.out.println(tp.toString());
+		}
+	}
+	
+	/**
+	 * Load accepted langs from string
+	 * @param property
+	 */
 	private void loadAcceptedLangs(String property) {
 		this.acceptedLangs=Arrays.asList(property.split(","));	
 		System.err.println("elh-MSM::FeedReader - Accepted languages: "+acceptedLangs);
 	}
 
+	/**
+	 * Close connetion to DB.
+	 */
 	public void closeDBConnection()
 	{
 		try {

@@ -20,29 +20,21 @@ This file is part of MSM.
 
 package elh.eus.MSM;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
-import java.nio.charset.Charset;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Properties;
 import java.util.Set;
-
-import javax.naming.NamingException;
+import java.util.regex.Pattern;
 
 import twitter4j.JSONException;
 import twitter4j.JSONObject;
-
-import org.apache.commons.validator.routines.UrlValidator;
 
 
 
@@ -51,8 +43,12 @@ public class InfluenceTagger {
 	private Properties params = new Properties();
 
 	private String KloutKey;
-	private String PRKey;
+	/*private String PRKey;*/
+	private String DomainStatsIOKey;
 
+	private final Pattern httpProt = Pattern.compile("^[hf]t?tps?://", Pattern.CASE_INSENSITIVE);
+
+	
 	public InfluenceTagger (String config, boolean db)
 	{
 		try {
@@ -72,12 +68,19 @@ public class InfluenceTagger {
 		}
 
 		
-		PRKey = params.getProperty("PRKey", "none");
+		/*PRKey = params.getProperty("PRKey", "none");
 		if (PRKey.equalsIgnoreCase("none"))
 		{
 			System.err.println("MSM::InfluenceTagger WARNING - no PageRank Key could be found, PageRank index won't be retrieved");
-		}		
+		}*/		
 			
+		DomainStatsIOKey = params.getProperty("DomainStatsIOKey", "none");
+		if (DomainStatsIOKey.equalsIgnoreCase("none"))
+		{
+			System.err.println("MSM::InfluenceTagger WARNING - no DomainStatsIOKey Key could be found, PageRank index won't be retrieved");
+		}	
+		
+		
 	}
 	
 	
@@ -120,54 +123,72 @@ public class InfluenceTagger {
 	}
 		
 	
-	/** websites - PageRank
-     * Key Rate Limits : - 10 Calls per second | 20,000 Calls per day
+	/** websites - DomainStatsIO API : http://api.domainstats.io/
+     * Key Rate Limits : - 5 Calls per second | 500 Calls per hour
+	 * 
      * 
      */
-	private double PageRankIndex (String id) 
+	private double webDomainIndex (String id)
 	{
 		String result = "";
 
-		JenkinsHash jenkinsHash = new JenkinsHash();
-		long hash = jenkinsHash.hash(("info:" + id).getBytes());
-
-		//Append a 6 in front of the hashing value.
-		String url = "http://toolbarqueries.google.com/tbr?client=navclient-auto&hl=en&"
-		   + "ch=6" + hash + "&ie=UTF-8&oe=UTF-8&features=Rank&q=info:" + id;
+		// by defaults sources come with the protocol (ftp|http|https) attached, 
+		//domainstatsio requires that we remove the protocol.
+		URL myURL;
+		String host=id;
+		
+		try {
+			myURL = new URL(id);
+			host = myURL.getHost();
+		} catch (MalformedURLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+		String url = "http://api.domainstats.io/"+host+"?secret_token="+DomainStatsIOKey;
 
 		System.out.println("Sending request to : " + url);
 
 		try {
-			URLConnection conn = new URL(url).openConnection();
+			// get domainStats io response         
+			JSONObject json=Utils.readJsonFromUrl(url);
 
-			BufferedReader br = new BufferedReader(new InputStreamReader(
-				conn.getInputStream()));
-
-			String input;
-			while ((input = br.readLine()) != null) {
-
-				// What Google returned? Example : Rank_1:1:9, PR = 9
-				System.out.println(input);
-				result = input.substring(input.lastIndexOf(":") + 1);
+			// if the json object contains the user id ask for its score (Klout has the user tracked).
+			if (json.has("data"))
+			{
+				//Domain info is stored in the "data" object 
+				JSONObject datajson = json.getJSONObject("data");
+				
+				
+				result = datajson.getString("ahrefs_domain_rank");
+				System.out.println(result);
 			}
 
-		} catch (Exception e) {
-			System.out.println(e.getMessage());
+		} catch (JSONException je) {
+			je.printStackTrace();
+			System.out.println("elh-MSM::InfluenceTagger - JSON error when trying to get influence (AHrefs)"
+					+ "for domain "+id);			
+		} catch (IOException ioe) {			
+			System.out.println("elh-MSM::InfluenceTagger - IO error when trying to get influence (AHrefs)"
+					+ "for domain "+id);			
 		}
 
 		if ("".equals(result)) {
 			if (id.endsWith(".eus"))
 			{
-				return PageRankIndex(id.replaceAll("\\.eus$", ".info"));
+				return webDomainIndex(id.replaceAll("\\.eus$", ".info"));
 			}
 			else
 			{
 				return 0;
 			}
 		} else {
-			return Double.valueOf(result)*10;
+			return Double.valueOf(result);
 		}
 	}
+	
+	
 	
 	/**
 	 * Tag the influence of the sources in the given list. 
@@ -176,8 +197,9 @@ public class InfluenceTagger {
 	 * 
 	 * @param srcList
 	 * @return
+	 * @throws InterruptedException 
 	 */
-	public Set<Source> tagInfluence(Set<Source> srcList){
+	public Set<Source> tagInfluence(Set<Source> srcList) throws InterruptedException{
 		
 		//kk
 		for (Source src : srcList)
@@ -189,7 +211,8 @@ public class InfluenceTagger {
 			}
 			else
 			{
-				src.setInfluence(PageRankIndex(src.getDomain()));
+				src.setInfluence(webDomainIndex(src.getDomain()));
+				Thread.sleep(1000);
 			}
 		}
 		return srcList;
