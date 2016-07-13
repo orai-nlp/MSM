@@ -206,6 +206,9 @@ public class Mention {
 		setSource_id(source_id);
 		setPolarity("NULL");
 		setIsRetweet(false);
+		setIsQuote(false);
+		setOrigTweetId(0);
+		setQuotedTweetId(0);
 	}
 
 	//END OF CONSTRUCTORS
@@ -220,7 +223,10 @@ public class Mention {
 		setFavourites(statusTwitter4j.getFavoriteCount());
 		setSource_id(statusTwitter4j.getUser().getId());
 		setPolarity("NULL");
-		
+		setIsRetweet(false);
+		setIsQuote(false);
+		setOrigTweetId(0);
+		setQuotedTweetId(0);
 		
 		//geoInformation
 		String geoStr = "unknown";
@@ -277,8 +283,7 @@ public class Mention {
 		PreparedStatement stmtKM = null;
 		
 		//PreparedStatement stmtS = null;		
-		try {	
-			
+		try {				
 			//retrieve id of the last mention in db
 			Statement stmt = conn.createStatement();			
 			ResultSet rs1 = stmt.executeQuery("SELECT max(mention_id) AS maxid FROM behagunea_app_mention");						
@@ -293,7 +298,7 @@ public class Mention {
 			System.err.println("mention2db: current id "+getMention_id());
 			
 			// prepare the sql statements to insert the mention in the DB and insert.
-	        String mentionIns = "insert into behagunea_app_mention (mention_id, date, source_id, url, text, lang, polarity, favourites, retweets, geoinfo, native_id, retweet_id) values (?,?,?,?,?,?,?,?,?,?,?,?)";
+	        String mentionIns = "insert into behagunea_app_mention (mention_id, date, source_id, url, text, lang, polarity, favourites, retweets, geoinfo, native_id, retweet_id, quote_id) values (?,?,?,?,?,?,?,?,?,?,?,?,?)";
 	        stmtM = conn.prepareStatement(mentionIns, Statement.RETURN_GENERATED_KEYS);
 	        stmtM.setInt(1, getMention_id());
 	       // System.err.println("daaaaaaataaaaa: "+getDate());
@@ -311,6 +316,7 @@ public class Mention {
 	        stmtM.setString(10, getGeoInfo());
 	        stmtM.setLong(11, getNativeId());
 	        stmtM.setLong(12, getOrigTweetId());
+	        stmtM.setLong(13, getQuotedTweetId());
 	        
 	        stmtM.executeUpdate();
 			//ResultSet rs = stmtM.getGeneratedKeys();

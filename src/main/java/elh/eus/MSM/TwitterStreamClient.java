@@ -130,7 +130,7 @@ public class TwitterStreamClient {
 			//we do not blindly trust twitter language identification, so we do our own checking.
 			lang = LID.detectTwtLanguage(text, lang);
 			
-			//language must be accepted and tweet must not be a retweet
+			//language must be accepted
 			if ((acceptedLangs.contains("all") || acceptedLangs.contains(lang) || lang.equalsIgnoreCase("unk")))// && (! retweetPattern.matcher(text).matches()))
 			{				
 				Set<Keyword> kwrds = parseTweetForKeywords(text,lang);
@@ -150,6 +150,13 @@ public class TwitterStreamClient {
 									params.getProperty("dbpass"),
 									params.getProperty("dbhost"),
 									params.getProperty("dbname"));
+							
+							if (m.existsInDB(conn)>=0)
+							{
+								System.err.println("elh-MSM::TwitterStreamClient - mention is already in the DB! "+m.getNativeId());							
+								break;
+							}
+							
 							Source author = new Source(status.getUser().getId(), status.getUser().getScreenName(), "Twitter","",-1);
 							int authorStored = 0;
 							if (!author.existsInDB(conn))
