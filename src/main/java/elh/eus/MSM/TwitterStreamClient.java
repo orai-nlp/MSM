@@ -191,6 +191,31 @@ public class TwitterStreamClient {
 								}
 								System.err.println("elh-MSM::TwitterStreamClient - retweeted mention stored into the DB!"+success+" "+authorStored);
 							}
+							//mention is a quote, so store the original tweet as well, or update it in case 
+							//it is already in the database							
+							else if (m.getIsQuote())
+							{
+								//System.err.println("elh-MSM::TwitterStreamClient - retweet found!!!"	);
+								Mention m2 = new Mention(status.getQuotedStatus(),lang);
+								m2.setKeywords(kwrds);
+								long mId = m2.existsInDB(conn);
+								if (mId>=0)
+								{
+									m2.updateRetweetFavouritesInDB(conn, mId);									
+								}
+								else
+								{
+									Source author2 = new Source(status.getUser().getId(), status.getUser().getScreenName(), "Twitter","",-1);
+									authorStored = 0;
+									if (!author2.existsInDB(conn))
+									{
+										authorStored = author2.source2db(conn);
+									}
+									success = m2.mention2db(conn);									
+								}
+								System.err.println("elh-MSM::TwitterStreamClient - quoted tweet mention stored into the DB!"+success+" "+authorStored);
+							}
+							
 							conn.close();
 							break;
 						} catch (SQLException sqle) {
@@ -260,6 +285,30 @@ public class TwitterStreamClient {
 									success = m2.mention2db(conn);									
 								}
 								System.err.println("elh-MSM::TwitterStreamClient - retweeted mention stored into the DB!"+success+" "+authorStored);
+							}
+							//mention is a quote, so store the original tweet as well, or update it in case 
+							//it is already in the database							
+							else if (m.getIsQuote())
+							{
+								//System.err.println("elh-MSM::TwitterStreamClient - retweet found!!!"	);
+								Mention m2 = new Mention(status.getQuotedStatus(),lang);
+								m2.setKeywords(kwrds);
+								long mId = m2.existsInDB(conn);
+								if (mId>=0)
+								{
+									m2.updateRetweetFavouritesInDB(conn, mId);									
+								}
+								else
+								{
+									Source author2 = new Source(status.getUser().getId(), status.getUser().getScreenName(), "Twitter","",-1);
+									authorStored = 0;
+									if (!author2.existsInDB(conn))
+									{
+										authorStored = author2.source2db(conn);
+									}
+									success = m2.mention2db(conn);									
+								}
+								System.err.println("elh-MSM::TwitterStreamClient - quoted tweet mention stored into the DB!"+success+" "+authorStored);
 							}
 							conn.close();
 							break;
@@ -567,34 +616,41 @@ public class TwitterStreamClient {
 		sb_anchors.append("\\b(");
 		for (Keyword k : keywords)
 		{
-			//create and store pattern;
-			String pstr;
-			if (k.getText().startsWith("#"))
+			if (k.isKword())
 			{
-				pstr = k.getText().replace('_',' ').toLowerCase();
-			}
-			else
-			{
-				pstr = "\\b"+k.getText().replace('_',' ').toLowerCase();
-			}
-			Pattern p = Pattern.compile(pstr);
-			System.err.println("elh-MSM::TwitterStreamClient::constructKeywordPatterns - currentPattern:"+p.toString());
+				//create and store pattern;
+				String pstr;
+				if (k.getText().startsWith("#"))
+				{
+					pstr = k.getText().replace('_',' ').toLowerCase();
+				}
+				else
+				{
+					pstr = "\\b"+k.getText().replace('_',' ').toLowerCase();
+				}
+				Pattern p = Pattern.compile(pstr);
+				System.err.println("elh-MSM::TwitterStreamClient::constructKeywordPatterns - currentPattern:"+p.toString());
 
-			kwrdPatterns.put(k.getId(), p);
+				kwrdPatterns.put(k.getId(), p);
+				
+				if (k.needsAnchor())
+				{
+					dependentkwrds.add(k);
+				}
+				else	
+				{
+					independentkwrds.add(k);
+				}	
+			}
+			
 			if (k.isAnchor())
 			{
 				sb_anchors.append(k.getText().replace('_',' ').toLowerCase()).append("|");
 				anchors=true;
 			}
 
-			if (k.needsAnchor())
-			{
-				dependentkwrds.add(k);
-			}
-			else	
-			{
-				independentkwrds.add(k);
-			}			
+			
+			
 		} 
 		
 		// if anchor keywords found construct the anchor pattern

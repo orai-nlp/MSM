@@ -160,24 +160,27 @@ public class FeedReader {
 		sb_anchors.append("\\b(");
 		for (Keyword k : kwrds)
 		{
-			//create and store pattern;
-			Pattern p = Pattern.compile("\\b"+k.getText().replace('_',' ').toLowerCase());
-			//System.err.println("elh-MSM::FeedReader::constructKeywordPatterns - currentPattern:"+p.toString());
+			if (k.isKword())
+			{
+				//create and store pattern;
+				Pattern p = Pattern.compile("\\b"+k.getText().replace('_',' ').toLowerCase());
+				//System.err.println("elh-MSM::FeedReader::constructKeywordPatterns - currentPattern:"+p.toString());
 
-			kwrdPatterns.put(k.getId(), p);
+				kwrdPatterns.put(k.getId(), p);
+
+				if (k.needsAnchor())
+				{
+					dependentkwrds.add(k);
+				}
+				else	
+				{
+					independentkwrds.add(k);
+				}
+			}
 			if (k.isAnchor())
 			{
 				sb_anchors.append(k.getText().replace('_',' ').toLowerCase()).append("|"); 
 			}
-
-			if (k.needsAnchor())
-			{
-				dependentkwrds.add(k);
-			}
-			else	
-			{
-				independentkwrds.add(k);
-			}			
 		} 
 		String anchPatt = sb_anchors.toString();
 		anchPatt=anchPatt.substring(0, anchPatt.length()-1)+")";

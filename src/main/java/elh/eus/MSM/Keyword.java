@@ -49,6 +49,7 @@ public class Keyword {
 	private String screenTag;
 	private boolean needsAnchor;
 	private boolean isAnchor;
+	private boolean isKword;
 
 	public String getText() {
 		return text;
@@ -108,6 +109,16 @@ public class Keyword {
 		return needsAnchor;
 	}
 	
+	public void setIsKword(boolean kw) {
+		this.isKword = kw;
+	}
+	
+	public boolean isKword()
+	{
+		return isKword;
+	}
+	
+	
 	/**
 	 *  Constructor
 	 */
@@ -121,7 +132,7 @@ public class Keyword {
 	 * @param lng
 	 */
 	public Keyword(String txt, String lng) {
-		this(txt,lng,false,false);
+		this(txt,lng,false,false,true);
 	}
 	
 	/**
@@ -130,11 +141,12 @@ public class Keyword {
 	 * @param txt
 	 * @param lng
 	 */
-	public Keyword(String txt, String lng, boolean isAnch, boolean needsAnch) {
+	public Keyword(String txt, String lng, boolean isAnch, boolean needsAnch, boolean isKey) {
 		setText(txt);
 		setLang(lng);
-		isAnchor=isAnch;
-		needsAnchor=needsAnch;
+		setIsAnchor(isAnch);
+		setNeedsAnchor(needsAnch);
+		setIsKword(isKey);
 	}
 	
 	/**
@@ -185,7 +197,7 @@ public class Keyword {
 		
 		try{	
 			while (rs.next()) {
-				Keyword kwrd = new Keyword(rs.getString("term"), rs.getString("lang"),rs.getBoolean("is_anchor"),rs.getBoolean("anchor"));
+				Keyword kwrd = new Keyword(rs.getString("term"), rs.getString("lang"),rs.getBoolean("is_anchor"),rs.getBoolean("anchor"),rs.getBoolean("is_kword"));
 				kwrd.setId(rs.getInt("keyword_id"));
 				result.add(kwrd);
 			}
@@ -240,7 +252,7 @@ public class Keyword {
 		{
 			for (String l: langs)
 			{
-				result.add(new Keyword(key,l,false,false));				 
+				result.add(new Keyword(key,l,false,false,true));				 
 			}
 		}
 		return result;
