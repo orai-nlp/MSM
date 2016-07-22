@@ -195,25 +195,33 @@ public class TwitterStreamClient {
 							//it is already in the database							
 							else if (m.getIsQuote())
 							{
-								//System.err.println("elh-MSM::TwitterStreamClient - retweet found!!!"	);
-								Mention m2 = new Mention(status.getQuotedStatus(),lang);
-								m2.setKeywords(kwrds);
-								long mId = m2.existsInDB(conn);
-								if (mId>=0)
+								Set<Keyword> quotedKwrds = parseTweetForKeywords(status.getQuotedStatus().getText(),lang);
+								if (quotedKwrds != null && !quotedKwrds.isEmpty())
 								{
-									m2.updateRetweetFavouritesInDB(conn, mId);									
+									//System.err.println("elh-MSM::TwitterStreamClient - retweet found!!!"	);
+									Mention m2 = new Mention(status.getQuotedStatus(),lang);
+									m2.setKeywords(quotedKwrds);
+									long mId = m2.existsInDB(conn);
+									if (mId>=0)
+									{
+										m2.updateRetweetFavouritesInDB(conn, mId);									
+									}
+									else
+									{
+										Source author2 = new Source(status.getUser().getId(), status.getUser().getScreenName(), "Twitter","",-1);
+										authorStored = 0;
+										if (!author2.existsInDB(conn))
+										{
+											authorStored = author2.source2db(conn);
+										}
+										success = m2.mention2db(conn);									
+									}
+									System.err.println("elh-MSM::TwitterStreamClient - quoted tweet mention stored into the DB!"+success+" "+authorStored);
 								}
 								else
 								{
-									Source author2 = new Source(status.getUser().getId(), status.getUser().getScreenName(), "Twitter","",-1);
-									authorStored = 0;
-									if (!author2.existsInDB(conn))
-									{
-										authorStored = author2.source2db(conn);
-									}
-									success = m2.mention2db(conn);									
+									System.err.println("elh-MSM::TwitterStreamClient - quoted tweet mention not stored beacuse no keyword was found "+success+" "+authorStored);
 								}
-								System.err.println("elh-MSM::TwitterStreamClient - quoted tweet mention stored into the DB!"+success+" "+authorStored);
 							}
 							
 							conn.close();
