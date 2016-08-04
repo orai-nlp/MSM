@@ -164,10 +164,18 @@ public class FeedReader {
 		for (Keyword k : kwrds)
 		{
 			if (k.isKword())
-			{
+			{				
 				//create and store pattern;
-				// as of 2016/08/03 press mentions have to respect keyword capitalization. 
-				Pattern p = Pattern.compile("\\b"+k.getText().replace('_',' '));//.toLowerCase());
+				Pattern p=null;
+				// as of 2016/08/03 press mentions have to respect keyword capitalization.
+				if (k.getCaseSensitiveSearch())
+				{
+					p = Pattern.compile("\\b"+k.getText().replace('_',' '));//.toLowerCase());
+				}
+				else
+				{
+					p = Pattern.compile("\\b"+k.getText().replace('_',' ').toLowerCase());
+				}
 				//System.err.println("elh-MSM::FeedReader::constructKeywordPatterns - currentPattern:"+p.toString());
 
 				kwrdPatterns.put(k.getId(), p);
