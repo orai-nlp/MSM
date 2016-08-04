@@ -115,6 +115,11 @@
       <artifactId>google-api-services-youtube</artifactId>
       <version>v3-rev176-1.22.0</version>
     </dependency>
+    <dependency>
+    	<groupId>eus.ixa</groupId>
+    	<artifactId>ixa-pipe-tok</artifactId>
+    	<version>1.8.5</version>
+	</dependency>
 
 	</dependencies>
 

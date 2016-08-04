@@ -50,6 +50,7 @@ public class Keyword {
 	private boolean needsAnchor;
 	private boolean isAnchor;
 	private boolean isKword;
+	private boolean caseSensitiveSearch = false;
 
 	public String getText() {
 		return text;
@@ -118,6 +119,14 @@ public class Keyword {
 		return isKword;
 	}
 	
+	public void setCaseSensitiveSearch(boolean css) {
+		this.caseSensitiveSearch = css;
+	}
+	
+	public boolean getCaseSensitiveSearch()
+	{
+		return caseSensitiveSearch;
+	}
 	
 	/**
 	 *  Constructor
@@ -142,7 +151,15 @@ public class Keyword {
 	 * @param lng
 	 */
 	public Keyword(String txt, String lng, boolean isAnch, boolean needsAnch, boolean isKey) {
-		setText(txt);
+		if (txt.startsWith(":"))
+		{
+			setText(txt.substring(1, txt.length()));
+			setCaseSensitiveSearch(true);
+		}
+		else
+		{
+			setText(txt);
+		}
 		setLang(lng);
 		setIsAnchor(isAnch);
 		setNeedsAnchor(needsAnch);

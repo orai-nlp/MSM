@@ -21,8 +21,6 @@ This file is part of MSM.
 package elh.eus.MSM;
 
 import com.google.common.collect.Lists;
-
-
 import com.twitter.hbc.ClientBuilder;
 import com.twitter.hbc.core.Client;
 import com.twitter.hbc.core.Constants;
@@ -31,10 +29,8 @@ import com.twitter.hbc.core.HttpHosts;
 import com.twitter.hbc.core.endpoint.Location;
 import com.twitter.hbc.core.endpoint.Location.Coordinate;
 import com.twitter.hbc.core.endpoint.StatusesFilterEndpoint;
-import com.twitter.hbc.core.endpoint.StatusesSampleEndpoint;
 import com.twitter.hbc.core.event.Event;
 import com.twitter.hbc.core.processor.StringDelimitedProcessor;
-import com.twitter.hbc.httpclient.BasicClient;
 import com.twitter.hbc.httpclient.auth.Authentication;
 import com.twitter.hbc.httpclient.auth.OAuth1;
 import com.twitter.hbc.twitter4j.Twitter4jStatusClient;
@@ -64,7 +60,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
@@ -88,7 +83,9 @@ public class TwitterStreamClient {
 	private HashMap<Integer,Pattern> kwrdPatterns = new HashMap<Integer,Pattern>(); //patterns for keywords.
 
 	
-	private static Pattern retweetPattern = Pattern.compile("^RT[^\\p{L}\\p{M}\\p{Nd}]+.*");
+	//private static Pattern retweetPattern = Pattern.compile("^RT[^\\p{L}\\p{M}\\p{Nd}]+.*");
+	//private static Pattern user = Pattern.compile("@([\\p{L}\\p{M}\\p{Nd}_]{1,15})");
+	private static Pattern urlPattern = Pattern.compile("\\b(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
 	
 	public String getStore() {
 		return store;
@@ -118,232 +115,12 @@ public class TwitterStreamClient {
 			case "stout": System.out.println(status.toString()); break;
 			case "db":
 				System.out.println("db - @" + status.getUser().getScreenName() + " - " + status.getText());
-				storeMention(status);
+				processMention(status);
 				break;
 			case "solr": System.out.println("solr - @" + status.getUser().getScreenName() + " - " + status.getText()); break;
 			} 
-        }
-
-        private void storeMention(Status status) {   
-			String text = status.getText();
-			String lang = status.getLang();			
-			//we do not blindly trust twitter language identification, so we do our own checking.
-			lang = LID.detectTwtLanguage(text, lang);
-			
-			//language must be accepted
-			if ((acceptedLangs.contains("all") || acceptedLangs.contains(lang) || lang.equalsIgnoreCase("unk")))// && (! retweetPattern.matcher(text).matches()))
-			{				
-				Set<Keyword> kwrds = parseTweetForKeywords(text,lang);
-				//if no keyword is found in the tweet it is discarded. 
-				// This discards some valid tweets, as the keyword maybe in an attached link. 
-				if (kwrds != null && !kwrds.isEmpty())
-				{
-					Mention m = new Mention (status, lang);
-					m.setKeywords(kwrds);
-					int success =1;
-					switch (getStore()) // print the message to stdout
-					{				
-					case "db":
-						try {
-							Connection conn = Utils.DbConnection(
-									params.getProperty("dbuser"),
-									params.getProperty("dbpass"),
-									params.getProperty("dbhost"),
-									params.getProperty("dbname"));
-							
-							if (m.existsInDB(conn)>=0)
-							{
-								System.err.println("elh-MSM::TwitterStreamClient - mention is already in the DB! "+m.getNativeId());							
-								break;
-							}
-							
-							Source author = new Source(status.getUser().getId(), status.getUser().getScreenName(), "Twitter","",-1);
-							int authorStored = 0;
-							if (!author.existsInDB(conn))
-							{
-								authorStored = author.source2db(conn);
-							}
-							success = m.mention2db(conn);
-							
-							System.err.println("elh-MSM::TwitterStreamClient - mention stored into the DB!"+success+" "+authorStored);
-							
-							//mention is a retweet, so store the original tweet as well, or update it in case 
-							//it is already in the database							
-							if (m.getIsRetweet())
-							{
-								//System.err.println("elh-MSM::TwitterStreamClient - retweet found!!!"	);
-								Mention m2 = new Mention(status.getRetweetedStatus(),lang);
-								m2.setKeywords(kwrds);
-								long mId = m2.existsInDB(conn);
-								if (mId>=0)
-								{
-									m2.updateRetweetFavouritesInDB(conn, mId);									
-								}
-								else
-								{
-									Source author2 = new Source(status.getUser().getId(), status.getUser().getScreenName(), "Twitter","",-1);
-									authorStored = 0;
-									if (!author2.existsInDB(conn))
-									{
-										authorStored = author2.source2db(conn);
-									}
-									success = m2.mention2db(conn);									
-								}
-								System.err.println("elh-MSM::TwitterStreamClient - retweeted mention stored into the DB!"+success+" "+authorStored);
-							}
-							//mention is a quote, so store the original tweet as well, or update it in case 
-							//it is already in the database							
-							else if (m.getIsQuote())
-							{
-								Set<Keyword> quotedKwrds = parseTweetForKeywords(status.getQuotedStatus().getText(),lang);
-								if (quotedKwrds != null && !quotedKwrds.isEmpty())
-								{
-									//System.err.println("elh-MSM::TwitterStreamClient - retweet found!!!"	);
-									Mention m2 = new Mention(status.getQuotedStatus(),lang);
-									m2.setKeywords(quotedKwrds);
-									long mId = m2.existsInDB(conn);
-									if (mId>=0)
-									{
-										m2.updateRetweetFavouritesInDB(conn, mId);									
-									}
-									else
-									{
-										Source author2 = new Source(status.getUser().getId(), status.getUser().getScreenName(), "Twitter","",-1);
-										authorStored = 0;
-										if (!author2.existsInDB(conn))
-										{
-											authorStored = author2.source2db(conn);
-										}
-										success = m2.mention2db(conn);									
-									}
-									System.err.println("elh-MSM::TwitterStreamClient - quoted tweet mention stored into the DB!"+success+" "+authorStored);
-								}
-								else
-								{
-									System.err.println("elh-MSM::TwitterStreamClient - quoted tweet mention not stored beacuse no keyword was found "+success+" "+authorStored);
-								}
-							}
-							
-							conn.close();
-							break;
-						} catch (SQLException sqle) {
-							System.err.println("elh-MSM::TwitterStreamClient - connection with the DB could not be established");
-							sqle.printStackTrace();
-						} catch (Exception e) {
-							System.err.println("elh-MSM::TwitterStreamClient - error when storing mention");
-							e.printStackTrace();
-						}
-						break;
-					case "stout": 
-						System.out.println("------ Mention found! ------ \n");
-						m.print();
-						System.out.println("---------\n");
-						break;
-					case "solr": success = m.mention2solr(); break;
-					}
-				}
-				// If there is no keywords but locations or users are not empty,
-				// it means we are not doing a keyword based crawling. 
-				// In that case store all tweets in the database.
-				else if (!locations.isEmpty() || !users.isEmpty())
-				{
-					Mention m = new Mention (status, lang);
-					int success =1;
-					switch (getStore()) // print the message to stdout
-					{				
-					case "db":
-						try {
-							Connection conn = Utils.DbConnection(
-									params.getProperty("dbuser"),
-									params.getProperty("dbpass"),
-									params.getProperty("dbhost"),
-									params.getProperty("dbname"));
-							Source author = new Source(status.getUser());
-							int authorStored = 0;
-							if (!author.existsInDB(conn))
-							{
-								authorStored = author.source2db(conn);
-							}
-							success = m.mention2db(conn);
-							System.err.println("elh-MSM::TwitterStreamClient -  mention stored into the DB!"+success+" "+authorStored);
-							
-							//mention is a retweet, so store the original tweet as well, or update it in case 
-							//it is already in the database							
-							if (m.getIsRetweet())
-							{
-								Status rtStatus = status.getRetweetedStatus();
-								//System.err.println("elh-MSM::TwitterStreamClient - retweet found!!!"	);								
-								Mention m2 = new Mention(rtStatus,lang);								
-								long mId = m2.existsInDB(conn);
-								if (mId>=0)
-								{
-									System.err.println("elh-MSM::TwitterStreamClient - retweet - original already in DB"	);																	
-									m2.updateRetweetFavouritesInDB(conn, mId);									
-								}
-								else
-								{
-									System.err.println("elh-MSM::TwitterStreamClient - retweet  - original new, add to DB"	);																	
-									//m2.setKeywords(kwrds);
-									Source author2 = new Source(rtStatus.getUser());
-									authorStored = 0;
-									if (!author2.existsInDB(conn))
-									{
-										authorStored = author2.source2db(conn);
-									}
-									success = m2.mention2db(conn);									
-								}
-								System.err.println("elh-MSM::TwitterStreamClient - retweeted mention stored into the DB!"+success+" "+authorStored);
-							}
-							//mention is a quote, so store the original tweet as well, or update it in case 
-							//it is already in the database							
-							else if (m.getIsQuote())
-							{
-								//System.err.println("elh-MSM::TwitterStreamClient - retweet found!!!"	);
-								Mention m2 = new Mention(status.getQuotedStatus(),lang);
-								m2.setKeywords(kwrds);
-								long mId = m2.existsInDB(conn);
-								if (mId>=0)
-								{
-									m2.updateRetweetFavouritesInDB(conn, mId);									
-								}
-								else
-								{
-									Source author2 = new Source(status.getUser().getId(), status.getUser().getScreenName(), "Twitter","",-1);
-									authorStored = 0;
-									if (!author2.existsInDB(conn))
-									{
-										authorStored = author2.source2db(conn);
-									}
-									success = m2.mention2db(conn);									
-								}
-								System.err.println("elh-MSM::TwitterStreamClient - quoted tweet mention stored into the DB!"+success+" "+authorStored);
-							}
-							conn.close();
-							break;
-						} catch (SQLException sqle) {
-							System.err.println("elh-MSM::TwitterStreamClient - connection with the DB could not be established");
-							sqle.printStackTrace();
-						} catch (Exception e) {
-							System.err.println("elh-MSM::TwitterStreamClient - error when storing mention");
-							e.printStackTrace();
-						}
-						break;
-					case "stout": 
-						System.out.println("------ Mention found! ------ \n");
-						m.print();
-						System.out.println("---------\n");
-						break;
-					case "solr": success = m.mention2solr(); break;
-					}
-				}
-			}
-			else
-			{
-				System.err.println("elh-MSM::TwitterStreamClient - mention discarded because of lang requirements. lang: "+lang+" - "+acceptedLangs.toString());				
-			}
-			
-		}
-
+        }      
+        
 		@Override
         public void onDeletionNotice(StatusDeletionNotice statusDeletionNotice) {
             System.out.println("Got a status deletion notice id:" + statusDeletionNotice.getStatusId());
@@ -681,8 +458,11 @@ public class TwitterStreamClient {
 	private Set<Keyword> parseTweetForKeywords(String text, String lang) {
 				
 		Set<Keyword> result = new HashSet<Keyword>();
-				
+		
+		// everything to lowercase
 		String searchText = StringUtils.stripAccents(text).toLowerCase().replace('\n', ' ');
+		// delete urls, no keyword will be accepted if inside an url
+		searchText = urlPattern.matcher(searchText).replaceAll("");
 		boolean anchorFound = false;
 		if (anchorPattern == null)
 		{
@@ -734,6 +514,157 @@ public class TwitterStreamClient {
 		return result;
 	}
 	    
-	
+	/**
+	 * Process status coming from twitter: check for language and keywords, 
+	 * If it passes the tests store it and its derivatives (the originals if it is a rt or a quote)
+	 * 
+	 * @param status
+	 */
+	private void processMention(Status status) {   
+		String text = status.getText();
+		String lang = status.getLang();			
+		//we do not blindly trust twitter language identification, so we do our own checking.
+		lang = LID.detectTwtLanguage(text, lang);
+		int success = 0;
+		//language must be accepted
+		if ((acceptedLangs.contains("all") || acceptedLangs.contains(lang) || lang.equalsIgnoreCase("unk")))// && (! retweetPattern.matcher(text).matches()))
+		{				
+			Set<Keyword> kwrds = parseTweetForKeywords(text,lang);
+			//if no keyword is found in the tweet it is discarded. 
+			// This discards some valid tweets, as the keyword maybe in an attached link. 
+			if (kwrds != null && !kwrds.isEmpty())
+			{
+				Mention m = new Mention (status, lang);
+				m.setKeywords(kwrds);
+				success =storeMention(m, status);	
+
+			}
+			// If there is no keywords but locations or users are not empty,
+			// it means we are not doing a keyword based crawling. 
+			// In that case store all tweets in the database.
+			else if (!locations.isEmpty() || !users.isEmpty())
+			{
+				Mention m = new Mention (status, lang);
+				success =storeMention(m, status);					
+			}
+			System.err.println("elh-MSM::TwitterStreamClient - mention and derivations stored. success: "+String.valueOf(success));				
+		}
+		else
+		{
+			System.err.println("elh-MSM::TwitterStreamClient - mention discarded because of lang requirements. lang: "+lang+" - "+acceptedLangs.toString());				
+		}
+
+	}
+
+	/**
+	 *  Function store mention is responsible to store a mention and its retweets and quotes if needed.
+	 *  Keyword-based searches are treated differently, because in the rest of the cases all tweets, 
+	 *  rts and quotes will be stored 
+	 *  
+	 * @param m
+	 * @param s
+	 * @return int success
+	 */
+	private int storeMention(Mention m, Status s) {
+
+		int success = 0;
+		boolean kwordBasedSearch = !keywords.isEmpty();
+		System.err.println("elh-MSM::TwitterStreamClient -  storMention: "+kwordBasedSearch+" "+keywords.size());
+		String lang =m.getLang();
+		switch (getStore()) // print the message to stdout
+		{				
+		case "db":
+			try {
+				Connection conn = Utils.DbConnection(
+						params.getProperty("dbuser"),
+						params.getProperty("dbpass"),
+						params.getProperty("dbhost"),
+						params.getProperty("dbname"));
+				Source author = new Source(s.getUser());
+				int authorStored = 0;
+				if (!author.existsInDB(conn))
+				{
+					authorStored = author.source2db(conn);
+				}
+				success = m.mention2db(conn);
+				System.err.println("elh-MSM::TwitterStreamClient -  mention stored into the DB! "+success+" "+authorStored);
+
+				//orig status is used to stored original statuses from retweets and quotes
+				Status origStatus = null;
+				//mention is a retweet, so store the original tweet as well, or update it in case 
+				//it is already in the database							
+				if (m.getIsRetweet())
+				{   				
+					origStatus = s.getRetweetedStatus();        				
+					System.err.println("elh-MSM::TwitterStreamClient -  RT found!! ");
+				}
+				//mention is a quote, so store the original tweet as well, or update it in case 
+				//it is already in the database							
+				else if (m.getIsQuote())
+				{
+					origStatus = s.getQuotedStatus();
+					System.err.println("elh-MSM::TwitterStreamClient -  Quote found!! ");
+				}
+
+				//if mentions was a quote or a rt process it as well 
+				if (origStatus != null)
+				{
+					//System.err.println("elh-MSM::TwitterStreamClient - retweet found!!!"	);
+					Mention m2 = new Mention(origStatus,lang);
+					long mId = m2.existsInDB(conn);
+					if (mId>=0)
+					{
+						m2.updateRetweetFavouritesInDB(conn, mId);									
+					}				
+					// there are no keywords to look for so all the tweets are to be stored.
+					else if (!kwordBasedSearch)
+					{
+						Source author2 = new Source(origStatus.getUser());
+						authorStored = 0;
+						if (!author2.existsInDB(conn))
+						{
+							authorStored = author2.source2db(conn);
+						}
+						success = m2.mention2db(conn);									
+					}
+					// keyword-based search only accept original rt or quoted text if it also contains keywords 
+					else 
+					{
+						Set<Keyword> quotedKwrds = parseTweetForKeywords(origStatus.getText(),lang);
+						if (quotedKwrds != null && !quotedKwrds.isEmpty())
+						{
+							//System.err.println("elh-MSM::TwitterStreamClient - retweet found!!!"	);
+							m2.setKeywords(quotedKwrds);
+							Source author2 = new Source(origStatus.getUser());
+							authorStored = 0;
+							if (!author2.existsInDB(conn))
+							{
+								authorStored = author2.source2db(conn);
+							}
+							success = m2.mention2db(conn);
+						}							
+					}	
+					System.err.println("elh-MSM::TwitterStreamClient - rt|quoted tweet mention stored into the DB!"+success+" "+authorStored);        			        				
+				}
+				conn.close();
+				break;
+			} catch (SQLException sqle) {
+				System.err.println("elh-MSM::TwitterStreamClient - connection with the DB could not be established");
+				sqle.printStackTrace();
+			} catch (Exception e) {
+				System.err.println("elh-MSM::TwitterStreamClient - error when storing mention");
+				e.printStackTrace();
+			}
+			break;
+		case "stout": 
+			System.out.println("------ Mention found! ------ \n");
+			m.print();
+			System.out.println("---------\n");
+			break;
+		case "solr": success = m.mention2solr(); break;
+		}
+		return success;
+	}
+     
 }
 

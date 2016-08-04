@@ -40,10 +40,12 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.StringReader;
 
 import javax.naming.NamingException;
 
@@ -70,6 +72,7 @@ import de.l3s.boilerpipe.extractors.CommonExtractors;
 import de.l3s.boilerpipe.sax.BoilerpipeSAXInput;
 import de.l3s.boilerpipe.sax.HTMLFetcher;
 import de.l3s.boilerpipe.sax.HtmlArticleExtractor;
+import eus.ixa.ixa.pipe.seg.RuleBasedSegmenter;
 
 
 /**
@@ -163,7 +166,8 @@ public class FeedReader {
 			if (k.isKword())
 			{
 				//create and store pattern;
-				Pattern p = Pattern.compile("\\b"+k.getText().replace('_',' ').toLowerCase());
+				// as of 2016/08/03 press mentions have to respect keyword capitalization. 
+				Pattern p = Pattern.compile("\\b"+k.getText().replace('_',' '));//.toLowerCase());
 				//System.err.println("elh-MSM::FeedReader::constructKeywordPatterns - currentPattern:"+p.toString());
 
 				kwrdPatterns.put(k.getId(), p);
@@ -672,24 +676,44 @@ public class FeedReader {
 		//		+"\n -- found? "+anchorFound+" lang: "+lang+" indep/dep:"+independentkwrds.size()+"/"+dependentkwrds.size());
 
 
-		String[] paragraphs = doc.getContent().split("\n+");
+		// objects needed to call the tokenizer
+		Properties tokProp = new Properties();		
+		tokProp.setProperty("language", lang);
+		tokProp.setProperty("normalize", "default");
+		tokProp.setProperty("untokenizable", "no");
+		tokProp.setProperty("hardParagraph", "no");	
+		// tokenizer call
+		RuleBasedSegmenter seg = new RuleBasedSegmenter(doc.getContent(),tokProp);
+		String[] paragraphs = seg.segmentSentence();
+		//String[] paragraphs = doc.getContent().split("\n+");
+		
 		for (String par : paragraphs )
 			//for (TextBlock b : doc.getTextBlocks())
 		{
 			result = new HashSet<Keyword>();
-			String searchText = StringUtils.stripAccents(par).toLowerCase();			
-			//System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - search paragraph: "+searchText);						
-			//if (b.isContent())
-			//{
-			//String origText = b.getText();
-			//String par = StringUtils.stripAccents(origText);
-
+			// capitalization must be respected in order to accept keywords found in paragraphs.
+			// as of 2016/08/03 press mentions have to respect keyword capitalization. 
+			String searchText = StringUtils.stripAccents(par); //.toLowerCase(); 
+			String searchTextLC = StringUtils.stripAccents(par).toLowerCase();
 			//keywords that do not need any anchor
 			for (Keyword k : independentkwrds)
-			{				
+			{		
+				boolean kwrdFound = false;
+				//check if keywords are found in the sentence
+				// case sensitive search
+				if (k.getCaseSensitiveSearch())
+				{
+					kwrdFound = kwrdPatterns.get(k.getId()).matcher(searchText).find();
+				}
+				// case insensitive search
+				else
+				{
+					kwrdFound = kwrdPatterns.get(k.getId()).matcher(searchTextLC).find();
+				}
+				
 				//System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key:"
 				//	+k.getText()+" l="+k.getLang()+" pattern:"+kwrdPatterns.get(k.getId()).toString());
-				if(k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(searchText).find())
+				if(k.getLang().equalsIgnoreCase(lang) && kwrdFound)
 				{	
 					//System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key found!!!: "+k.getText()+" id: "+k.getId());
 					result.add(k);
@@ -700,7 +724,20 @@ public class FeedReader {
 			{
 				for (Keyword k : dependentkwrds)
 				{
-					if (k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(searchText).find())
+					boolean kwrdFound = false;
+					//check if keywords are found in the sentence
+					// case sensitive search
+					if (k.getCaseSensitiveSearch())
+					{
+						kwrdFound = kwrdPatterns.get(k.getId()).matcher(searchText).find();
+					}
+					// case insensitive search
+					else
+					{
+						kwrdFound = kwrdPatterns.get(k.getId()).matcher(searchTextLC).find();
+					}
+					
+					if (k.getLang().equalsIgnoreCase(lang) && kwrdFound)
 					{
 						//System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - dependent key found!!!: "+k.getText()+" id: "+k.getId());						
 						result.add(k);

@@ -281,7 +281,7 @@ public class Mention {
 
 		PreparedStatement stmtM = null;
 		PreparedStatement stmtKM = null;
-		
+		int success = 0;
 		//PreparedStatement stmtS = null;		
 		try {				
 			//retrieve id of the last mention in db
@@ -314,7 +314,12 @@ public class Mention {
 	        stmtM.setInt(8, getRetweets());
 	        stmtM.setInt(9, getFavourites());
 	        stmtM.setString(10, getGeoInfo());
-	        stmtM.setLong(11, getNativeId());
+	        if (getNativeId()!=0){
+		        stmtM.setLong(11, getNativeId());	        	
+	        }
+	        else{
+		        stmtM.setLong(11, -getMention_id());
+	        }
 	        stmtM.setLong(12, getOrigTweetId());
 	        stmtM.setLong(13, getQuotedTweetId());
 	        
@@ -342,12 +347,13 @@ public class Mention {
 			}
 			stmtKM.close();			
 			//stmtS.close();
+			success=1;
 		} catch (SQLException e) {
 			System.err.println("elh-MSM::Mention mention2db - Error when trying to store mention into db.");
-			e.printStackTrace();
+			e.printStackTrace();			
 		}
 
-		return 1;
+		return success;
 	}
 	
 	/**
