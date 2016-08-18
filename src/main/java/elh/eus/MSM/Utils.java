@@ -53,7 +53,11 @@ public final class Utils {
 	*/
 	public static boolean checkFile(final String name) 
 	{
-		return checkFile(new File(name));
+		try {
+			return checkFile(new File(name));
+		}catch(NullPointerException ne){
+			return false;
+		}
 	}
 
 	/**
@@ -86,7 +90,11 @@ public final class Utils {
 	*/
 	public static boolean checkDir(final String name) 
 	{
-		return checkDir(new File(name));
+		try {
+			return checkDir(new File(name));
+		}catch(NullPointerException ne){
+			return false;
+		}
 	}
 	
 	/**

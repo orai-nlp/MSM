@@ -59,8 +59,7 @@ public class CLI {
 	 * Get dynamically the version of elh-MSM by looking at the MANIFEST
 	 * file.
 	 */
-	private final String version = CLI.class.getPackage()
-			.getImplementationVersion();
+	private final String version = getVersion();
 	/**
 	 * Name space of the arguments provided at the CLI.
 	 */
@@ -206,7 +205,7 @@ public class CLI {
 			}
 		} catch (ArgumentParserException e) {
 			argParser.handleError(e);
-			System.out.println("Run java -jar target/elh-crawler-" + version
+			System.out.println("Run java -jar target/MSM-" + version
 					+ ".jar (twitter|feed|influence|twtUser) -help for details");
 			System.exit(1);
 		}
@@ -516,5 +515,27 @@ public class CLI {
 				+ "\t - \"db\" : standard output\n"
 				+ "\t - \"solr\" : standard output\n");
 	}
+	
+	/**
+	 * Dummy function to get the version of this software from the pom.properties file.
+	 * @return
+	 */
+	final String getVersion(){
+		String v = "null";
+		Properties pom = new Properties();
+		try {
+			pom.load(this.getClass().getResourceAsStream(
+		            "/META-INF/maven/elh.eus/MSM/pom.properties"
+		          ));
+			v = pom.getProperty("version");
+		} catch (FileNotFoundException fe){
+			System.err.println("elh-MSM::CLI - pom.properties not found ");			
+		} catch (IOException ioe){
+			System.err.println("elh-MSM::InfluenceTagger - pom.properties could not be read ");
+		} 	
+		
+		return v;
+	}
+	
 	
 }
