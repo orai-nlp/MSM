@@ -143,6 +143,7 @@ public class Source {
 			setScreenName(src);
 			setType("twitter");
 		}
+		setIsLocalArea(false);
 	}
 	
 	public Source(long id, String screenName, String type, String domain,double inf, boolean isLocal){
@@ -277,7 +278,7 @@ public class Source {
 			stmtM.setInt(4, 1); //BEWARE: user_id is always given '1'. This must be reviewed in the future.	        
 			stmtM.setInt(5, getFollowers());
 			stmtM.setInt(6, getFriends());
-			stmtM.setBoolean(6, getIsLocalArea());
+			stmtM.setBoolean(7, getIsLocalArea());
 			stmtM.executeUpdate();
 			stmtM.close();
 			success=1;
