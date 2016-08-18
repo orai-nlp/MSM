@@ -22,46 +22,22 @@ package elh.eus.MSM;
 
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.net.URL;
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
-import javax.naming.Context;
-import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
 import twitter4j.JSONException;
 import twitter4j.JSONObject;
 
-import com.google.common.base.Optional;
 import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
-import com.optimaize.langdetect.DetectedLanguage;
-import com.optimaize.langdetect.LanguageDetector;
-import com.optimaize.langdetect.LanguageDetectorBuilder;
-import com.optimaize.langdetect.i18n.LdLocale;
-import com.optimaize.langdetect.ngram.NgramExtractors;
-import com.optimaize.langdetect.profiles.LanguageProfile;
-import com.optimaize.langdetect.profiles.LanguageProfileReader;
-import com.optimaize.langdetect.text.CommonTextObjectFactories;
-import com.optimaize.langdetect.text.TextObject;
-import com.optimaize.langdetect.text.TextObjectFactory;
 
 
 public final class Utils {
@@ -221,9 +197,8 @@ public final class Utils {
 	 * @throws IOException
 	 * @throws JSONException
 	 */
-	public static JSONObject readJsonFromUrl(String url) throws IOException, JSONException {
-		BufferedReader reader = null;
-		
+	public static JSONObject readJsonFromUrl(String url) throws IOException, JSONException
+	{		
 		URL urlObj = new URL(url);
 		BufferedReader rd = new BufferedReader(new InputStreamReader(urlObj.openStream()));
 		StringBuilder sb = new StringBuilder();
@@ -236,5 +211,87 @@ public final class Utils {
 	     
 		return json;
 	  }
+	
+	
+	/**
+	 * Function reads two column file and stores the values into a HashMap<String,String> object 
+	 * 
+	 * @param resource : InputStream containing the two column resource in tab separated format. 
+	 *                   The file may contain more than two columns, ONLY the first two will be taken into account.
+	 * @return HashMap<String,String> contains the elements and their respective attribute values. 
+	 *         First column in the inputStream is used as key in the map.
+	 * 
+	 * @throws IOException if the given resource has reading problems.
+	 */
+	public static HashMap<String, String> loadTwoColumnResource(InputStream resource) 
+			throws IOException
+	{
+		HashMap<String, String> result = new HashMap<String, String>();		
+		
+		if (resource == null)
+		{
+			System.err.println("utilsElh::loadTwoColumnResource - resource is null");
+			return result;
+		}	
+		
+		BufferedReader breader = new BufferedReader(new InputStreamReader(resource));
+		String line;
+		while ((line = breader.readLine()) != null) 
+		{
+			if (line.startsWith("#") || line.matches("^\\s*$"))
+			{
+				continue;
+			}
+			String[] fields = line.split("\t");
+			try{
+				result.put(fields[0], fields[1]);
+			}catch (IndexOutOfBoundsException ioobe){
+				System.err.println("utilsElh::loadTwoColumnResource - "+line);
+			}
+		}											
+		breader.close();
+		return result;
+	}
+	
+	/**
+	 * Function reads a single column file and stores the values into a HashSet<String> object 
+	 * 
+	 * @param resource : InputStream containing the single column resource. 
+	 *                   The file may contain more columns  in tab separated format. ONLY the first one will used.
+	 * @return HashSet<Long> contains the elements in the file. 
+	 * 
+	 * @throws IOException if the given resource has reading problems.
+	 */
+	public static HashSet<Long> loadOneColumnResource(InputStream resource) 
+			throws IOException 
+	{
+		HashSet<Long> result = new HashSet<Long>();		
+		if (resource == null)
+		{
+			System.err.println("UtilsElh::loadOneColumnResource - resource is null");
+			return result;
+		}		
+		
+		BufferedReader breader = new BufferedReader(new InputStreamReader(resource));
+		String line;
+		while ((line = breader.readLine()) != null) 
+		{
+			if (line.startsWith("#") || line.matches("^\\s*$"))
+			{
+				continue;
+			}
+			try{
+				result.add(Long.valueOf(line.trim()));
+				//System.err.println("FileUtilsElh::loadOneColumnResource - "+line.trim());
+			}catch (IndexOutOfBoundsException ioobe){
+				System.err.println("UtilsElh::loadOneColumnResource - "+line);
+			}catch (NumberFormatException nfe){
+				System.err.println("UtilsElh::loadOneColumnResource - unparseable line, not number: "+line);
+			}
+		}											
+		breader.close();
+		return result;
+	}
+	
 	
 }

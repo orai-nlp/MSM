@@ -21,16 +21,14 @@ package elh.eus.MSM;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.List;
 import java.util.Date;
 import java.util.Set;
 
 import twitter4j.GeoLocation;
-import twitter4j.JSONObject;
 import twitter4j.Status;
 
 import java.sql.* ;  // for standard JDBC programs
-import java.math.* ; // for BigDecimal and BigInteger support
+//import java.math.* ; // for BigDecimal and BigInteger support
 
 public class Mention {
 
@@ -48,9 +46,10 @@ public class Mention {
 	private String geoInfo;
 	private boolean isRetweet;
 	private boolean isQuote;
-	private boolean inReply; 
+	//private boolean inReply; //not used for the moment 
 	private long origTweetId;
 	private long quotedTweetId;
+	private boolean isLocalArea;
 	
 	/**
 	 * Setter and getter functions  
@@ -188,16 +187,24 @@ public class Mention {
 		this.quotedTweetId = twtId;
 	}
 		
+	public boolean getIsLocalArea() {
+		return isLocalArea;
+	}
+
+	public void setIsLocalArea(boolean ila) {
+		this.isLocalArea = ila;
+	}
+	
 	
 	//END OF GETTERS AND SETTERS
 	
 	//CONSTRUCTORS
 	
-	public Mention(Status statusTwitter4j, String lang) {
-		mentionFromTweet(statusTwitter4j,lang);
+	public Mention(Status statusTwitter4j, String lang, boolean isLocal) {
+		mentionFromTweet(statusTwitter4j,lang, isLocal);
 	}
 	
-	public Mention(String lang, String text, Date date, String url, long source_id) {
+	public Mention(String lang, String text, Date date, String url, long source_id, boolean isLocal) {
 		setLang(lang);
 		setText(text);
 		setDate(date);
@@ -209,11 +216,12 @@ public class Mention {
 		setIsQuote(false);
 		setOrigTweetId(0);
 		setQuotedTweetId(0);
+		setIsLocalArea(isLocal);
 	}
 
 	//END OF CONSTRUCTORS
 	
-	private void mentionFromTweet(Status statusTwitter4j, String lang) {
+	private void mentionFromTweet(Status statusTwitter4j, String lang, boolean isLocal) {
 		setLang(lang);			
 		setText(statusTwitter4j.getText());
 		setDate(statusTwitter4j.getCreatedAt());
@@ -227,6 +235,8 @@ public class Mention {
 		setIsQuote(false);
 		setOrigTweetId(0);
 		setQuotedTweetId(0);
+		setIsLocalArea(isLocal);
+
 		
 		//geoInformation
 		String geoStr = "unknown";
@@ -265,13 +275,6 @@ public class Mention {
 	}
 	
 	/**
-	 * @deprecated
-	 */
-	private void mentionFromFeed() {
-		
-	}
-	
-	/**
 	 * Store mention into the database.
 	 * 
 	 * @param conn
@@ -298,7 +301,7 @@ public class Mention {
 			System.err.println("mention2db: current id "+getMention_id());
 			
 			// prepare the sql statements to insert the mention in the DB and insert.
-	        String mentionIns = "insert into behagunea_app_mention (mention_id, date, source_id, url, text, lang, polarity, favourites, retweets, geoinfo, native_id, retweet_id, quote_id) values (?,?,?,?,?,?,?,?,?,?,?,?,?)";
+	        String mentionIns = "insert into behagunea_app_mention (mention_id, date, source_id, url, text, lang, polarity, favourites, retweets, geoinfo, native_id, retweet_id, quote_id, is_local_area) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 	        stmtM = conn.prepareStatement(mentionIns, Statement.RETURN_GENERATED_KEYS);
 	        stmtM.setInt(1, getMention_id());
 	       // System.err.println("daaaaaaataaaaa: "+getDate());
@@ -322,6 +325,7 @@ public class Mention {
 	        }
 	        stmtM.setLong(12, getOrigTweetId());
 	        stmtM.setLong(13, getQuotedTweetId());
+	        stmtM.setBoolean(14, getIsLocalArea());
 	        
 	        stmtM.executeUpdate();
 			//ResultSet rs = stmtM.getGeneratedKeys();
@@ -369,6 +373,7 @@ public class Mention {
 		try {			
 			// prepare the sql statements to insert the mention in the DB and insert.						
 			String keywordMentionIns = "insert ignore into behagunea_app_keyword_mention (mention_id, keyword_id) values (?,?)";			
+			stmtKM = conn.prepareStatement(keywordMentionIns, Statement.RETURN_GENERATED_KEYS);	  
 			
 			//connect mention to keywords
 			stmtKM.setInt(1, getMention_id());

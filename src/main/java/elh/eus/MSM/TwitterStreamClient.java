@@ -42,6 +42,7 @@ import twitter4j.StallWarning;
 import twitter4j.Status;
 import twitter4j.StatusDeletionNotice;
 import twitter4j.StatusListener;
+import twitter4j.User;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -75,6 +76,7 @@ public class TwitterStreamClient {
 	private List<Location> locations = new ArrayList<Location>();
 	private List<Long> users = new ArrayList<Long>();
 	private LangDetect LID;
+	private Set<Long> census = new HashSet<Long>();
 	
 	private Set<Keyword> independentkwrds = new HashSet<Keyword>();
 	private Set<Keyword> dependentkwrds = new HashSet<Keyword>();
@@ -189,7 +191,7 @@ public class TwitterStreamClient {
 	 * @param config
 	 * @param store
 	 */
-	public TwitterStreamClient (String config, String store, String parameters)
+	public TwitterStreamClient (String config, String store, String parameters, String censusf)
 	{
 		try {
 			params.load(new FileInputStream(new File(config)));
@@ -329,6 +331,20 @@ public class TwitterStreamClient {
 			}
 		}
 
+		//if a census field is provided fill the census map
+		if (Utils.checkFile(censusf))
+		{
+			try {
+				census = Utils.loadOneColumnResource(new FileInputStream(censusf));
+			} catch (FileNotFoundException fe){
+				System.err.println("elh-MSM::TwitterStreamClient - census file NOT FOUND, crawler will continue without census"+censusf);
+			} catch (IOException ioe){
+				System.err.println("elh-MSM::TwitterStreamClient - census file COULD NOT BE READ, crawler will continue without census "+censusf);
+			} 
+		}
+		
+		
+		
 		//END OF FILTER STREAM API PARAMETER HANDLING
 		
 		try {
@@ -375,6 +391,11 @@ public class TwitterStreamClient {
 
 	}
 
+	/**
+	 * Only messages in certain languages may be retrieved. This void load the list of allowed languages.
+	 * @param property is a list of iso-639 codes separated by ',' chars. It can also contain the value 'all'
+	 *        meaning that messages in all languages will be accepted
+	 */
 	private void loadAcceptedLangs(String property) {
 		this.acceptedLangs=Arrays.asList(property.split(","));	
 		System.err.println("elh-MSM::TwitterStreamClient - Accepted languages: "+acceptedLangs);
@@ -534,7 +555,7 @@ public class TwitterStreamClient {
 			// This discards some valid tweets, as the keyword maybe in an attached link. 
 			if (kwrds != null && !kwrds.isEmpty())
 			{
-				Mention m = new Mention (status, lang);
+				Mention m = new Mention (status, lang, census.contains(status.getUser().getId()));
 				m.setKeywords(kwrds);
 				success =storeMention(m, status);	
 
@@ -544,7 +565,7 @@ public class TwitterStreamClient {
 			// In that case store all tweets in the database.
 			else if (!locations.isEmpty() || !users.isEmpty())
 			{
-				Mention m = new Mention (status, lang);
+				Mention m = new Mention (status, lang, census.contains(status.getUser().getId()));
 				success =storeMention(m, status);					
 			}
 			System.err.println("elh-MSM::TwitterStreamClient - mention and derivations stored. success: "+String.valueOf(success));				
@@ -580,7 +601,8 @@ public class TwitterStreamClient {
 						params.getProperty("dbpass"),
 						params.getProperty("dbhost"),
 						params.getProperty("dbname"));
-				Source author = new Source(s.getUser());
+				User u = s.getUser();
+				Source author = new Source(u,census.contains(u.getId()));
 				int authorStored = 0;
 				if (!author.existsInDB(conn))
 				{
@@ -610,7 +632,7 @@ public class TwitterStreamClient {
 				if (origStatus != null)
 				{
 					//System.err.println("elh-MSM::TwitterStreamClient - retweet found!!!"	);
-					Mention m2 = new Mention(origStatus,lang);
+					Mention m2 = new Mention(origStatus,lang,census.contains(origStatus.getUser().getId()));
 					long mId = m2.existsInDB(conn);
 					if (mId>=0)
 					{
@@ -619,7 +641,8 @@ public class TwitterStreamClient {
 					// there are no keywords to look for so all the tweets are to be stored.
 					else if (!kwordBasedSearch)
 					{
-						Source author2 = new Source(origStatus.getUser());
+						User u2 = origStatus.getUser();
+						Source author2 = new Source(u2,census.contains(u.getId()));
 						authorStored = 0;
 						if (!author2.existsInDB(conn))
 						{
@@ -635,7 +658,8 @@ public class TwitterStreamClient {
 						{
 							//System.err.println("elh-MSM::TwitterStreamClient - retweet found!!!"	);
 							m2.setKeywords(quotedKwrds);
-							Source author2 = new Source(origStatus.getUser());
+							User u2 = origStatus.getUser();
+							Source author2 = new Source(u2,census.contains(u.getId()));
 							authorStored = 0;
 							if (!author2.existsInDB(conn))
 							{

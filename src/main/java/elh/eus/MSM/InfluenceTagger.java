@@ -31,7 +31,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Properties;
 import java.util.Set;
-import java.util.regex.Pattern;
+//import java.util.regex.Pattern;
 
 import twitter4j.JSONException;
 import twitter4j.JSONObject;
@@ -46,7 +46,7 @@ public class InfluenceTagger {
 	/*private String PRKey;*/
 	private String DomainStatsIOKey;
 
-	private final Pattern httpProt = Pattern.compile("^[hf]t?tps?://", Pattern.CASE_INSENSITIVE);
+	//private final Pattern httpProt = Pattern.compile("^[hf]t?tps?://", Pattern.CASE_INSENSITIVE);
 
 	
 	public InfluenceTagger (String config, boolean db)

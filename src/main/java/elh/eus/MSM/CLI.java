@@ -20,21 +20,14 @@ This file is part of MSM.
 
 package elh.eus.MSM;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
@@ -63,7 +56,7 @@ import net.sourceforge.argparse4j.inf.Subparsers;
  */
 public class CLI {
 	/**
-	 * Get dynamically the version of elh-eus-absa-atp by looking at the MANIFEST
+	 * Get dynamically the version of elh-MSM by looking at the MANIFEST
 	 * file.
 	 */
 	private final String version = CLI.class.getPackage()
@@ -224,41 +217,22 @@ public class CLI {
 		String cfg = parsedArguments.getString("config");
 		String store = parsedArguments.getString("store");
 		String params = parsedArguments.getString("params");
+		String census = parsedArguments.getString("census");
 		
 		try {
-			TwitterStreamClient twitterClient = new TwitterStreamClient(cfg, store,params);
+			TwitterStreamClient twitterClient = new TwitterStreamClient(cfg, store,params,census);
 		} catch (Exception e) {			
 			e.printStackTrace();
 		} 		
 	}
 	
-	@Deprecated
-	public final void feedReaderOld()
-	{
-		String cfg = parsedArguments.getString("config");
-		String store = parsedArguments.getString("store");
-		String url = parsedArguments.getString("url");
-		
-		if ((url!=null) && (url.length() > 0))
-		{		
-			FeedReader feedReader = new FeedReader(url);			
-		}
-		else
-		{
-			try {
-				FeedReader feedReader = new FeedReader(cfg, store);
-				feedReader.closeDBConnection();
-			} catch (Exception e) {			
-				e.printStackTrace();
-			}
-		}
-	}
 	
 	public final void feedReader()
 	{
 		String cfg = parsedArguments.getString("config");
 		String store = parsedArguments.getString("store");
 		String url = parsedArguments.getString("url");
+		String census = parsedArguments.getString("census");
 		
 
 		Properties params = new Properties();
@@ -330,7 +304,7 @@ public class CLI {
 				
 				
 				System.err.println("elh-MSM::FeedReader (CLI) - "+feedList.size()+" feeds and "+kwrdList.size()+" keywords");
-				FeedReader fReader = new FeedReader(cfg, feedList, kwrdList, store);
+				FeedReader fReader = new FeedReader(cfg, feedList, kwrdList, store, census);
 				fReader.processFeeds(store);
 			}
 			
@@ -453,6 +427,11 @@ public class CLI {
 				+ "\t - \"stout\" : standard output\n"
 				+ "\t - \"db\" : standard output\n"
 				+ "\t - \"solr\" : standard output\n");
+		tweetCrawlParser.addArgument("-cn", "--census")				
+		.help("Census is used to store tweets by users in a certain geographic area. A path to a file must be given as an argument. "
+				+ "The file contains a list of Twitter users. The users and their tweets will be marked in"
+				+ " the database as 'local'. The file must contain one user per line in the following format:\n"
+				+ "\t userId<tab>screenName[<tab>Additional Fields]\n");
 	}
 	
 	public final void loadFeedReaderParameters()
@@ -474,6 +453,11 @@ public class CLI {
 				+ "\t - \"stout\" : standard output\n"
 				+ "\t - \"db\" : standard output\n"
 				+ "\t - \"solr\" : standard output\n");
+		feedReaderParser.addArgument("-cn", "--census")				
+		.help("Census is used to store mentions from sources in a certain geographic area. A path to a file must be given as an argument. "
+				+ "The file contains a list of source ids (as stored in the database). The sources and their mentions will be marked in"
+				+ " the database as 'local'. The file must contain one user per line in the following format:\n"
+				+ "\t userId<tab>sourceName[<tab>Additional Fields]\n");
 	}
 	
 	public final void loadInfluenceTaggerParameters()
@@ -502,11 +486,11 @@ public class CLI {
 		influenceTaggerParser.addArgument("-w", "--which")
 		.choices("null", "error", "all")
 		.setDefault("null")
-		.help("which sources to look for its influence for (only for database interaction):"
+		.help("which sources to look for its influence for (only for database interaction):\n"
 				+ "\t - \"null\" : sources that have not been yet processed at all\n"
 				+ "\t - \"error\" : sources that have been processed but no influence could be retrieved\n"
 				+ "\t - \"all\" : all sources.\n\t\tWARNING: this will override values in the database.\n"
-				+ "\t\tWARNING2:Depending on the number of sources in the database this could take \n");
+				+ "\t\tWARNING2:Depending on the number of sources in the database this could take a very long time.\n");
 	}
 	
 	public final void loadTwitterUserInfoParameters()

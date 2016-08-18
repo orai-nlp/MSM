@@ -29,10 +29,8 @@ import com.twitter.hbc.core.HttpHosts;
 import com.twitter.hbc.core.endpoint.Location;
 import com.twitter.hbc.core.endpoint.Location.Coordinate;
 import com.twitter.hbc.core.endpoint.StatusesFilterEndpoint;
-import com.twitter.hbc.core.endpoint.StatusesSampleEndpoint;
 import com.twitter.hbc.core.event.Event;
 import com.twitter.hbc.core.processor.StringDelimitedProcessor;
-import com.twitter.hbc.httpclient.BasicClient;
 import com.twitter.hbc.httpclient.auth.Authentication;
 import com.twitter.hbc.httpclient.auth.OAuth1;
 import com.twitter.hbc.twitter4j.Twitter4jStatusClient;
@@ -62,7 +60,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
@@ -86,7 +83,7 @@ public class gPlusClient {
 	private HashMap<Integer,Pattern> kwrdPatterns = new HashMap<Integer,Pattern>(); //patterns for keywords.
 
 	
-	private static Pattern retweetPattern = Pattern.compile("^RT[^\\p{L}\\p{M}\\p{Nd}]+.*");
+	//private static Pattern retweetPattern = Pattern.compile("^RT[^\\p{L}\\p{M}\\p{Nd}]+.*");
 	
 	public String getStore() {
 		return store;
@@ -136,7 +133,7 @@ public class gPlusClient {
 				// This discards some valid tweets, as the keyword maybe in an attached link. 
 				if (kwrds != null && !kwrds.isEmpty())
 				{
-					Mention m = new Mention (status, lang);
+					Mention m = new Mention (status, lang, false); //local area treatment not done
 					m.setKeywords(kwrds);
 					int success =1;
 					switch (getStore()) // print the message to stdout
@@ -148,7 +145,7 @@ public class gPlusClient {
 									params.getProperty("dbpass"),
 									params.getProperty("dbhost"),
 									params.getProperty("dbname"));
-							Source author = new Source(status.getUser().getId(), status.getUser().getScreenName(), "Twitter","",-1);
+							Source author = new Source(status.getUser().getId(), status.getUser().getScreenName(), "Twitter","",-1, false);
 							int authorStored = 0;
 							if (!author.existsInDB(conn))
 							{
@@ -163,7 +160,7 @@ public class gPlusClient {
 							if (m.getIsRetweet())
 							{
 								//System.err.println("elh-MSM::TwitterStreamClient - retweet found!!!"	);
-								Mention m2 = new Mention(status.getRetweetedStatus(),lang);
+								Mention m2 = new Mention(status.getRetweetedStatus(),lang, false); //local area treatment not done
 								m2.setKeywords(kwrds);
 								long mId = m2.existsInDB(conn);
 								if (mId>=0)
@@ -172,7 +169,7 @@ public class gPlusClient {
 								}
 								else
 								{
-									Source author2 = new Source(status.getUser().getId(), status.getUser().getScreenName(), "Twitter","",-1);
+									Source author2 = new Source(status.getUser().getId(), status.getUser().getScreenName(), "Twitter","",-1, false);
 									authorStored = 0;
 									if (!author2.existsInDB(conn))
 									{
@@ -205,7 +202,7 @@ public class gPlusClient {
 				// In that case store all tweets in the database.
 				else if (!locations.isEmpty() || !users.isEmpty())
 				{
-					Mention m = new Mention (status, lang);
+					Mention m = new Mention (status, lang, false); //local area treatment not done
 					int success =1;
 					switch (getStore()) // print the message to stdout
 					{				
@@ -216,7 +213,7 @@ public class gPlusClient {
 									params.getProperty("dbpass"),
 									params.getProperty("dbhost"),
 									params.getProperty("dbname"));
-							Source author = new Source(status.getUser());
+							Source author = new Source(status.getUser(),false);
 							int authorStored = 0;
 							if (!author.existsInDB(conn))
 							{
@@ -231,7 +228,7 @@ public class gPlusClient {
 							{
 								Status rtStatus = status.getRetweetedStatus();
 								//System.err.println("elh-MSM::TwitterStreamClient - retweet found!!!"	);								
-								Mention m2 = new Mention(rtStatus,lang);								
+								Mention m2 = new Mention(rtStatus,lang, false); //local area treatment not done								
 								long mId = m2.existsInDB(conn);
 								if (mId>=0)
 								{
@@ -242,7 +239,7 @@ public class gPlusClient {
 								{
 									System.err.println("elh-MSM::TwitterStreamClient - retweet  - original new, add to DB"	);																	
 									//m2.setKeywords(kwrds);
-									Source author2 = new Source(rtStatus.getUser());
+									Source author2 = new Source(rtStatus.getUser(),false);
 									authorStored = 0;
 									if (!author2.existsInDB(conn))
 									{

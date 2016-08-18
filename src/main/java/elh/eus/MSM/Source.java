@@ -1,3 +1,23 @@
+/*
+ * Copyright 2015 Elhuyar Fundazioa
+
+This file is part of MSM.
+
+    MSM is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    MSM is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with MSM.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+
 package elh.eus.MSM;
 
 import java.sql.Connection;
@@ -24,6 +44,8 @@ public class Source {
 	private double influence;
 	private int followers;
 	private int friends;
+	private boolean isLocalArea;
+
 	
 	private final Pattern httpProt = Pattern.compile("^[hf]t?tps?://", Pattern.CASE_INSENSITIVE);
 
@@ -85,6 +107,17 @@ public class Source {
 		this.friends = id;
 	}
 	
+	public boolean getIsLocalArea() {
+		return isLocalArea;
+	}
+
+	public void setIsLocalArea(boolean ila) {
+		this.isLocalArea = ila;
+	}
+	
+	//END OF GETTERS AND SETTERS
+	
+	//CONSTRUCTORS
 	
 	public Source(String src){
 		//URL normalization
@@ -112,7 +145,7 @@ public class Source {
 		}
 	}
 	
-	public Source(long id, String screenName, String type, String domain,double inf){
+	public Source(long id, String screenName, String type, String domain,double inf, boolean isLocal){
 		setId(id);
 		setScreenName(screenName);
 		setType(type);
@@ -120,10 +153,11 @@ public class Source {
 		setInfluence(inf);
 		setFollowers(-1);
 		setFriends(-1);
+		setIsLocalArea(isLocal);
 	}
 	
-	public Source(long id, String screenName, String type, String domain,double inf, int ff,int fr){
-		this(id, screenName,type,domain,inf);
+	public Source(long id, String screenName, String type, String domain,double inf, int ff,int fr, boolean isLocal){
+		this(id, screenName,type,domain,inf,isLocal);
 		setFollowers(ff);
 		setFriends(fr);
 	}
@@ -132,9 +166,9 @@ public class Source {
 	 *  Constructor from twitter4j.User 
 	 * @param u
 	 */
-	public Source(User u)
+	public Source(User u, boolean isLocal)
 	{
-		this(u.getId(), u.getScreenName(),"Twitter","",-1,u.getFollowersCount(),u.getFriendsCount());
+		this(u.getId(), u.getScreenName(),"Twitter","",-1,u.getFollowersCount(),u.getFriendsCount(),isLocal);
 	}
 	
 	/**
@@ -183,14 +217,14 @@ public class Source {
 			if (type.equalsIgnoreCase("feed"))
 			{
 				while (rs.next()) {
-					Source src = new Source(rs.getLong("source_id"), rs.getString("source_name"),rs.getString("type"),rs.getString("domain"),rs.getDouble("influence"));				
+					Source src = new Source(rs.getLong("source_id"), rs.getString("source_name"),rs.getString("type"),rs.getString("domain"),rs.getDouble("influence"),rs.getBoolean("is_local_area"));				
 					result.add(src);
 				}
 			}
 			else
 			{
 				while (rs.next()) {
-					Source src = new Source(rs.getLong("source_id"), rs.getString("source_name"),rs.getString("type"),rs.getString("domain"),rs.getDouble("influence"), rs.getInt("followers"), rs.getInt("friends"));				
+					Source src = new Source(rs.getLong("source_id"), rs.getString("source_name"),rs.getString("type"),rs.getString("domain"),rs.getDouble("influence"), rs.getInt("followers"), rs.getInt("friends"),rs.getBoolean("is_local_area"));				
 					result.add(src);
 				}
 			}
@@ -235,7 +269,7 @@ public class Source {
 		int success = 0;
 		//PreparedStatement stmtS = null;		
 		try {	
-			String sourceIns = "insert ignore into behagunea_app_source (source_id, type, source_name, user_id, followers,friends) values (?,?,?,?,?,?)";
+			String sourceIns = "insert ignore into behagunea_app_source (source_id, type, source_name, user_id, followers,friends,is_local_area) values (?,?,?,?,?,?,?)";
 			stmtM = conn.prepareStatement(sourceIns, Statement.RETURN_GENERATED_KEYS);
 			stmtM.setLong(1, getId());
 			stmtM.setString(2, "Twitter");
@@ -243,6 +277,7 @@ public class Source {
 			stmtM.setInt(4, 1); //BEWARE: user_id is always given '1'. This must be reviewed in the future.	        
 			stmtM.setInt(5, getFollowers());
 			stmtM.setInt(6, getFriends());
+			stmtM.setBoolean(6, getIsLocalArea());
 			stmtM.executeUpdate();
 			stmtM.close();
 			success=1;
