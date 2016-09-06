@@ -437,6 +437,7 @@ public class FeedReader {
 	private void parseArticleForKeywords(TextDocument doc, String lang, Date date, String link, long srcId, String store) {
 
 		Set<Keyword> result = new HashSet<Keyword>();
+		
 		String wholeText = StringUtils.stripAccents(doc.getContent()).toLowerCase(); 
 		boolean anchorFound = anchorPattern.matcher(wholeText).find();
 		//System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - anchorPattern: "+anchorPattern.toString()
@@ -458,13 +459,23 @@ public class FeedReader {
 			//for (TextBlock b : doc.getTextBlocks())
 		{
 			result = new HashSet<Keyword>();
+			// this set controls that two keywords belonging to the same screen tag won't be assigned to a mention 
+			Set<String> screenTagList = new HashSet<String>();
+			
 			// capitalization must be respected in order to accept keywords found in paragraphs.
 			// as of 2016/08/03 press mentions have to respect keyword capitalization. 
 			String searchText = StringUtils.stripAccents(par); //.toLowerCase(); 
 			String searchTextLC = StringUtils.stripAccents(par).toLowerCase();
 			//keywords that do not need any anchor
 			for (Keyword k : independentkwrds)
-			{		
+			{	
+				//check if a keyword with the same tag has been already matched, if so do not check the key. 
+				if (screenTagList.contains(k.getScreenTag()))
+				{
+					System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - indpndnt keyword found,"
+							+ " but not stored because another key was matched with the same screen tag: "+k.getText());
+					continue;
+				}
 				boolean kwrdFound = false;
 				//check if keywords are found in the sentence
 				// case sensitive search
@@ -484,6 +495,7 @@ public class FeedReader {
 				{	
 					//System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key found!!!: "+k.getText()+" id: "+k.getId());
 					result.add(k);
+					screenTagList.add(k.getScreenTag());
 				}								
 			}			
 			//keywords that need and anchor, only if anchors where found
@@ -491,6 +503,14 @@ public class FeedReader {
 			{
 				for (Keyword k : dependentkwrds)
 				{
+					//check if a keyword with the same tag has been already matched, if so do not check the key. 
+					if (screenTagList.contains(k.getScreenTag()))
+					{
+						System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - dpndnt keyword found,"
+								+ " but not stored because another key was matched with the same screen tag: "+k.getText());
+						continue;
+					}
+
 					boolean kwrdFound = false;
 					//check if keywords are found in the sentence
 					// case sensitive search
@@ -508,6 +528,7 @@ public class FeedReader {
 					{
 						//System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - dependent key found!!!: "+k.getText()+" id: "+k.getId());						
 						result.add(k);
+						screenTagList.add(k.getScreenTag());
 					}					
 				}
 			}
@@ -527,7 +548,7 @@ public class FeedReader {
 					m.print();		
 				}
 			}			
-		}				
+		} //for each paragraph				
 	}
 
 	/**

@@ -129,7 +129,7 @@ public class Keyword {
 	 * @param lng
 	 */
 	public Keyword(String txt, String lng) {
-		this(txt,lng,false,false,true);
+		this(txt,lng,false,false,true,txt);
 	}
 	
 	/**
@@ -138,7 +138,7 @@ public class Keyword {
 	 * @param txt
 	 * @param lng
 	 */
-	public Keyword(String txt, String lng, boolean isAnch, boolean needsAnch, boolean isKey) {
+	public Keyword(String txt, String lng, boolean isAnch, boolean needsAnch, boolean isKey, String scrTag) {
 		if (txt.startsWith(":"))
 		{
 			setText(txt.substring(1, txt.length()));
@@ -152,7 +152,9 @@ public class Keyword {
 		setIsAnchor(isAnch);
 		setNeedsAnchor(needsAnch);
 		setIsKword(isKey);
+		setScreenTag(scrTag);
 	}
+	
 	
 	/**
 	 * @return
@@ -202,7 +204,7 @@ public class Keyword {
 		
 		try{	
 			while (rs.next()) {
-				Keyword kwrd = new Keyword(rs.getString("term"), rs.getString("lang"),rs.getBoolean("is_anchor"),rs.getBoolean("anchor"),rs.getBoolean("is_kword"));
+				Keyword kwrd = new Keyword(rs.getString("term"), rs.getString("lang"),rs.getBoolean("is_anchor"),rs.getBoolean("anchor"),rs.getBoolean("is_kword"),rs.getString("screen_tag"));
 				kwrd.setId(rs.getInt("keyword_id"));
 				result.add(kwrd);
 			}
@@ -257,7 +259,7 @@ public class Keyword {
 		{
 			for (String l: langs)
 			{
-				result.add(new Keyword(key,l,false,false,true));				 
+				result.add(new Keyword(key,l,false,false,true,key));				 
 			}
 		}
 		return result;

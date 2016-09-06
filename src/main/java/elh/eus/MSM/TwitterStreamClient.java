@@ -479,7 +479,9 @@ public class TwitterStreamClient {
 	private Set<Keyword> parseTweetForKeywords(String text, String lang) {
 				
 		Set<Keyword> result = new HashSet<Keyword>();
-		
+		// this set controls that two keywords belonging to the same screen tag won't be assigned to a mention 
+		Set<String> screenTagList = new HashSet<String>();
+
 		// everything to lowercase
 		String searchText = StringUtils.stripAccents(text).toLowerCase().replace('\n', ' ');
 		// delete urls, no keyword will be accepted if inside an url
@@ -503,6 +505,16 @@ public class TwitterStreamClient {
 		{				
 			//System.err.println("elh-MSM::TwitterStreamClient::parseTweetForKeywords - independent key:"
 			//	+k.getText()+" l="+k.getLang()+" pattern:"+kwrdPatterns.get(k.getId()).toString());
+			
+			//check if a keyword with the same tag has been already matched, if so do not check the key.
+			String currentScreenTag = k.getScreenTag();
+			if (screenTagList.contains(currentScreenTag))
+			{
+				System.err.println("elh-MSM::TwitterStreamClientReader::parseTweetForKeywords - indpndnt keyword found,"
+						+ " but not stored because another key was matched with the same screen tag: "+k.getText());
+				continue;
+			}
+			
 			String kLang = k.getLang();
 			if ((kwrdPatterns.get(k.getId()).matcher(searchText).find()) && 
 					(kLang.equalsIgnoreCase(lang)|| kLang.equalsIgnoreCase("all") || lang.equalsIgnoreCase("unk")))
@@ -511,6 +523,7 @@ public class TwitterStreamClient {
 			{	
 				System.err.println("elh-MSM::TwitterStreamClient::parseTweetForKeywords - independent key found!!!: "+k.getText()+" id: "+k.getId());
 				result.add(k);
+				screenTagList.add(currentScreenTag);					
 			}								
 		}			
 		//keywords that need and anchor, only if anchors where found
@@ -518,14 +531,24 @@ public class TwitterStreamClient {
 		{
 			for (Keyword k : dependentkwrds)
 			{
+				//check if a keyword with the same tag has been already matched, if so do not check the key.
+				String currentScreenTag = k.getScreenTag();
+				if (screenTagList.contains(currentScreenTag))
+				{
+					System.err.println("elh-MSM::TwitterStreamClientReader::parseTweetForKeywords - dpndnt keyword found,"
+							+ " but not stored because another key was matched with the same screen tag: "+k.getText());
+					continue;
+				}
+				
 				String kLang = k.getLang();
 				//if ((k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(searchText).find())||
 				//(k.getLang().equalsIgnoreCase("all") && kwrdPatterns.get(k.getId()).matcher(searchText).find()))
 				if ((kwrdPatterns.get(k.getId()).matcher(searchText).find()) && 
 							(kLang.equalsIgnoreCase(lang)|| kLang.equalsIgnoreCase("all") || lang.equalsIgnoreCase("unk")))
 				{
-					System.err.println("elh-MSM::TwitterStreamClient::parseTweetForKeywords - dependent key found!!!: "+k.getText()+" id: "+k.getId());						
-					result.add(k);
+					System.err.println("elh-MSM::TwitterStreamClient::parseTweetForKeywords - dependent key found!!!: "+k.getText()+" id: "+k.getId());					
+					result.add(k);	
+					screenTagList.add(k.getScreenTag());					
 				}					
 			}
 		}	
