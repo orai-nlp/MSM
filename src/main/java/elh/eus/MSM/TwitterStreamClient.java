@@ -422,19 +422,17 @@ public class TwitterStreamClient {
 		sb_anchors.append("\\b(");
 		for (Keyword k : keywords)
 		{
+			String pstr=k.getText().replace('_',' ').toLowerCase();			
+			//if keyword has '#@' prefixes maintain '_' chars as they are specifically used in twitter
+			if (k.getText().startsWith("#") || k.getText().startsWith("@"))
+			{
+				pstr = k.getText().toLowerCase();
+			}
+			
 			if (k.isKword())
 			{
-				//create and store pattern;
-				String pstr;
-				if (k.getText().startsWith("#"))
-				{
-					pstr = k.getText().replace('_',' ').toLowerCase();
-				}
-				else
-				{
-					pstr = "\\b"+k.getText().replace('_',' ').toLowerCase();
-				}
-				Pattern p = Pattern.compile(pstr);
+				//create and store pattern;								
+				Pattern p = Pattern.compile("\\b"+pstr);
 				System.err.println("elh-MSM::TwitterStreamClient::constructKeywordPatterns - currentPattern:"+p.toString());
 
 				kwrdPatterns.put(k.getId(), p);
@@ -451,7 +449,7 @@ public class TwitterStreamClient {
 			
 			if (k.isAnchor())
 			{
-				sb_anchors.append(k.getText().replace('_',' ').toLowerCase()).append("|");
+				sb_anchors.append(pstr).append("|");
 				anchors=true;
 			}
 
