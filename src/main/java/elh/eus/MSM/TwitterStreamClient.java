@@ -422,7 +422,7 @@ public class TwitterStreamClient {
 		sb_anchors.append("\\b(");
 		for (Keyword k : keywords)
 		{
-			String pstr=k.getText().replace('_',' ').toLowerCase();			
+			String pstr="\\b"+k.getText().replace('_',' ').toLowerCase();			
 			//if keyword has '#@' prefixes maintain '_' chars as they are specifically used in twitter
 			if (k.getText().startsWith("#") || k.getText().startsWith("@"))
 			{
@@ -432,7 +432,7 @@ public class TwitterStreamClient {
 			if (k.isKword())
 			{
 				//create and store pattern;								
-				Pattern p = Pattern.compile("\\b"+pstr);
+				Pattern p = Pattern.compile(pstr);
 				System.err.println("elh-MSM::TwitterStreamClient::constructKeywordPatterns - currentPattern:"+p.toString());
 
 				kwrdPatterns.put(k.getId(), p);

@@ -535,7 +535,7 @@ public class FeedReader {
 
 			if (result != null && !result.isEmpty())
 			{
-				Mention m = new Mention(lang,par,date,link,srcId,census.contains(srcId));
+				Mention m = new Mention(lang,par,date,link,srcId,true);
 				m.setKeywords(result);
 				if (store.equalsIgnoreCase("db"))
 				{
