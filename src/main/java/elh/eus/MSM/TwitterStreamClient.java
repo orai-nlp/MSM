@@ -422,18 +422,26 @@ public class TwitterStreamClient {
 		sb_anchors.append("\\b(");
 		for (Keyword k : keywords)
 		{
-			String pstr="\\b"+k.getText().replace('_',' ').toLowerCase();			
+		        // capitalization must be respected if keywords are so specified.
+		        // as of 2016/08/03 press mentions have to respect keyword capitalization. 
+		        // as of 2016/09/09 twitter mentions may have to respect keyword capitalization depending on the key.
+		        String pstr="\\b"+k.getText().replace('_',' ');			
 			//if keyword has '#@' prefixes maintain '_' chars as they are specifically used in twitter
 			if (k.getText().startsWith("#") || k.getText().startsWith("@"))
 			{
 				pstr = k.getText().toLowerCase();
 			}
 			
+			if (! k.getCaseSensitiveSearch())
+			{
+			    pstr=pstr.toLowerCase();
+			}
+
 			if (k.isKword())
 			{
 				//create and store pattern;								
 				Pattern p = Pattern.compile(pstr);
-				System.err.println("elh-MSM::TwitterStreamClient::constructKeywordPatterns - currentPattern:"+p.toString());
+				System.err.println("elh-MSM::TwitterStreamClient::constructKeywordPatterns - currentPattern:"+p.toString()+" orig - "+k.getText());
 
 				kwrdPatterns.put(k.getId(), p);
 				
