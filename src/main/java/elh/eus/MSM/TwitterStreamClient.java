@@ -480,10 +480,14 @@ public class TwitterStreamClient {
 		// this set controls that two keywords belonging to the same screen tag won't be assigned to a mention 
 		Set<String> screenTagList = new HashSet<String>();
 
-		// everything to lowercase
-		String searchText = StringUtils.stripAccents(text).toLowerCase().replace('\n', ' ');
+		// capitalization must be respected if keywords as so specified.
+		// as of 2016/08/03 press mentions have to respect keyword capitalization. 
+		String searchText = StringUtils.stripAccents(text).replace('\n', ' '); //.toLowerCase(); 
+		String searchTextLC = searchText.toLowerCase();
+
 		// delete urls, no keyword will be accepted if inside an url
 		searchText = urlPattern.matcher(searchText).replaceAll("");
+		searchTextLC = urlPattern.matcher(searchTextLC).replaceAll("");
 		boolean anchorFound = false;
 		if (anchorPattern == null)
 		{
@@ -513,9 +517,23 @@ public class TwitterStreamClient {
 				continue;
 			}
 			
+			boolean kwrdFound = false;
+			//check if keywords are found in the sentence
+			// case sensitive search
+			if (k.getCaseSensitiveSearch())
+			{
+				kwrdFound = kwrdPatterns.get(k.getId()).matcher(searchText).find();
+			}
+			// case insensitive search
+			else
+			{
+				kwrdFound = kwrdPatterns.get(k.getId()).matcher(searchTextLC).find();
+			}
+			
 			String kLang = k.getLang();
-			if ((kwrdPatterns.get(k.getId()).matcher(searchText).find()) && 
-					(kLang.equalsIgnoreCase(lang)|| kLang.equalsIgnoreCase("all") || lang.equalsIgnoreCase("unk")))
+			
+			
+			if (kwrdFound && (kLang.equalsIgnoreCase(lang)|| kLang.equalsIgnoreCase("all") || lang.equalsIgnoreCase("unk")))
 			//if((k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(searchText).find())|| 
 			//		(k.getLang().equalsIgnoreCase("all") && kwrdPatterns.get(k.getId()).matcher(searchText).find()))
 			{	
@@ -538,11 +556,24 @@ public class TwitterStreamClient {
 					continue;
 				}
 				
+				boolean kwrdFound = false;
+				//check if keywords are found in the sentence
+				// case sensitive search
+				if (k.getCaseSensitiveSearch())
+				{
+					kwrdFound = kwrdPatterns.get(k.getId()).matcher(searchText).find();
+				}
+				// case insensitive search
+				else
+				{
+					kwrdFound = kwrdPatterns.get(k.getId()).matcher(searchTextLC).find();
+				}
+				
+				
 				String kLang = k.getLang();
 				//if ((k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(searchText).find())||
 				//(k.getLang().equalsIgnoreCase("all") && kwrdPatterns.get(k.getId()).matcher(searchText).find()))
-				if ((kwrdPatterns.get(k.getId()).matcher(searchText).find()) && 
-							(kLang.equalsIgnoreCase(lang)|| kLang.equalsIgnoreCase("all") || lang.equalsIgnoreCase("unk")))
+				if (kwrdFound && (kLang.equalsIgnoreCase(lang)|| kLang.equalsIgnoreCase("all") || lang.equalsIgnoreCase("unk")))
 				{
 					System.err.println("elh-MSM::TwitterStreamClient::parseTweetForKeywords - dependent key found!!!: "+k.getText()+" id: "+k.getId());					
 					result.add(k);	
@@ -572,21 +603,26 @@ public class TwitterStreamClient {
 		if ((acceptedLangs.contains("all") || acceptedLangs.contains(lang) || lang.equalsIgnoreCase("unk")))// && (! retweetPattern.matcher(text).matches()))
 		{				
 			Set<Keyword> kwrds = parseTweetForKeywords(text,lang);
+			boolean local = census.contains(status.getUser().getId());
+			// all tweets in basque are considered local (2016:09:09)
+			if (lang.equalsIgnoreCase("eu"))
+			{
+				local=true;
+			}
 			//if no keyword is found in the tweet it is discarded. 
 			// This discards some valid tweets, as the keyword maybe in an attached link. 
 			if (kwrds != null && !kwrds.isEmpty())
-			{
-				Mention m = new Mention (status, lang, census.contains(status.getUser().getId()));
+			{				
+				Mention m = new Mention (status, lang, local);
 				m.setKeywords(kwrds);
 				success =storeMention(m, status);	
-
 			}
 			// If there is no keywords but locations or users are not empty,
 			// it means we are not doing a keyword based crawling. 
 			// In that case store all tweets in the database.
 			else if (!locations.isEmpty() || !users.isEmpty())
 			{
-				Mention m = new Mention (status, lang, census.contains(status.getUser().getId()));
+				Mention m = new Mention (status, lang, local);
 				success =storeMention(m, status);					
 			}
 			System.err.println("elh-MSM::TwitterStreamClient - mention and derivations stored. success: "+String.valueOf(success));				
@@ -653,7 +689,13 @@ public class TwitterStreamClient {
 				if (origStatus != null)
 				{
 					//System.err.println("elh-MSM::TwitterStreamClient - retweet found!!!"	);
-					Mention m2 = new Mention(origStatus,lang,census.contains(origStatus.getUser().getId()));
+					boolean local = census.contains(origStatus.getUser().getId());
+					// all tweets in basque are considered local (2016:09:09)
+					if (lang.equalsIgnoreCase("eu"))
+					{
+						local=true;
+					}
+					Mention m2 = new Mention(origStatus,lang,local);
 					long mId = m2.existsInDB(conn);
 					if (mId>=0)
 					{
@@ -663,7 +705,7 @@ public class TwitterStreamClient {
 					else if (!kwordBasedSearch)
 					{
 						User u2 = origStatus.getUser();
-						Source author2 = new Source(u2,census.contains(u.getId()));
+						Source author2 = new Source(u2,local);
 						authorStored = 0;
 						if (!author2.existsInDB(conn))
 						{
@@ -680,7 +722,7 @@ public class TwitterStreamClient {
 							//System.err.println("elh-MSM::TwitterStreamClient - retweet found!!!"	);
 							m2.setKeywords(quotedKwrds);
 							User u2 = origStatus.getUser();
-							Source author2 = new Source(u2,census.contains(u.getId()));
+							Source author2 = new Source(u2,local);
 							authorStored = 0;
 							if (!author2.existsInDB(conn))
 							{
