@@ -441,7 +441,7 @@ public class TwitterStreamClient {
 			{
 				//create and store pattern;								
 				Pattern p = Pattern.compile(pstr);
-				System.err.println("elh-MSM::TwitterStreamClient::constructKeywordPatterns - currentPattern:"+p.toString()+" orig - "+k.getText());
+				System.err.println("elh-MSM::TwitterStreamClient::constructKeywordPatterns - current:"+p.toString()+"  --> "+k.getText()+" | "+k.getLang()+" | "+k.getScreenTag()+" | ");
 
 				kwrdPatterns.put(k.getId(), p);
 				
