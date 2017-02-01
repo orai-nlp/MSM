@@ -21,6 +21,9 @@ package elh.eus.MSM;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
+import java.nio.charset.Charset;
+import java.nio.charset.UnsupportedCharsetException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -37,11 +40,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 
 import javax.naming.NamingException;
 
@@ -60,8 +67,11 @@ import de.l3s.boilerpipe.BoilerpipeProcessingException;
 import de.l3s.boilerpipe.document.TextDocument;
 import de.l3s.boilerpipe.extractors.ArticleExtractor;
 import de.l3s.boilerpipe.sax.BoilerpipeSAXInput;
+import de.l3s.boilerpipe.sax.HTMLDocument;
 import de.l3s.boilerpipe.sax.HTMLFetcher;
 import eus.ixa.ixa.pipe.seg.RuleBasedSegmenter;
+
+import fabricator.*;
 
 
 /**
@@ -369,7 +379,8 @@ public class FeedReader {
 
 					//normal kohlschuetter extractor call
 					// parse the document into boilerpipe's internal data structure
-					final InputSource is = HTMLFetcher.fetch(linkSrc).toInputSource();						 
+					//final InputSource is = HTMLFetcher.fetch(linkSrc).toInputSource();
+					final InputSource is = fetchHTML(linkSrc);
 					TextDocument doc = new BoilerpipeSAXInput(is).getTextDocument();
 					// perform the extraction/classification process on "doc"
 					ArticleExtractor.INSTANCE.process(doc);
@@ -424,6 +435,7 @@ public class FeedReader {
 		}		
 	}
 
+	
 	/**
 	 * Function looks for keywords in a given text. The text is broken down into sentences and 
 	 * keyword search is carried out for each sentence. If keywords are found, a sentence is stored as a mention.
@@ -684,4 +696,77 @@ public class FeedReader {
 		}
 	}
 
+
+	/**
+	 *  Custom html source fetcher. It differs from kohlschuetter's provided version in that a random user
+	 *  agent is added to the URLConnection object, otherwise some servers return error codes (403,404 or 504
+	 *  have been spotted).
+	 * 
+	 * @param linkSrc
+	 * @return Input source
+	 * @throws IOException
+	 */
+	private InputSource fetchHTML(URL linkSrc) throws IOException {
+		
+		final Pattern PAT_CHARSET = Pattern
+				.compile("charset=([^; ]+)$");
+
+		final URLConnection conn = linkSrc.openConnection();
+		
+		// kodean gehituta lerroak
+		String userAg = Fabricator.userAgent().browser();
+		System.err.println("User-Agent-a: "+userAg);
+		conn.addRequestProperty("User-Agent", userAg);
+		conn.addRequestProperty("Accept","*/*");
+		
+		
+		final String ct = conn.getContentType();
+
+		if (ct == null
+				|| !(ct.equals("text/html") || ct.startsWith("text/html;"))) {
+			throw new IOException("Unsupported content type: "+ct);
+		}
+
+		Charset cs = Charset.forName("Cp1252");
+		if (ct != null) {
+			Matcher m = PAT_CHARSET.matcher(ct);
+			if (m.find()) {
+				final String charset = m.group(1);
+				try {
+					cs = Charset.forName(charset);
+				} catch (UnsupportedCharsetException e) {
+					System.err.println("WARN: unsupported charset: "+ charset);
+				}
+			}
+		}
+
+		InputStream in = conn.getInputStream();
+
+		final String encoding = conn.getContentEncoding();
+		if (encoding != null) {
+			if ("gzip".equalsIgnoreCase(encoding)) {
+				in = new GZIPInputStream(in);
+			} else {
+				System.err.println("WARN: unsupported Content-Encoding: "+ encoding);
+			}
+		}
+
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		byte[] buf = new byte[4096];
+		int r;
+		while ((r = in.read(buf)) != -1) {
+			bos.write(buf, 0, r);
+		}
+		in.close();
+
+		final byte[] data = bos.toByteArray();
+		
+		// kodifikazio aldatu UTF-8 ra, batzuk conn.getContentType() : ISO-8859-1 itzultzen dute 
+		byte[] utf8 = new String(data, cs.displayName()).getBytes("UTF-8");
+		cs = Charset.forName("UTF-8");
+		return new HTMLDocument(utf8, cs).toInputSource();
+			
+	}
+	
+	
 }
