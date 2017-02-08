@@ -135,6 +135,10 @@ public class LangDetect {
 			}
 		}
 		
+		if (supposedLang==null)
+		{
+			supposedLang="";
+		}
 		if (result.equals("unk") && supposedLang.contains(maxProbLang))
 		{
 			result = maxProbLang;

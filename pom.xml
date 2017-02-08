@@ -53,7 +53,12 @@
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
 			<version>3.4</version>
-		</dependency>			
+		</dependency>		
+		<dependency>
+  			<groupId>org.apache.httpcomponents</groupId>
+  			<artifactId>httpclient</artifactId>
+  			<version>4.5.2</version>
+		</dependency>	
 		<dependency>
 			<groupId>jaxen</groupId>
 			<artifactId>jaxen</artifactId>
@@ -89,13 +94,7 @@
 		  <groupId>com.rometools</groupId>
 		  <artifactId>rome</artifactId>
 		  <version>1.7.1</version>
-		</dependency>
-		<dependency>
-		  <groupId>com.rometools</groupId>
-		  <artifactId>rome-fetcher</artifactId>
-		  <version>1.7.1</version>
-		</dependency>
-	    
+		</dependency>		
 	    <dependency>
           <groupId>org.slf4j</groupId>
           <artifactId>slf4j-simple</artifactId>

@@ -20,6 +20,7 @@ This file is part of MSM.
 package elh.eus.MSM;
 
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
@@ -55,7 +56,18 @@ import javax.naming.NamingException;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.Header;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.client.LaxRedirectStrategy;
 
+import com.google.api.client.http.HttpResponse;
 import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.feed.synd.SyndFeedImpl;
@@ -300,20 +312,38 @@ public class FeedReader {
 			}
 		}	
 		
-		//reload language identification with the feed possible languages
-		//loadAcceptedLangs(f.getLangs());
-
-		SyndFeedInput input = new SyndFeedInput();
-		input.setPreserveWireFeed(true);
+		// reload language identification with the feed possible languages
+		// loadAcceptedLangs(f.getLangs());
 		SyndFeed feed = new SyndFeedImpl();
-		//try to read a feed.
-		try {
-			feed = input.build(new XmlReader(new URL(f.getFeedURL())));
-			//String ftype =feed.getFeedType();
-		}catch (FeedException | IOException fe) {							     
-			fe.printStackTrace();
-			System.err.println("FeadReader::getFeed ->  Feed ERROR with"+f.getFeedURL()+" : "+fe.getMessage());
-		} 
+		try{
+			HttpClient client = HttpClientBuilder.create().setRedirectStrategy(new LaxRedirectStrategy()).build();
+			// (CloseableHttpClient client = HttpClients.createDefault()..createMinimal()) 
+			//client.setRedirectStrategy(new LaxRedirectStrategy());
+			HttpUriRequest method = new HttpGet(f.getFeedURL());
+			org.apache.http.HttpResponse response = client.execute(method);
+			//try (CloseableHttpResponse response = client.execute(method);
+			InputStream stream = response.getEntity().getContent();	
+			SyndFeedInput input = new SyndFeedInput();
+			input.setPreserveWireFeed(true);
+			// try to read a feed.
+			try {
+				feed = input.build(new XmlReader(stream));
+				// String ftype =feed.getFeedType();
+			} catch (FeedException | IOException fe) {				
+				System.err.println(
+						"FeadReader::getFeed ->  Feed ERROR with" + f.getFeedURL() + " : " + fe.getMessage());
+				fe.printStackTrace();
+			}
+		} catch (IOException cpe) {			
+			System.err.println(
+					"FeadReader::getFeed ->  HTTP ERROR with" + f.getFeedURL() + " : " + cpe.getMessage());
+			cpe.printStackTrace();
+		}
+
+		//SyndFeedInput input = new SyndFeedInput();
+		//input.setPreserveWireFeed(true);
+		//SyndFeed feed = new SyndFeedImpl();
+		
 		
 		int newEnts =0;
 		//System.err.println("FeadReader::getFeed -> feed type: "+feed type);
@@ -414,6 +444,9 @@ public class FeedReader {
 			} catch (BoilerpipeProcessingException | SAXException be){ //| URISyntaxException be) {			
 				be.printStackTrace();
 				System.err.println("FeadReader::getFeed ->  Boilerplate removal ERROR with"+f.getFeedURL()+" : "+be.getMessage());
+			} catch (URISyntaxException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 
 		}
@@ -705,22 +738,31 @@ public class FeedReader {
 	 * @param linkSrc
 	 * @return Input source
 	 * @throws IOException
+	 * @throws URISyntaxException 
 	 */
-	private InputSource fetchHTML(URL linkSrc) throws IOException {
+	private InputSource fetchHTML(URL linkSrc) throws IOException, URISyntaxException {
 		
 		final Pattern PAT_CHARSET = Pattern
 				.compile("charset=([^; ]+)$");
 
-		final URLConnection conn = linkSrc.openConnection();
+		HttpClient client = HttpClientBuilder.create().setRedirectStrategy(new LaxRedirectStrategy()).build();
+		// (CloseableHttpClient client = HttpClients.createDefault()..createMinimal()) 
+		//client.setRedirectStrategy(new LaxRedirectStrategy());
+		HttpUriRequest method = new HttpGet(linkSrc.toURI());
+		org.apache.http.HttpResponse response = client.execute(method);
+		//try (CloseableHttpResponse response = client.execute(method);
+		InputStream stream = response.getEntity().getContent();	
+		
+		//final URLConnection conn = linkSrc.openConnection();
 		
 		// kodean gehituta lerroak
-		String userAg = Fabricator.userAgent().browser();
-		System.err.println("User-Agent-a: "+userAg);
-		conn.addRequestProperty("User-Agent", userAg);
-		conn.addRequestProperty("Accept","*/*");
+		//String userAg = Fabricator.userAgent().browser();
+		//System.err.println("User-Agent-a: "+userAg);
+		//conn.addRequestProperty("User-Agent", userAg);
+		//conn.addRequestProperty("Accept","*/*");
 		
 		
-		final String ct = conn.getContentType();
+		final String ct = response.getEntity().getContentType().getValue();//conn.getContentType();
 
 		if (ct == null
 				|| !(ct.equals("text/html") || ct.startsWith("text/html;"))) {
@@ -740,14 +782,14 @@ public class FeedReader {
 			}
 		}
 
-		InputStream in = conn.getInputStream();
+		InputStream in = stream;//conn.getInputStream();
 
-		final String encoding = conn.getContentEncoding();
+		final Header encoding = response.getEntity().getContentEncoding();
 		if (encoding != null) {
-			if ("gzip".equalsIgnoreCase(encoding)) {
+			if ("gzip".equalsIgnoreCase(encoding.getValue())) {
 				in = new GZIPInputStream(in);
 			} else {
-				System.err.println("WARN: unsupported Content-Encoding: "+ encoding);
+				System.err.println("WARN: unsupported Content-Encoding: "+ encoding.getValue());
 			}
 		}
 
