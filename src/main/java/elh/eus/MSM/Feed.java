@@ -140,7 +140,7 @@ public class Feed {
 	 * @throws NamingException
 	 * @throws SQLException
 	 */
-	public static Set<Feed> retrieveFromDB(Connection conn) throws SQLException {
+	public static Set<Feed> retrieveFromDB(Connection conn, String type) throws SQLException {
 
 		Set<Feed> result = new HashSet<Feed>(); 
 		Statement stmt = conn.createStatement();
@@ -149,7 +149,7 @@ public class Feed {
 		String query = "SELECT * FROM "
 				+ "behagunea_app_source JOIN behagunea_app_feed "
 				+ "ON behagunea_app_source.source_id=behagunea_app_feed.source_id "
-				+ "WHERE behagunea_app_source.type='press'";
+				+ "WHERE behagunea_app_source.type='"+type+"'";
 		// execute the query, and get a java resultset
 		ResultSet rs = stmt.executeQuery(query);
 

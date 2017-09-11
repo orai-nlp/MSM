@@ -29,8 +29,15 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 
 import javax.naming.NamingException;
 
@@ -42,6 +49,12 @@ import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
 
 public final class Utils {
 
+	
+	private static List<DateFormat> dateFormats= new ArrayList<DateFormat>(
+			Arrays.asList(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z"),
+					new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"),
+					new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z")));
+	
 	
 	
 	/**
@@ -301,5 +314,26 @@ public final class Utils {
 		return result;
 	}
 	
+	
+	/**
+	 *  Function parses a string and returns a date element if the string contains an accepted format. 
+	 *  Else an empty date element is returned. accepted formats are store in dateFormats constant.
+	 *   
+	 * @param strDate
+	 * @return
+	 */
+	public static Date parseDate (String strDate){
+		Date date = new Date();
+		for (DateFormat df : dateFormats)
+		{
+			try {
+				date = df.parse(strDate);
+				break;						
+			}catch(ParseException pe){
+				//continue loop
+			}
+		}
+		return date;
+	}
 	
 }

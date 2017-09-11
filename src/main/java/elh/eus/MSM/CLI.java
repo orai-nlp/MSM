@@ -232,6 +232,7 @@ public class CLI {
 		String store = parsedArguments.getString("store");
 		String url = parsedArguments.getString("url");
 		String census = parsedArguments.getString("census");
+		String type = parsedArguments.getString("type");
 		
 
 		Properties params = new Properties();
@@ -257,7 +258,7 @@ public class CLI {
 													params.getProperty("dbpass"),
 													params.getProperty("dbhost"),
 													params.getProperty("dbname"));
-				feedList = Feed.retrieveFromDB(conn);
+				feedList = Feed.retrieveFromDB(conn, type);
 				kwrdList = Keyword.retrieveFromDB(conn, "press", params.getProperty("langs", "all"));
 				conn.close();
 			}
@@ -439,7 +440,14 @@ public class CLI {
 		.required(false)
 		.help("Configuration file that contains the necessary parameters to connect to the feed stream for crawling."
 				+ "Only needed if no url is given through the --url parameter.\n");
-
+		
+		feedReaderParser.addArgument("-t", "--type")
+		.choices("press", "multimedia")
+		.setDefault("press")
+		.help("The type of feed we are dealing with. Configuration file that contains the necessary parameters to connect to the feed stream for crawling."
+				+ "\t - \"press\" : written digital press feeds. Standard rss feed parsers are used\n"
+				+ "\t - \"multimedia\" : feed coming from multimedia source (tv/radio) a custom parser is activated in this case.\n");
+		
 		feedReaderParser.addArgument("-u", "--url")
 		.required(false)
 		.setDefault("db")

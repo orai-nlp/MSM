@@ -50,6 +50,8 @@ public class Mention {
 	private long origTweetId;
 	private long quotedTweetId;
 	private boolean isLocalArea;
+	private String offset;
+	private String mediaUrl;
 	
 	/**
 	 * Setter and getter functions  
@@ -194,8 +196,22 @@ public class Mention {
 	public void setIsLocalArea(boolean ila) {
 		this.isLocalArea = ila;
 	}
-	
-	
+		
+	public String getOffset() {
+		return offset;
+	}
+
+	public void setOffset(String offset) {
+		this.offset = offset;
+	}
+
+	public String getMediaUrl() {
+		return mediaUrl;
+	}
+
+	public void setMediaUrl(String mediaUrl) {
+		this.mediaUrl = mediaUrl;
+	}
 	//END OF GETTERS AND SETTERS
 	
 	//CONSTRUCTORS
@@ -452,4 +468,5 @@ public class Mention {
 	public int mention2solr(){
 		return 1;
 	}
+
 }

@@ -66,6 +66,13 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.client.LaxRedirectStrategy;
+import org.jdom2.Document;
+import org.jdom2.Element;
+import org.jdom2.JDOMException;
+import org.jdom2.filter.Filters;
+import org.jdom2.input.SAXBuilder;
+import org.jdom2.xpath.XPathExpression;
+import org.jdom2.xpath.XPathFactory;
 
 import com.google.api.client.http.HttpResponse;
 import com.rometools.rome.feed.synd.SyndEntry;
@@ -271,11 +278,24 @@ public class FeedReader {
 	}//end constructor
 
 
-	public void processFeeds(String store)
+	public void processFeeds(String store, String type)
 	{
-		for (Feed f : getFeeds())
+		switch (type)
 		{
-			getFeed(f, store);
+		case "press":
+			for (Feed f : getFeeds())
+			{
+				getRssFeed(f, store);
+			}
+			break;
+		case "multimedia":
+			for (Feed f : getFeeds())
+			{
+				getMultimediaFeed(f, store);
+			}
+			break;
+		default:
+			System.out.println("MSM::FeedReader::processFeeds -> wrong feed type provided [press|multimedia] -> "+type);
 		}
 		
 		try{
@@ -286,14 +306,13 @@ public class FeedReader {
 
 	}
 
-
 	/**
-	 * Core function of the class. Code to process a single feed
+	 * Core function for standard rss feeds. Code to process a single feed
 	 * 
 	 * @param Feed f
 	 * 
 	 */
-	private void getFeed (Feed f, String store){
+	private void getRssFeed (Feed f, String store){
 
 		System.err.println("FeadReader::getFeed -> parse feed "+f.getFeedURL()+" lastFetched: "+f.getLastFetchDate());
 		String link = "";
@@ -468,6 +487,204 @@ public class FeedReader {
 		}		
 	}
 
+	
+	/**
+	 * Core function of the class. Code to process a single feed
+	 * 
+	 * @param Feed f
+	 * 
+	 */
+	private void getMultimediaFeed (Feed f, String store){
+
+		System.err.println("FeadReader::getFeed -> parse feed "+f.getFeedURL()+" lastFetched: "+f.getLastFetchDate());
+		String link = "";
+
+		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");				
+		Date currentDate = new Date();
+
+		Date lastFetchDate_date = new Date();
+		for (DateFormat df : dateFormats)
+		{
+			try {
+				lastFetchDate_date = df.parse(f.getLastFetchDate());
+				break;						
+			}catch(ParseException pe){
+				//continue loop
+			}
+		}	
+		
+		// reload language identification with the feed possible languages
+		// loadAcceptedLangs(f.getLangs());
+		SAXBuilder sax = new SAXBuilder();
+		XPathFactory xFactory = XPathFactory.instance();
+		Document feed;		
+		List<multimediaElement> entries = new ArrayList<multimediaElement>();
+		try{
+			HttpClient client = HttpClientBuilder.create().setRedirectStrategy(new LaxRedirectStrategy()).build();
+			// (CloseableHttpClient client = HttpClients.createDefault()..createMinimal()) 
+			//client.setRedirectStrategy(new LaxRedirectStrategy());
+			HttpUriRequest method = new HttpGet(f.getFeedURL());
+			org.apache.http.HttpResponse response = client.execute(method);
+			//try (CloseableHttpResponse response = client.execute(method);
+			InputStream stream = response.getEntity().getContent();	
+			// try to read a feed.
+			try {
+				feed = sax.build(stream);
+				XPathExpression<Element> expr = xFactory.compile("//saioa",
+						Filters.element());
+				List<Element> shows = expr.evaluate(feed);
+				for (Element show : shows) {
+					multimediaElement mme = new multimediaElement(show);
+					entries.add(mme);					
+				}
+			} catch (JDOMException | IOException e) {
+				System.err.println( "FeadReader::getMultimediaFeed -> Feed ERROR with" + f.getFeedURL() + " : " + e.getMessage());
+				//e.printStackTrace();
+				//System.err.println("EliXa::CorpusReader - Could not extract opinions from corpus (semeval2015 format)."
+				//		+ "\n\t Make sure the corpus is correctly formatted, and if so pass the correct format in the -f argument."
+				//		+ "\n\t If you are already doing that the file can't be read for some other reason");				
+			}
+		} catch (IOException cpe) {			
+			System.err.println(
+					"FeadReader::getFeed ->  HTTP ERROR with" + f.getFeedURL() + " : " + cpe.getMessage());
+			cpe.printStackTrace();
+		}
+
+		int newEnts =0;
+		//System.err.println("FeadReader::getFeed -> feed type: "+feed type);
+		for (multimediaElement entry : entries)
+		{
+			//System.err.println("FeadReader::getFeed -> analysing entries");
+			link = entry.getOriginURL();		
+
+			try 
+			{	
+				if (store.equalsIgnoreCase("db"))
+				{	
+					String query = "SELECT count(*) FROM "
+						+ "behagunea_app_mention "
+						+ "WHERE url='"+link+"'";
+
+					Statement st = DBconn.createStatement();			       
+					// execute the query, and get a java resultset
+					ResultSet rs = st.executeQuery(query);
+					int urlKop = 0 ;
+					while (rs.next()){
+						urlKop = rs.getInt(1); 
+					}
+					//if the url already exist do not parse the entry
+					if (urlKop > 0){
+						System.err.println("FeadReader::getFeed -> entry already parsed "+link);
+						continue;
+					}
+					st.close();
+				}
+			} catch(SQLException sqle) {
+				System.err.println("FeadReader::getFeed ->  MYSQL ERROR when looking for parsed urls in DB "+f.getFeedURL());
+			}
+			
+			try
+			{
+				
+				/**
+				 * 
+				 * 
+				 * 
+				 *   HEMEN SARTU BEHAR DA TRANSKRIPZIOA EGITEKO KORRITU ETA KEYWORD-AK TOPATZEKO KODEA
+				 * 
+				 * 
+				 * 
+				 * */
+				URL linkSrc = new URL(link);
+				Date pubDate = entry.getPublishedDate();
+				boolean nullDate=false;
+				if (pubDate==null)
+				{					
+					//entry.getWireEntry();
+					pubDate = feed.getPublishedDate();						
+					if (pubDate==null)
+					{
+						Calendar c = Calendar.getInstance(); 
+						c.setTime(currentDate); 
+						c.add(Calendar.DATE, -1);
+						pubDate = c.getTime();
+						nullDate=true;
+					}
+				}
+				String date = dateFormat.format(pubDate);
+
+				if ((!nullDate && pubDate.after(lastFetchDate_date)) || (nullDate && lastFetchDate_date.before(pubDate)) )
+				{
+					newEnts++;
+					System.err.println("FeadReader::getFeed -> new entry "+date+" vs."+f.getLastFetchDate());
+					//com.robbypond version.
+					//final BoilerpipeExtractor extractor = CommonExtractors.ARTICLE_EXTRACTOR;
+					//final HtmlArticleExtractor htmlExtr = HtmlArticleExtractor.INSTANCE;
+					//String text = htmlExtr.process(extractor, linkSrc);
+
+					//normal kohlschuetter extractor call
+					// parse the document into boilerpipe's internal data structure
+					//final InputSource is = HTMLFetcher.fetch(linkSrc).toInputSource();
+					final InputSource is = fetchHTML(linkSrc);
+					TextDocument doc = new BoilerpipeSAXInput(is).getTextDocument();
+					// perform the extraction/classification process on "doc"
+					ArticleExtractor.INSTANCE.process(doc);
+					//text = text.replaceAll("(?i)<p>", "").replaceAll("(?i)</p>", "\n\n").replaceAll("(?i)<br\\/?>","\n");
+
+					//detect language
+					String lang = LID.detectFeedLanguage(doc.getContent(), f.getLangs());
+
+					//if language accepted parse article for mentions. If found store them to DB or print them
+					if (acceptedLangs.contains("all") || acceptedLangs.contains(lang))
+					{
+						if (kwrds.isEmpty())
+						{
+							System.err.println("MSM::FeadReader::getFeed ->no keywords provided full articles will be returned");
+							processFullArticle(doc,lang, pubDate, link, f.getSrcId(), store);
+						}
+						else
+						{
+							parseArticleForKeywords(doc,lang, pubDate, link, f.getSrcId(), store);
+						}
+					}
+				}
+			//	else
+			//	{
+			//		System.err.println("FeadReader::getFeed -> no new entries ");
+			//	}
+
+			} catch (IOException ioe) {	        
+				ioe.printStackTrace();
+				System.err.println("FeadReader::getFeed ->  ERROR when reading html a link ("+link+") - "+ioe.getMessage());
+			} catch (BoilerpipeProcessingException | SAXException be){ //| URISyntaxException be) {			
+				be.printStackTrace();
+				System.err.println("FeadReader::getFeed ->  Boilerplate removal ERROR with"+f.getFeedURL()+" : "+be.getMessage());
+			} catch (URISyntaxException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+		}
+		System.err.println("FeadReader::getFeed -> found "+newEnts+" new entries ");
+
+		try {
+			//update last fetch date in the DB.
+			if (store.equalsIgnoreCase("db"))
+			{
+				String updateComm = "UPDATE behagunea_app_feed "
+						+ "SET last_fetch='"+dateFormat.format(currentDate)+"' WHERE id='"+f.getId()+"'";
+				Statement st = DBconn.createStatement();			       
+				// execute the query, and get a java resultset
+				st.executeUpdate(updateComm);
+			}
+		}catch (SQLException sqle) {
+			System.out.println("FeadReader::getFeed ->  ERROR when updating fetch time "+dateFormat.format(currentDate)+" : "+sqle.getMessage());
+			//e.printStackTrace();
+		}		
+	}
+
+	
+	
 	
 	/**
 	 * Function looks for keywords in a given text. The text is broken down into sentences and 
