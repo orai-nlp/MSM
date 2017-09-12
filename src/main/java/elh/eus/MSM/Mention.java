@@ -216,11 +216,47 @@ public class Mention {
 	
 	//CONSTRUCTORS
 	
+	/**
+	 * 
+	 * Constructor for tweet derived mentions
+	 * 
+	 * @param statusTwitter4j
+	 * @param lang
+	 * @param isLocal
+	 */
 	public Mention(Status statusTwitter4j, String lang, boolean isLocal) {
 		mentionFromTweet(statusTwitter4j,lang, isLocal);
 	}
 	
+	/**
+	 * 
+	 * Constructor for rss feed origin mentions
+	 * 
+	 * @param lang
+	 * @param text
+	 * @param date
+	 * @param url
+	 * @param source_id
+	 * @param isLocal
+	 */
 	public Mention(String lang, String text, Date date, String url, long source_id, boolean isLocal) {
+		this(lang,text,date,url,source_id,isLocal,"","");		
+	}
+	
+	/**
+	 * 
+	 * Constructor for multimedia origin mentions
+	 * 
+	 * @param lang
+	 * @param text
+	 * @param date
+	 * @param url
+	 * @param source_id
+	 * @param isLocal
+	 * @param offset
+	 * @param mediaUrl
+	 */
+	public Mention(String lang, String text, Date date, String url, long source_id, boolean isLocal, String offset, String mediaUrl) {
 		setLang(lang);
 		setText(text);
 		setDate(date);
@@ -233,10 +269,20 @@ public class Mention {
 		setOrigTweetId(0);
 		setQuotedTweetId(0);
 		setIsLocalArea(isLocal);
+		setOffset(offset);
+		setMediaUrl(mediaUrl);
 	}
 
 	//END OF CONSTRUCTORS
 	
+	/**
+	 * 
+	 *  This is the void thant actually creates the mentions starting from a tweet
+	 * 
+	 * @param statusTwitter4j
+	 * @param lang
+	 * @param isLocal
+	 */
 	private void mentionFromTweet(Status statusTwitter4j, String lang, boolean isLocal) {
 		setLang(lang);			
 		setText(statusTwitter4j.getText());
@@ -430,8 +476,8 @@ public class Mention {
 	}
 	
 	/**
-	 *  Function looks if the current mention exists in the DB based on each
-	 *  native id (Twitter status id, for example)
+	 *  Function updates the retweet and favourite counts of a mention (tweet) in the DB backed system,
+	 *  based on each native id (Twitter status id, for example)
 	 *  
 	 * 
 	 * @param conn

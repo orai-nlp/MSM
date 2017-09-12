@@ -92,13 +92,13 @@ public class InfluenceTagger {
 	{
 		try	{	
 			// get klout id          
-			JSONObject json=Utils.readJsonFromUrl("http://api.klout.com/v2/identity.json/twitter?screenName="+userId+"&key="+KloutKey);
+			JSONObject json=MSMUtils.readJsonFromUrl("http://api.klout.com/v2/identity.json/twitter?screenName="+userId+"&key="+KloutKey);
 
 			// if the json object contains the user id ask for its score (Klout has the user tracked).
 			if (json.has("id"))
 			{
 				String kloutId = json.getString("id");
-				json=Utils.readJsonFromUrl("http://api.klout.com/v2/user.json/"+kloutId+"/score?key="+KloutKey);
+				json=MSMUtils.readJsonFromUrl("http://api.klout.com/v2/user.json/"+kloutId+"/score?key="+KloutKey);
 				if (json.has("score"))
 				{
 					System.err.println("MSM::InfluenceTagger - Success!! retrieved the Klout index for source "+userId);					
@@ -152,7 +152,7 @@ public class InfluenceTagger {
 
 		try {
 			// get domainStats io response         
-			JSONObject json=Utils.readJsonFromUrl(url);
+			JSONObject json=MSMUtils.readJsonFromUrl(url);
 
 			// if the json object contains the user id ask for its score (Klout has the user tracked).
 			if (json.has("data"))

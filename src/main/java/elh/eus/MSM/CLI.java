@@ -233,7 +233,8 @@ public class CLI {
 		String url = parsedArguments.getString("url");
 		String census = parsedArguments.getString("census");
 		String type = parsedArguments.getString("type");
-		
+		String ffmpeg = parsedArguments.getString("ffmpeg");
+
 
 		Properties params = new Properties();
 		try {
@@ -254,7 +255,7 @@ public class CLI {
 			// load feeds from db
 			if (url.equalsIgnoreCase("db"))
 			{
-				Connection conn = Utils.DbConnection(params.getProperty("dbuser"),
+				Connection conn = MSMUtils.DbConnection(params.getProperty("dbuser"),
 													params.getProperty("dbpass"),
 													params.getProperty("dbhost"),
 													params.getProperty("dbname"));
@@ -305,7 +306,7 @@ public class CLI {
 				
 				System.err.println("elh-MSM::FeedReader (CLI) - "+feedList.size()+" feeds and "+kwrdList.size()+" keywords");
 				FeedReader fReader = new FeedReader(cfg, feedList, kwrdList, store, census);
-				fReader.processFeeds(store);
+				fReader.processFeeds(store, type, ffmpeg);
 			}
 			
 		} catch (Exception e) {			
@@ -341,7 +342,7 @@ public class CLI {
 			
 			if (sources.equalsIgnoreCase("db"))
 			{
-				Connection conn = Utils.DbConnection(params.getProperty("dbuser"),
+				Connection conn = MSMUtils.DbConnection(params.getProperty("dbuser"),
 													params.getProperty("dbpass"),
 													params.getProperty("dbhost"),
 													params.getProperty("dbname"));
@@ -369,7 +370,7 @@ public class CLI {
 		if (db) // store influences into the database
 		{
 			try {
-				Connection conn = Utils.DbConnection(params.getProperty("dbuser"),
+				Connection conn = MSMUtils.DbConnection(params.getProperty("dbuser"),
 						params.getProperty("dbpass"),
 						params.getProperty("dbhost"),
 						params.getProperty("dbname"));
@@ -444,9 +445,16 @@ public class CLI {
 		feedReaderParser.addArgument("-t", "--type")
 		.choices("press", "multimedia")
 		.setDefault("press")
-		.help("The type of feed we are dealing with. Configuration file that contains the necessary parameters to connect to the feed stream for crawling."
+		.help("The type of feed we are dealing with."
 				+ "\t - \"press\" : written digital press feeds. Standard rss feed parsers are used\n"
 				+ "\t - \"multimedia\" : feed coming from multimedia source (tv/radio) a custom parser is activated in this case.\n");
+		
+		
+		feedReaderParser.addArgument("-ff", "--ffmpeg")
+		.required(false)
+		.setDefault("/usr/bin/ffmpeg")
+		.help("The path to the ffmpeg executable only needed if for multimedia source feeds."
+				+ " Default value is \"/usr/bin/ffmpeg\". Change the value to match your installation path\n");
 		
 		feedReaderParser.addArgument("-u", "--url")
 		.required(false)

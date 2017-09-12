@@ -28,7 +28,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -47,15 +49,13 @@ import twitter4j.JSONObject;
 import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
 
 
-public final class Utils {
+public final class MSMUtils {
 
 	
 	private static List<DateFormat> dateFormats= new ArrayList<DateFormat>(
 			Arrays.asList(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z"),
 					new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"),
 					new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z")));
-	
-	
 	
 	/**
 	* Check input file integrity.
@@ -210,6 +210,39 @@ public final class Utils {
 			return conn;		
 	}
 	
+	
+	/**
+	 * Function checks if there are mentions in comming from a certain url. 
+	 * Used by the FeedReader class to check if a feed element has already been parsed. 
+	 * 
+	 * @param dbconn
+	 * @param url
+	 * @return
+	 */
+	public static int mentionsInDB(Connection dbconn, String url) {
+		int urlKop = 0 ;
+		try 
+		{	
+				String query = "SELECT count(*) FROM "
+					+ "behagunea_app_mention "
+					+ "WHERE url='"+url+"'";
+
+				Statement st = dbconn.createStatement();			       
+				// execute the query, and get a java resultset
+				ResultSet rs = st.executeQuery(query);
+				
+				while (rs.next()){
+					urlKop = rs.getInt(1); 
+				}
+				st.close();				
+		} catch(SQLException sqle) {
+			System.err.println("MSMUtils::mentionsInDB ->  MYSQL ERROR when looking for parsed urls in DB "+url);
+		}
+		return urlKop;
+	}
+	
+	
+	
 	/**
 	 * Function to read a JSON object from an url
 	 * 
@@ -335,5 +368,7 @@ public final class Utils {
 		}
 		return date;
 	}
+	
+	
 	
 }

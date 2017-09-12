@@ -142,7 +142,7 @@ public class FeedReader {
 
 		//keyword loading: keywords to identify relevant mentions in articles.
 		try {
-			DBconn = Utils.DbConnection(params.getProperty("dbuser"),params.getProperty("dbpass"),params.getProperty("dbhost"),params.getProperty("dbname"));
+			DBconn = MSMUtils.DbConnection(params.getProperty("dbuser"),params.getProperty("dbpass"),params.getProperty("dbhost"),params.getProperty("dbname"));
 			kwrds = Keyword.retrieveFromDB(DBconn, "press", params.getProperty("langs", "all"));
 			System.err.println("elh-MSM::FeedReader(config,store) - retrieved "+kwrds.size()+" keywords");
 
@@ -254,10 +254,10 @@ public class FeedReader {
 		constructKeywordsPatterns();
 		
 		//if a census field is provided fill the census map
-		if (Utils.checkFile(censusf))
+		if (MSMUtils.checkFile(censusf))
 		{
 			try {
-				census = Utils.loadOneColumnResource(new FileInputStream(censusf));
+				census = MSMUtils.loadOneColumnResource(new FileInputStream(censusf));
 			} catch (FileNotFoundException fe){
 				System.err.println("elh-MSM::FeedReader - census file NOT FOUND, crawler will continue without census"+censusf);
 			} catch (IOException ioe){
@@ -268,7 +268,7 @@ public class FeedReader {
 		if (store.equalsIgnoreCase("db"))
 		{
 			try {
-				DBconn = Utils.DbConnection(params.getProperty("dbuser"),params.getProperty("dbpass"),params.getProperty("dbhost"),params.getProperty("dbname"));
+				DBconn = MSMUtils.DbConnection(params.getProperty("dbuser"),params.getProperty("dbpass"),params.getProperty("dbhost"),params.getProperty("dbname"));
 			} catch (NamingException | SQLException e) {
 				System.err.println("elh-MSM::FeedReader - Database connection could not be stablished.");
 				System.exit(1);
@@ -278,7 +278,7 @@ public class FeedReader {
 	}//end constructor
 
 
-	public void processFeeds(String store, String type)
+	public void processFeeds(String store, String type, String ffmpeg)
 	{
 		switch (type)
 		{
@@ -291,7 +291,7 @@ public class FeedReader {
 		case "multimedia":
 			for (Feed f : getFeeds())
 			{
-				getMultimediaFeed(f, store);
+				getMultimediaFeed(f, store, ffmpeg);
 			}
 			break;
 		default:
@@ -320,16 +320,7 @@ public class FeedReader {
 		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");				
 		Date currentDate = new Date();
 
-		Date lastFetchDate_date = new Date();
-		for (DateFormat df : dateFormats)
-		{
-			try {
-				lastFetchDate_date = df.parse(f.getLastFetchDate());
-				break;						
-			}catch(ParseException pe){
-				//continue loop
-			}
-		}	
+		Date lastFetchDate_date = MSMUtils.parseDate(f.getLastFetchDate());
 		
 		// reload language identification with the feed possible languages
 		// loadAcceptedLangs(f.getLangs());
@@ -371,30 +362,12 @@ public class FeedReader {
 			//System.err.println("FeadReader::getFeed -> analysing entries");
 			link = entry.getLink();		
 
-			try 
+			if (store.equalsIgnoreCase("db"))
 			{	
-				if (store.equalsIgnoreCase("db"))
-				{	
-					String query = "SELECT count(*) FROM "
-						+ "behagunea_app_mention "
-						+ "WHERE url='"+link+"'";
-
-					Statement st = DBconn.createStatement();			       
-					// execute the query, and get a java resultset
-					ResultSet rs = st.executeQuery(query);
-					int urlKop = 0 ;
-					while (rs.next()){
-						urlKop = rs.getInt(1); 
-					}
-					//if the url already exist do not parse the entry
-					if (urlKop > 0){
+				if (MSMUtils.mentionsInDB(DBconn, link) > 0){
 						System.err.println("FeadReader::getFeed -> entry already parsed "+link);
 						continue;
-					}
-					st.close();
 				}
-			} catch(SQLException sqle) {
-				System.err.println("FeadReader::getFeed ->  MYSQL ERROR when looking for parsed urls in DB "+f.getFeedURL());
 			}
 			
 			try
@@ -494,7 +467,7 @@ public class FeedReader {
 	 * @param Feed f
 	 * 
 	 */
-	private void getMultimediaFeed (Feed f, String store){
+	private void getMultimediaFeed (Feed f, String store, String ffmpeg){
 
 		System.err.println("FeadReader::getFeed -> parse feed "+f.getFeedURL()+" lastFetched: "+f.getLastFetchDate());
 		String link = "";
@@ -512,14 +485,15 @@ public class FeedReader {
 				//continue loop
 			}
 		}	
-		
-		// reload language identification with the feed possible languages
-		// loadAcceptedLangs(f.getLangs());
+	
+		// object to store the feed elements to process.
+		List<multimediaElement> entries = new ArrayList<multimediaElement>();
+		// xml parser for parsing the feed
 		SAXBuilder sax = new SAXBuilder();
 		XPathFactory xFactory = XPathFactory.instance();
 		Document feed;		
-		List<multimediaElement> entries = new ArrayList<multimediaElement>();
 		try{
+			//this is legacy code, normaly the feed is stored somewhere in our HD.
 			HttpClient client = HttpClientBuilder.create().setRedirectStrategy(new LaxRedirectStrategy()).build();
 			// (CloseableHttpClient client = HttpClients.createDefault()..createMinimal()) 
 			//client.setRedirectStrategy(new LaxRedirectStrategy());
@@ -534,7 +508,7 @@ public class FeedReader {
 						Filters.element());
 				List<Element> shows = expr.evaluate(feed);
 				for (Element show : shows) {
-					multimediaElement mme = new multimediaElement(show);
+					multimediaElement mme = new multimediaElement(show, ffmpeg);
 					entries.add(mme);					
 				}
 			} catch (JDOMException | IOException e) {
@@ -550,6 +524,10 @@ public class FeedReader {
 			cpe.printStackTrace();
 		}
 
+	//} catch (SAXException be){ //| URISyntaxException be) {			
+		//be.printStackTrace();
+		//System.err.println("FeadReader::getFeed ->  xml parsing ERROR with"+f.getFeedURL()+" : "+be.getMessage());
+	
 		int newEnts =0;
 		//System.err.println("FeadReader::getFeed -> feed type: "+feed type);
 		for (multimediaElement entry : entries)
@@ -557,115 +535,44 @@ public class FeedReader {
 			//System.err.println("FeadReader::getFeed -> analysing entries");
 			link = entry.getOriginURL();		
 
-			try 
+			if (store.equalsIgnoreCase("db"))
 			{	
-				if (store.equalsIgnoreCase("db"))
-				{	
-					String query = "SELECT count(*) FROM "
-						+ "behagunea_app_mention "
-						+ "WHERE url='"+link+"'";
-
-					Statement st = DBconn.createStatement();			       
-					// execute the query, and get a java resultset
-					ResultSet rs = st.executeQuery(query);
-					int urlKop = 0 ;
-					while (rs.next()){
-						urlKop = rs.getInt(1); 
-					}
-					//if the url already exist do not parse the entry
-					if (urlKop > 0){
+				if (MSMUtils.mentionsInDB(DBconn, link) > 0){
 						System.err.println("FeadReader::getFeed -> entry already parsed "+link);
 						continue;
-					}
-					st.close();
 				}
-			} catch(SQLException sqle) {
-				System.err.println("FeadReader::getFeed ->  MYSQL ERROR when looking for parsed urls in DB "+f.getFeedURL());
 			}
 			
-			try
-			{
+			newEnts++;
+			//language comes from the transcription module (which in turn reads it from the DB info on the feed)
+			String lang= entry.getLang();
 				
-				/**
-				 * 
-				 * 
-				 * 
-				 *   HEMEN SARTU BEHAR DA TRANSKRIPZIOA EGITEKO KORRITU ETA KEYWORD-AK TOPATZEKO KODEA
-				 * 
-				 * 
-				 * 
-				 * */
-				URL linkSrc = new URL(link);
-				Date pubDate = entry.getPublishedDate();
-				boolean nullDate=false;
-				if (pubDate==null)
-				{					
-					//entry.getWireEntry();
-					pubDate = feed.getPublishedDate();						
-					if (pubDate==null)
-					{
-						Calendar c = Calendar.getInstance(); 
-						c.setTime(currentDate); 
-						c.add(Calendar.DATE, -1);
-						pubDate = c.getTime();
-						nullDate=true;
-					}
-				}
-				String date = dateFormat.format(pubDate);
-
-				if ((!nullDate && pubDate.after(lastFetchDate_date)) || (nullDate && lastFetchDate_date.before(pubDate)) )
+			//if language accepted parse article for mentions. If found store them to DB or print them
+			if (acceptedLangs.contains("all") || acceptedLangs.contains(lang))
+			{
+				if (kwrds.isEmpty())
 				{
-					newEnts++;
-					System.err.println("FeadReader::getFeed -> new entry "+date+" vs."+f.getLastFetchDate());
-					//com.robbypond version.
-					//final BoilerpipeExtractor extractor = CommonExtractors.ARTICLE_EXTRACTOR;
-					//final HtmlArticleExtractor htmlExtr = HtmlArticleExtractor.INSTANCE;
-					//String text = htmlExtr.process(extractor, linkSrc);
-
-					//normal kohlschuetter extractor call
-					// parse the document into boilerpipe's internal data structure
-					//final InputSource is = HTMLFetcher.fetch(linkSrc).toInputSource();
-					final InputSource is = fetchHTML(linkSrc);
-					TextDocument doc = new BoilerpipeSAXInput(is).getTextDocument();
-					// perform the extraction/classification process on "doc"
-					ArticleExtractor.INSTANCE.process(doc);
-					//text = text.replaceAll("(?i)<p>", "").replaceAll("(?i)</p>", "\n\n").replaceAll("(?i)<br\\/?>","\n");
-
-					//detect language
-					String lang = LID.detectFeedLanguage(doc.getContent(), f.getLangs());
-
-					//if language accepted parse article for mentions. If found store them to DB or print them
-					if (acceptedLangs.contains("all") || acceptedLangs.contains(lang))
-					{
-						if (kwrds.isEmpty())
-						{
-							System.err.println("MSM::FeadReader::getFeed ->no keywords provided full articles will be returned");
-							processFullArticle(doc,lang, pubDate, link, f.getSrcId(), store);
-						}
-						else
-						{
-							parseArticleForKeywords(doc,lang, pubDate, link, f.getSrcId(), store);
-						}
+					System.err.println("MSM::FeadReader::getFeed ->no keywords provided. MSM will stop now, "
+							+ "it doesn't make any sense to continue without keywords.");
+					break;
+				}
+				else
+				{
+					try {
+						entry.parseForKeywords(kwrds, kwrdPatterns, independentkwrds, dependentkwrds, anchorPattern, 60,store,DBconn);
+					} catch (IOException e) {
+						System.err.println("FeadReader::getMultimediaFeed -> XML parsing error when parsing "
+											+entry.getTranscriptionURL()+" transcription file for entry "+entry.getShowURL());
+						e.printStackTrace();
+					} catch (JDOMException e) {
+						System.err.println("FeadReader::getMultimediaFeed -> I/O error where reading "
+								+entry.getTranscriptionURL()+" transcription file for entry "+entry.getShowURL());
+						e.printStackTrace();
 					}
 				}
-			//	else
-			//	{
-			//		System.err.println("FeadReader::getFeed -> no new entries ");
-			//	}
-
-			} catch (IOException ioe) {	        
-				ioe.printStackTrace();
-				System.err.println("FeadReader::getFeed ->  ERROR when reading html a link ("+link+") - "+ioe.getMessage());
-			} catch (BoilerpipeProcessingException | SAXException be){ //| URISyntaxException be) {			
-				be.printStackTrace();
-				System.err.println("FeadReader::getFeed ->  Boilerplate removal ERROR with"+f.getFeedURL()+" : "+be.getMessage());
-			} catch (URISyntaxException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-
-		}
-		System.err.println("FeadReader::getFeed -> found "+newEnts+" new entries ");
+			}			 
+		} //for 
+		System.err.println("FeadReader::getMultimediaFeed -> found "+newEnts+" new entries ");
 
 		try {
 			//update last fetch date in the DB.

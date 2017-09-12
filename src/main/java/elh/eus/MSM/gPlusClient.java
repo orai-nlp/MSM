@@ -140,7 +140,7 @@ public class gPlusClient {
 					{				
 					case "db":
 						try {
-							Connection conn = Utils.DbConnection(
+							Connection conn = MSMUtils.DbConnection(
 									params.getProperty("dbuser"),
 									params.getProperty("dbpass"),
 									params.getProperty("dbhost"),
@@ -208,7 +208,7 @@ public class gPlusClient {
 					{				
 					case "db":
 						try {
-							Connection conn = Utils.DbConnection(
+							Connection conn = MSMUtils.DbConnection(
 									params.getProperty("dbuser"),
 									params.getProperty("dbpass"),
 									params.getProperty("dbhost"),
@@ -387,7 +387,7 @@ public class gPlusClient {
 			if(terms.isEmpty())
 			{
 				try{
-					Connection conn = Utils.DbConnection(
+					Connection conn = MSMUtils.DbConnection(
 							params.getProperty("dbuser"), 
 							params.getProperty("dbpass"), 
 							params.getProperty("dbhost"), 

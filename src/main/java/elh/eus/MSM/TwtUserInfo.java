@@ -67,7 +67,7 @@ public class TwtUserInfo {
 		// If no user Ids were defined in config file try to get them from the DB
 		if (usrIds.isEmpty()){	
 			try{
-				Connection conn = Utils.DbConnection(
+				Connection conn = MSMUtils.DbConnection(
 						params.getProperty("dbuser"), 
 						params.getProperty("dbpass"), 
 						params.getProperty("dbhost"), 

@@ -235,7 +235,7 @@ public class TwitterStreamClient {
 			if(terms.isEmpty())
 			{
 				try{
-					Connection conn = Utils.DbConnection(
+					Connection conn = MSMUtils.DbConnection(
 							params.getProperty("dbuser"), 
 							params.getProperty("dbpass"), 
 							params.getProperty("dbhost"), 
@@ -332,10 +332,10 @@ public class TwitterStreamClient {
 		}
 
 		//if a census field is provided fill the census map
-		if (Utils.checkFile(censusf))
+		if (MSMUtils.checkFile(censusf))
 		{
 			try {
-				census = Utils.loadOneColumnResource(new FileInputStream(censusf));
+				census = MSMUtils.loadOneColumnResource(new FileInputStream(censusf));
 			} catch (FileNotFoundException fe){
 				System.err.println("elh-MSM::TwitterStreamClient - census file NOT FOUND, crawler will continue without census"+censusf);
 			} catch (IOException ioe){
@@ -661,7 +661,7 @@ public class TwitterStreamClient {
 		{				
 		case "db":
 			try {
-				Connection conn = Utils.DbConnection(
+				Connection conn = MSMUtils.DbConnection(
 						params.getProperty("dbuser"),
 						params.getProperty("dbpass"),
 						params.getProperty("dbhost"),
