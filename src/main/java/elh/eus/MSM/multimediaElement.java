@@ -241,6 +241,8 @@ public final class multimediaElement {
 		final File temp = File.createTempFile(converted,"");
 		this.convertStream(getMediaURL(), temp.getAbsolutePath());
 		
+		System.err.println("MSM::MultimediaElement::parseForKeywords - stream "+getMediaURL()
+				+" converted to "+temp.getAbsolutePath());
 		
 		
 		
@@ -272,7 +274,8 @@ public final class multimediaElement {
 		// anchor pattern are searched in a window determined by the parameter anchorwindow (in seconds)
 		while (wstart < transcriptionEnd)
 		{
-			
+			System.err.println("MSM::MultimediaElement::parseForKeywords - anchor window: "
+					+String.valueOf(wstart)+" - "+String.valueOf(wend));
 			Set<Keyword> result = new HashSet<Keyword>();
 		
 			String anchorText = StringUtils.stripAccents(windowWords(transWords, wstart, wend).toLowerCase()); 

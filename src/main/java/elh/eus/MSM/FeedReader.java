@@ -510,7 +510,7 @@ public class FeedReader {
 
 			}
 			else{
-				stream = new FileInputStream(Paths.get(f.getFeedURL()).toFile());
+				stream = new URL(f.getFeedURL()).openStream();
 			}
 			// try to read a feed.
 			try {
@@ -526,6 +526,7 @@ public class FeedReader {
 				System.err.println( "FeadReader::getMultimediaFeed -> Feed ERROR with " + f.getFeedURL() + " : " + e.getMessage());
 				//e.printStackTrace();								
 			}
+			stream.close();
 		} catch (IOException cpe) {			
 			System.err.println(
 					"FeadReader::getFeed ->  HTTP ERROR with " + f.getFeedURL() + " : " + cpe.getMessage());
@@ -577,7 +578,7 @@ public class FeedReader {
 			}			 
 		} //for 
 		System.err.println("FeadReader::getMultimediaFeed -> found "+newEnts+" new entries ");
-
+		
 		try {
 			//update last fetch date in the DB.
 			if (store.equalsIgnoreCase("db"))
