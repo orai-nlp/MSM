@@ -510,7 +510,7 @@ public class FeedReader {
 
 			}
 			else{
-				stream = new FileInputStream(Paths.get(f.getFeedURL()).toFile());
+			    stream = new URL(f.getFeedURL()).openStream();
 			}
 			// try to read a feed.
 			try {
