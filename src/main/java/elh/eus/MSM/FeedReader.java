@@ -537,8 +537,11 @@ public class FeedReader {
 		//System.err.println("FeadReader::getFeed -> feed type: "+feed type);
 		for (multimediaElement entry : entries)
 		{
-			//System.err.println("FeadReader::getFeed -> analysing entries");
 			link = entry.getOriginURL();		
+			//language comes from the transcription module (which in turn reads it from the DB info on the feed)
+			String lang= entry.getLang();
+
+			System.err.println("FeadReader::getFeed -> analysing entries - "+link+" ("+lang+")");
 
 			if (store.equalsIgnoreCase("db"))
 			{	
@@ -549,8 +552,7 @@ public class FeedReader {
 			}
 			
 			newEnts++;
-			//language comes from the transcription module (which in turn reads it from the DB info on the feed)
-			String lang= entry.getLang();
+
 				
 			//if language accepted parse article for mentions. If found store them to DB or print them
 			if (acceptedLangs.contains("all") || acceptedLangs.contains(lang))
@@ -564,7 +566,8 @@ public class FeedReader {
 				else
 				{
 					try {
-						entry.parseForKeywords(kwrds, kwrdPatterns, independentkwrds, dependentkwrds, anchorPattern, 60,store,DBconn);
+					    System.err.println("FeadReader::getMultimediaFeed - parsing multimedia feed for keywords");
+					    entry.parseForKeywords(kwrds, kwrdPatterns, independentkwrds, dependentkwrds, anchorPattern, 60,store,DBconn);
 					} catch (IOException e) {
 						System.err.println("FeadReader::getMultimediaFeed -> XML parsing error when parsing "
 											+entry.getTranscriptionURL()+" transcription file for entry "+entry.getShowURL());

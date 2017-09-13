@@ -45,6 +45,7 @@ import org.jdom2.xpath.XPathFactory;
 
 import net.bramp.ffmpeg.FFmpeg;
 import net.bramp.ffmpeg.FFprobe;
+import net.bramp.ffmpeg.probe.FFmpegProbeResult;
 import net.bramp.ffmpeg.FFmpegExecutor;
 import net.bramp.ffmpeg.builder.FFmpegBuilder;
 
@@ -237,15 +238,15 @@ public final class multimediaElement {
 		float step = 5;
 		
 		// create a temporal mkv file
-		String converted = getMediaURL().replaceFirst("\\.[^\\.]+$", "mkv");
-		final File temp = File.createTempFile(converted,"");
-		this.convertStream(getMediaURL(), temp.getAbsolutePath());
+		String converted = getMediaURL().replaceFirst("\\.[^\\.]+$",".mp4");
+
+		System.err.println("MSM::MultimediaElement::parseForKeywords - converted file path: "+converted);
+						
+		this.convertStream(getMediaURL(), converted);
 		
 		System.err.println("MSM::MultimediaElement::parseForKeywords - stream "+getMediaURL()
-				+" converted to "+temp.getAbsolutePath());
-		
-		
-		
+				+" converted to "+converted);
+	
 		//xml parser to parse the transcription
 		SAXBuilder sax = new SAXBuilder();
 		XPathFactory xFactory = XPathFactory.instance();
@@ -255,7 +256,7 @@ public final class multimediaElement {
 		//This xpath extracts all the words in a transcription. 
 		//NOTE: This is a simplification of the structure,
 		//      both "turn" (speaker changes) and lang (language changes) elements are ignored.
-		XPathExpression<Element> expr = xFactory.compile("//words",
+		XPathExpression<Element> expr = xFactory.compile("//word",
 				Filters.element());
 		List<Element> buffer = expr.evaluate(transcription);
 		List<Word> transWords = new ArrayList<Word>();
@@ -288,6 +289,9 @@ public final class multimediaElement {
 			
 			while (splitStart < wend)
 			{
+			    System.err.println("MSM::MultimediaElement::parseForKeywords - split window: "
+						+String.valueOf(splitStart)+" - "+String.valueOf(splitEnd));
+				
 				result = new HashSet<Keyword>();
 				// this set controls that two keywords belonging to the same screen tag won't be assigned to a mention 
 				Set<String> screenTagList = new HashSet<String>();
@@ -391,35 +395,32 @@ public final class multimediaElement {
 			wstart=wend;
 			wend=wstart+anchorWindow;
 		}//while - anchor window
-		
-		//update
-		
-		//delete temporal files
-		temp.delete();
-		
+								
 	}//parseForKeywors
 	
 	public void convertStream (String mediaUrl, String converted) throws IOException{
 		//convert original video to usable format
-		FFmpeg ffmpegWrapper = new FFmpeg(this.ffmpeg+File.pathSeparator+"ffmpeg");				
-		FFprobe ffprobeWrapper = new FFprobe(this.ffmpeg+File.pathSeparator+"ffprobe");
+	    System.err.println("elh-MSM::MultimediaElement::convertStream - "+mediaUrl+" to "+converted);
+		FFmpeg ffmpegWrapper = new FFmpeg(this.ffmpeg+File.separator+"ffmpeg");				
+		FFprobe ffprobeWrapper = new FFprobe(this.ffmpeg+File.separator+"ffprobe");
+		FFmpegProbeResult ffInput = ffprobeWrapper.probe(mediaUrl);
 
 		FFmpegBuilder builder = new FFmpegBuilder()
-				.setInput(mediaUrl)     // Filename, or a FFmpegProbeResult
+				.setInput(ffInput)     // Filename, or a FFmpegProbeResult
 				.overrideOutputFiles(true) // Override the output if it exists
-
+		    
 				.addOutput(converted)   // Filename for the destination
-				//.setFormat("mp4")        // Format is inferred from filename, or can be set
-				.setTargetSize(250_000)  // Aim for a 250KB file
-
-				.disableSubtitle()       // No subtiles
+				.setFormat("mp4")        // Format is inferred from filename, or can be set
+		    //.setTargetSize(250_000)  // Aim for a 250KB file
+		    //.setVideoBitRate(ffInput.getStreams().get(0).bit_rate)
+		    .disableSubtitle()       // No subtiles
 
 				.setAudioChannels(1)         // Mono audio
-				.setAudioCodec("aac")        // using the aac codec
+				.setAudioCodec("copy")        // using the aac codec
 				.setAudioSampleRate(48_000)  // at 48KHz
 				.setAudioBitRate(32768)      // at 32 kbit/s
 
-				.setVideoCodec("libx264")     // Video using x264
+				.setVideoCodec("copy")     // Video using x264
 				.setVideoFrameRate(24, 1)     // at 24 frames per second
 				.setVideoResolution(640, 480) // at 640x480 resolution
 
@@ -427,7 +428,8 @@ public final class multimediaElement {
 				.done();
 
 		FFmpegExecutor executor = new FFmpegExecutor(ffmpegWrapper, ffprobeWrapper);
-		executor.createTwoPassJob(builder).run();
+		//executor.createTwoPassJob(builder).run();
+		executor.createJob(builder).run();
 
 	}
 	
@@ -457,16 +459,16 @@ public final class multimediaElement {
 		String fileUrl = getMediaURL().replaceFirst("\\.[^\\.]+$", "_"+splitStart+"mp4");
 		
 		//create ffmpeg wrapper object
-		FFmpeg ffmpegWrapper = new FFmpeg(this.ffmpeg+File.pathSeparator+"ffmpeg");				
-		FFprobe ffprobeWrapper = new FFprobe(this.ffmpeg+File.pathSeparator+"ffprobe");
+		FFmpeg ffmpegWrapper = new FFmpeg(this.ffmpeg+File.separator+"ffmpeg");				
+		FFprobe ffprobeWrapper = new FFprobe(this.ffmpeg+File.separator+"ffprobe");
 		
 		FFmpegBuilder builder = new FFmpegBuilder()
-				.setInput(fullVideoPath)     // Filename, or a FFmpegProbeResult
+		    .setInput(ffprobeWrapper.probe(fullVideoPath))     // Filename, or a FFmpegProbeResult
 				.overrideOutputFiles(true) // Override the output if it exists
 				
 				.addOutput(fileUrl)   // Filename for the destination
-				//.setFormat("mp4")        // Format is inferred from filename, or can be set
-				.setTargetSize(250_000)  // Aim for a 250KB file
+				.setFormat("mkv")        // Format is inferred from filename, or can be set
+		    //.setTargetSize(250_000)  // Aim for a 250KB file
 				
 				.disableSubtitle()       // No subtiles
 				
