@@ -502,8 +502,6 @@ public class FeedReader {
 			{
 				//this is legacy code, normaly the feed is stored somewhere in our HD.
 				HttpClient client = HttpClientBuilder.create().setRedirectStrategy(new LaxRedirectStrategy()).build();
-				// (CloseableHttpClient client = HttpClients.createDefault()..createMinimal()) 
-				//client.setRedirectStrategy(new LaxRedirectStrategy());
 				HttpUriRequest method = new HttpGet(f.getFeedURL());
 				org.apache.http.HttpResponse response = client.execute(method);
 				//try (CloseableHttpResponse response = client.execute(method);
@@ -524,11 +522,8 @@ public class FeedReader {
 					entries.add(mme);					
 				}
 			} catch (JDOMException | IOException e) {
-				System.err.println( "FeadReader::getMultimediaFeed -> Feed ERROR with" + f.getFeedURL() + " : " + e.getMessage());
-				//e.printStackTrace();
-				//System.err.println("EliXa::CorpusReader - Could not extract opinions from corpus (semeval2015 format)."
-				//		+ "\n\t Make sure the corpus is correctly formatted, and if so pass the correct format in the -f argument."
-				//		+ "\n\t If you are already doing that the file can't be read for some other reason");				
+				System.err.println( "FeadReader::getMultimediaFeed -> Feed ERROR with " + f.getFeedURL() + " : " + e.getMessage());
+				//e.printStackTrace();								
 			}
 		} catch (IOException cpe) {			
 			System.err.println(
@@ -536,10 +531,6 @@ public class FeedReader {
 			cpe.printStackTrace();
 		}
 
-	//} catch (SAXException be){ //| URISyntaxException be) {			
-		//be.printStackTrace();
-		//System.err.println("FeadReader::getFeed ->  xml parsing ERROR with"+f.getFeedURL()+" : "+be.getMessage());
-	
 		int newEnts =0;
 		//System.err.println("FeadReader::getFeed -> feed type: "+feed type);
 		for (multimediaElement entry : entries)
