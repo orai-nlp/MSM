@@ -25,6 +25,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -509,7 +510,7 @@ public class FeedReader {
 
 			}
 			else{
-				stream = new FileInputStream(f.getFeedURL());
+				stream = new FileInputStream(Paths.get(f.getFeedURL()).toFile());
 			}
 			// try to read a feed.
 			try {
@@ -527,7 +528,7 @@ public class FeedReader {
 			}
 		} catch (IOException cpe) {			
 			System.err.println(
-					"FeadReader::getFeed ->  HTTP ERROR with" + f.getFeedURL() + " : " + cpe.getMessage());
+					"FeadReader::getFeed ->  HTTP ERROR with " + f.getFeedURL() + " : " + cpe.getMessage());
 			cpe.printStackTrace();
 		}
 
