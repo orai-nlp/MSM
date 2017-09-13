@@ -56,6 +56,7 @@ import javax.naming.NamingException;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.validator.routines.UrlValidator;
 import org.apache.http.Header;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
@@ -341,12 +342,12 @@ public class FeedReader {
 				// String ftype =feed.getFeedType();
 			} catch (FeedException | IOException fe) {				
 				System.err.println(
-						"FeadReader::getFeed ->  Feed ERROR with" + f.getFeedURL() + " : " + fe.getMessage());
+						"FeadReader::getFeed ->  Feed ERROR with" + f.getFeedURL() + " :\n " + fe.getMessage());
 				fe.printStackTrace();
 			}
 		} catch (IOException cpe) {			
 			System.err.println(
-					"FeadReader::getFeed ->  HTTP ERROR with" + f.getFeedURL() + " : " + cpe.getMessage());
+					"FeadReader::getFeed ->  HTTP ERROR with" + f.getFeedURL() + " :\n " + cpe.getMessage());
 			cpe.printStackTrace();
 		}
 
@@ -493,14 +494,25 @@ public class FeedReader {
 		XPathFactory xFactory = XPathFactory.instance();
 		Document feed;		
 		try{
-			//this is legacy code, normaly the feed is stored somewhere in our HD.
-			HttpClient client = HttpClientBuilder.create().setRedirectStrategy(new LaxRedirectStrategy()).build();
-			// (CloseableHttpClient client = HttpClients.createDefault()..createMinimal()) 
-			//client.setRedirectStrategy(new LaxRedirectStrategy());
-			HttpUriRequest method = new HttpGet(f.getFeedURL());
-			org.apache.http.HttpResponse response = client.execute(method);
-			//try (CloseableHttpResponse response = client.execute(method);
-			InputStream stream = response.getEntity().getContent();	
+			InputStream stream;
+			//URL normalization
+			UrlValidator defaultValidator = new UrlValidator(UrlValidator.ALLOW_2_SLASHES);
+					
+			if (defaultValidator.isValid(f.getFeedURL())) 
+			{
+				//this is legacy code, normaly the feed is stored somewhere in our HD.
+				HttpClient client = HttpClientBuilder.create().setRedirectStrategy(new LaxRedirectStrategy()).build();
+				// (CloseableHttpClient client = HttpClients.createDefault()..createMinimal()) 
+				//client.setRedirectStrategy(new LaxRedirectStrategy());
+				HttpUriRequest method = new HttpGet(f.getFeedURL());
+				org.apache.http.HttpResponse response = client.execute(method);
+				//try (CloseableHttpResponse response = client.execute(method);
+				stream = response.getEntity().getContent();					
+
+			}
+			else{
+				stream = new FileInputStream(f.getFeedURL());
+			}
 			// try to read a feed.
 			try {
 				feed = sax.build(stream);
