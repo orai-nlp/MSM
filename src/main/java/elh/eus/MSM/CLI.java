@@ -322,8 +322,11 @@ public class CLI {
 				fReader.processFeeds(store, type, ffmpeg);
 			}
 			
+		} catch (SQLException se) {			
+			se.printStackTrace();	
+			System.err.println("elh-MSM::FeedReader (CLI) - ERROR when connecting to the DB: "+params.getProperty("dbuser")+" "+params.getProperty("dbpass")+" "+params.getProperty("dbhost")+" "+params.getProperty("dbname"));
 		} catch (Exception e) {			
-			e.printStackTrace();
+			e.printStackTrace();			
 		} 
 		
 		
@@ -465,9 +468,10 @@ public class CLI {
 		
 		feedReaderParser.addArgument("-ff", "--ffmpeg")
 		.required(false)
-		.setDefault("/usr/bin/ffmpeg")
-		.help("The path to the ffmpeg executable only needed if for multimedia source feeds."
-				+ " Default value is \"/usr/bin/ffmpeg\". Change the value to match your installation path\n");
+		.setDefault("/usr/bin")
+		.help("The path to the ffmpeg executable (the directory containing ffmpeg and ffprobe binaries)."
+				+ " Only needed if for multimedia source feeds."
+				+ " Default value is \"/usr/bin\". Change the value to match your installation path\n");
 		
 		feedReaderParser.addArgument("-u", "--url")
 		.required(false)
