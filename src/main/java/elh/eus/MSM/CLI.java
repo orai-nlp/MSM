@@ -260,6 +260,7 @@ public class CLI {
 													params.getProperty("dbhost"),
 													params.getProperty("dbname"));
 				feedList = Feed.retrieveFromDB(conn, type);
+				//retrieve keywords from DB. For the moment both multimedia and press sources use keywords of "press" type
 				kwrdList = Keyword.retrieveFromDB(conn, "press", params.getProperty("langs", "all"));
 				conn.close();
 			}
@@ -281,7 +282,7 @@ public class CLI {
 					feedList.add(new Feed(feed));
 				}	
 			}
-						
+			//no source feed was found hence exit
 			if (feedList.isEmpty())
 			{
 				System.err.println("ERROR: either there no feed or no keywords were specified."
@@ -289,9 +290,10 @@ public class CLI {
 				System.exit(1);
 			}
 			else
-			{
+			{	
+				//if no keyword was found try to load them from config file
 				if (kwrdList.isEmpty())
-				{
+				{					
 					String kwrds = params.getProperty("searchTerms", "none");
 					if (!kwrds.equalsIgnoreCase("none"))
 					{
@@ -301,10 +303,21 @@ public class CLI {
 							kwrdList.add(new Keyword(kwrd,"all"));
 						}
 					}
+					// if no keyword is found in config file try to load them from the database as a last resort.
+					else{
+						Connection conn = MSMUtils.DbConnection(params.getProperty("dbuser"),
+								params.getProperty("dbpass"),
+								params.getProperty("dbhost"),
+								params.getProperty("dbname"));
+						
+						//retrieve keywords from DB. For the moment both multimedia and press sources use keywords of "press" type
+						kwrdList = Keyword.retrieveFromDB(conn, "press", params.getProperty("langs", "all"));
+						conn.close();
+					}
 				}
 				
 				
-				System.err.println("elh-MSM::FeedReader (CLI) - "+feedList.size()+" feeds and "+kwrdList.size()+" keywords");
+				System.err.println("elh-MSM::FeedReader (CLI) - "+feedList.size()+" "+type+" feeds and "+kwrdList.size()+" keywords");
 				FeedReader fReader = new FeedReader(cfg, feedList, kwrdList, store, census);
 				fReader.processFeeds(store, type, ffmpeg);
 			}
