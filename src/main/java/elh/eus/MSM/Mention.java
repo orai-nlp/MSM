@@ -363,7 +363,7 @@ public class Mention {
 			System.err.println("mention2db: current id "+getMention_id());
 			
 			// prepare the sql statements to insert the mention in the DB and insert.
-	        String mentionIns = "insert into behagunea_app_mention (mention_id, date, source_id, url, text, lang, polarity, favourites, retweets, geoinfo, native_id, retweet_id, quote_id, is_local_area) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+	        String mentionIns = "insert into behagunea_app_mention (mention_id, date, source_id, url, text, lang, polarity, favourites, retweets, geoinfo, native_id, retweet_id, quote_id, is_local_area, offset, media_url) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 	        stmtM = conn.prepareStatement(mentionIns, Statement.RETURN_GENERATED_KEYS);
 	        stmtM.setInt(1, getMention_id());
 	       // System.err.println("daaaaaaataaaaa: "+getDate());
@@ -388,6 +388,8 @@ public class Mention {
 	        stmtM.setLong(12, getOrigTweetId());
 	        stmtM.setLong(13, getQuotedTweetId());
 	        stmtM.setBoolean(14, getIsLocalArea());
+	        stmtM.setString(15, getOffset());
+	        stmtM.setString(16, getMediaUrl());
 	        
 	        stmtM.executeUpdate();
 			//ResultSet rs = stmtM.getGeneratedKeys();

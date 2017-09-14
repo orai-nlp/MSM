@@ -22,8 +22,10 @@ package elh.eus.MSM;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Date;
@@ -371,9 +373,10 @@ public final class multimediaElement {
 				if (result != null && !result.isEmpty())
 				{
 					String offset = String.valueOf(splitStart);
-					String splitURL = getMentionSplit(converted, splitStart);
+					String splitPath = getMentionSplit(converted, splitStart);
+					String splitURL = Paths.get(splitPath).getFileName().toString();
 					//BE CAREFUL: isLocal is hardcoded to true
-					Mention m = new Mention(this.getLang(),splitText,getEmisionDate(),getOriginURL(),getChannelId(),true,offset,getMediaURL());
+					Mention m = new Mention(this.getLang(),splitText,getEmisionDate(),getOriginURL(),getChannelId(),true,String.valueOf(splitStart),splitURL);
 					m.setKeywords(result);
 					if (store.equalsIgnoreCase("db"))
 					{
@@ -390,10 +393,18 @@ public final class multimediaElement {
 				//update window
 				splitStart = splitStart+step;
 				splitEnd = splitStart+splitDuration;
+				if (splitEnd > wend)
+				{
+					splitEnd=wend;
+				}
 			}//while - split
 			//update anchor window
 			wstart=wend;
 			wend=wstart+anchorWindow;
+			if (wend > transcriptionEnd)
+			{
+				wend=transcriptionEnd;
+			}
 		}//while - anchor window
 								
 	}//parseForKeywors
@@ -456,7 +467,7 @@ public final class multimediaElement {
 	
 	private String getMentionSplit(String fullVideoPath, float splitStart) throws IOException
 	{
-		String fileUrl = getMediaURL().replaceFirst("\\.[^\\.]+$", "_"+splitStart+"mp4");
+		String fileUrl = getMediaURL().replaceFirst("\\.[^\\.]+$", "_"+splitStart+".mp4");
 		
 		//create ffmpeg wrapper object
 		FFmpeg ffmpegWrapper = new FFmpeg(this.ffmpeg+File.separator+"ffmpeg");				
@@ -467,7 +478,7 @@ public final class multimediaElement {
 				.overrideOutputFiles(true) // Override the output if it exists
 				
 				.addOutput(fileUrl)   // Filename for the destination
-				.setFormat("mkv")        // Format is inferred from filename, or can be set
+				.setFormat("mp4")        // Format is inferred from filename, or can be set
 		    //.setTargetSize(250_000)  // Aim for a 250KB file
 				
 				.disableSubtitle()       // No subtiles
@@ -476,19 +487,43 @@ public final class multimediaElement {
 				.setDuration(10, TimeUnit.SECONDS) //set split duration
 				
 				.setAudioChannels(1)         // Mono audio
-				.setAudioCodec("aac")        // using the aac codec
+				.setAudioCodec("copy")        // using the aac codec
 				.setAudioSampleRate(48_000)  // at 48KHz
 				.setAudioBitRate(32768)      // at 32 kbit/s
 				
-				.setVideoCodec("libx264")     // Video using x264
+				.setVideoCodec("copy")     // Video using x264
 				.setVideoFrameRate(24, 1)     // at 24 frames per second
 				.setVideoResolution(640, 480) // at 640x480 resolution
 				.setStrict(FFmpegBuilder.Strict.EXPERIMENTAL) // Allow FFmpeg to use experimental specs
 				.done();
 		
 		FFmpegExecutor executor = new FFmpegExecutor(ffmpegWrapper, ffprobeWrapper);
-		executor.createTwoPassJob(builder).run();
+		executor.createJob(builder).run();
+		//executor.createTwoPassJob(builder).run();
 		
 		return fileUrl;
+	}
+	
+	private void createSplitSubtitles(List<Word> wrds, float s, float e, String url){
+		StringBuilder sb = new StringBuilder();
+		// words are order by time
+		for (Word w : wrds){
+			//if start time is previous to the given start time ignore the word
+			if (w.start<s){
+				continue;
+			}
+			//if the end time previous to the given end time add the word to the window
+			if (w.end<=e){
+				/** TODO add here the proper code to format the subtitle.*/
+				sb.append(w.form).append(" ");					
+			}
+			//the end time is posterior to the given end time. End loop and return the window
+			else {
+				break;					
+			}
+		}
+		FileOutputStream out = new FileOutputStream(new File(url));
+		out.write(sb.toString().getBytes());
+		out.close();
 	}
 }
