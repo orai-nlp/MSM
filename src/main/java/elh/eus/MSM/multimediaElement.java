@@ -274,7 +274,7 @@ public final class multimediaElement {
 		float wstart=0;
 		float wend=wstart+anchorWindow;
 		
-		// anchor pattern are searched in a window determined by the parameter anchorwindow (in seconds)
+		// anchor patterns are searched in a window determined by the parameter anchorwindow (in seconds)
 		while (wstart < transcriptionEnd)
 		{
 			System.err.println("MSM::MultimediaElement::parseForKeywords - anchor window: "
@@ -510,11 +510,15 @@ public final class multimediaElement {
 	
 	private void createSplitSubtitles(List<Word> wrds, float s, float e, String url){
 		String fileUrl = url.replaceFirst("\\.[^\\.]+$", ".vtt");
-		
+		// sentTimeInterval is the size of time window where words must be concatenated as a single sentence. 
+		float sentTimeInterval = (float) 1.5;		
 		StringBuilder sb = new StringBuilder();
+		String timeCue = "";
+		String text = ""; 
 		sb.append("WEBVTT\n\n");
 		//shift stores position of the split with respect to the whole video, to adapt the subtitles accordingly.
 		int shift = (int)s;
+		float interval = s+sentTimeInterval;
 		// words are order by time
 		for (Word w : wrds){
 			//if start time is previous to the given start time ignore the word
@@ -523,9 +527,24 @@ public final class multimediaElement {
 			}
 			//if the end time previous to the given end time add the word to the window
 			if (w.end<=e){
-				/** TODO add here the proper code to format the subtitle.*/
-				sb.append(secToTime(w.start,shift)).append(" --> ").append(secToTime(w.end, shift))
-				.append("\n").append(w.form).append("\n\n");					
+				// the following conditions pack together the words inside a time interval defined by sentTimeInterval
+				if (timeCue.equalsIgnoreCase(""))
+				{
+					timeCue = secToTime(w.start,shift)+" --> ";
+					text = w.form+" ";
+				}
+				else if (w.start <= interval)
+				{					
+					text += w.form+" ";
+				}
+				else  //create subtitle line
+				{					
+					sb.append(timeCue).append(secToTime(w.end, shift))
+					.append("\n").append(text).append(" ").append(w.form).append("\n\n");
+					timeCue = "";
+					text = "";
+					interval=w.end+sentTimeInterval;
+				}
 			}
 			//the end time is posterior to the given end time. End loop and return the window
 			else {
