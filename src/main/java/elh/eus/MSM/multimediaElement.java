@@ -508,6 +508,14 @@ public final class multimediaElement {
 		return fileUrl;
 	}
 	
+	/**
+	 * Function that creates subtitle tracks from mention splits.
+	 * 
+	 * @param wrds
+	 * @param s
+	 * @param e
+	 * @param url
+	 */
 	private void createSplitSubtitles(List<Word> wrds, float s, float e, String url){
 		String fileUrl = url.replaceFirst("\\.[^\\.]+$", ".vtt");
 		// sentTimeInterval is the size of time window where words must be concatenated as a single sentence. 
@@ -532,8 +540,16 @@ public final class multimediaElement {
 				{
 					timeCue = secToTime(w.start,shift)+" --> ";
 					text = w.form+" ";
+					if (w.form.matches(".*[.:;?!]\\s*$"))
+					{
+						sb.append(timeCue).append(secToTime(w.end, shift))
+						.append("\n").append(text).append("\n\n");
+						timeCue = "";
+						text = "";
+						interval=w.end+sentTimeInterval;						
+					}					
 				}
-				else if (w.start <= interval)
+				else if ((w.start <= interval) && (! w.form.matches(".*[.:;?!]\\s*$")))
 				{					
 					text += w.form+" ";
 				}
