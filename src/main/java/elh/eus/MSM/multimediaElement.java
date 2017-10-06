@@ -534,7 +534,7 @@ public final class multimediaElement {
 				continue;
 			}
 			//if the end time previous to the given end time add the word to the window
-			if (w.end<=e){
+			if (w.start<=e){
 				// the following conditions pack together the words inside a time interval defined by sentTimeInterval
 				if (timeCue.equalsIgnoreCase(""))
 				{
@@ -562,7 +562,7 @@ public final class multimediaElement {
 					interval=w.end+sentTimeInterval;
 				}
 			}
-			//the end time is posterior to the given end time. End loop and return the window
+			//the start time is posterior to the given end time. End loop and return the window
 			else {
 				break;					
 			}
