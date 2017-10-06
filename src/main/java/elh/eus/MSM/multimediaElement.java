@@ -240,11 +240,11 @@ public final class multimediaElement {
 		float step = 5;
 		
 		// create a temporal mkv file
-		String converted = getMediaURL().replaceFirst("\\.[^\\.]+$",".mp4");
+		String converted = getMediaURL();//.replaceFirst("\\.[^\\.]+$",".mp4");
 
 		System.err.println("MSM::MultimediaElement::parseForKeywords - converted file path: "+converted);
 						
-		this.convertStream(getMediaURL(), converted);
+		//this.convertStream(getMediaURL(), converted);
 		
 		System.err.println("MSM::MultimediaElement::parseForKeywords - stream "+getMediaURL()
 				+" converted to "+converted);
@@ -274,7 +274,7 @@ public final class multimediaElement {
 		float wstart=0;
 		float wend=wstart+anchorWindow;
 		
-		// anchor pattern are searched in a window determined by the parameter anchorwindow (in seconds)
+		// anchor patterns are searched in a window determined by the parameter anchorwindow (in seconds)
 		while (wstart < transcriptionEnd)
 		{
 			System.err.println("MSM::MultimediaElement::parseForKeywords - anchor window: "
@@ -373,7 +373,10 @@ public final class multimediaElement {
 				if (result != null && !result.isEmpty())
 				{
 					String offset = String.valueOf(splitStart);
+					// cut the video and get the split containing the current mention
 					String splitPath = getMentionSplit(converted, splitStart);
+					// generate subtitles for the splite
+					createSplitSubtitles(transWords, splitStart, splitEnd, splitPath);
 					String splitURL = Paths.get(splitPath).getFileName().toString();
 					//BE CAREFUL: isLocal is hardcoded to true
 					Mention m = new Mention(this.getLang(),splitText,getEmisionDate(),getOriginURL(),getChannelId(),true,String.valueOf(splitStart),splitURL);
@@ -487,14 +490,15 @@ public final class multimediaElement {
 				.setDuration(10, TimeUnit.SECONDS) //set split duration
 				
 				.setAudioChannels(1)         // Mono audio
-				.setAudioCodec("copy")        // using the aac codec
+				.setAudioCodec("aac")        // using the aac codec
 				.setAudioSampleRate(48_000)  // at 48KHz
 				.setAudioBitRate(32768)      // at 32 kbit/s
 				
-				.setVideoCodec("copy")     // Video using x264
+				.setVideoCodec("libx264")     // Video using x264
+				.setVideoCopyInkf(true)    //copy including previous key frames at the begining.
 				.setVideoFrameRate(24, 1)     // at 24 frames per second
 				.setVideoResolution(640, 480) // at 640x480 resolution
-				.setStrict(FFmpegBuilder.Strict.EXPERIMENTAL) // Allow FFmpeg to use experimental specs
+				.setStrict(FFmpegBuilder.Strict.EXPERIMENTAL) // Allow FFmpeg to use experimental specs				
 				.done();
 		
 		FFmpegExecutor executor = new FFmpegExecutor(ffmpegWrapper, ffprobeWrapper);
@@ -504,8 +508,25 @@ public final class multimediaElement {
 		return fileUrl;
 	}
 	
+	/**
+	 * Function that creates subtitle tracks from mention splits.
+	 * 
+	 * @param wrds
+	 * @param s
+	 * @param e
+	 * @param url
+	 */
 	private void createSplitSubtitles(List<Word> wrds, float s, float e, String url){
+		String fileUrl = url.replaceFirst("\\.[^\\.]+$", ".vtt");
+		// sentTimeInterval is the size of time window where words must be concatenated as a single sentence. 
+		float sentTimeInterval = (float) 1.5;		
 		StringBuilder sb = new StringBuilder();
+		String timeCue = "";
+		String text = ""; 
+		sb.append("WEBVTT\n\n");
+		//shift stores position of the split with respect to the whole video, to adapt the subtitles accordingly.
+		int shift = (int)s;
+		float interval = s+sentTimeInterval;
 		// words are order by time
 		for (Word w : wrds){
 			//if start time is previous to the given start time ignore the word
@@ -514,16 +535,65 @@ public final class multimediaElement {
 			}
 			//if the end time previous to the given end time add the word to the window
 			if (w.end<=e){
-				/** TODO add here the proper code to format the subtitle.*/
-				sb.append(w.form).append(" ");					
+				// the following conditions pack together the words inside a time interval defined by sentTimeInterval
+				if (timeCue.equalsIgnoreCase(""))
+				{
+					timeCue = secToTime(w.start,shift)+" --> ";
+					text = w.form+" ";
+					if (w.form.matches(".*[.:;?!]\\s*$"))
+					{
+						sb.append(timeCue).append(secToTime(w.end, shift))
+						.append("\n").append(text).append("\n\n");
+						timeCue = "";
+						text = "";
+						interval=w.end+sentTimeInterval;						
+					}					
+				}
+				else if ((w.start <= interval) && (! w.form.matches(".*[.:;?!]\\s*$")))
+				{					
+					text += w.form+" ";
+				}
+				else  //create subtitle line
+				{					
+					sb.append(timeCue).append(secToTime(w.end, shift))
+					.append("\n").append(text).append(" ").append(w.form).append("\n\n");
+					timeCue = "";
+					text = "";
+					interval=w.end+sentTimeInterval;
+				}
 			}
 			//the end time is posterior to the given end time. End loop and return the window
 			else {
 				break;					
 			}
 		}
-		FileOutputStream out = new FileOutputStream(new File(url));
-		out.write(sb.toString().getBytes());
-		out.close();
+		try{
+			FileOutputStream out = new FileOutputStream(new File(fileUrl));
+			out.write(sb.toString().getBytes());
+			out.close();			
+		} catch	(IOException ioe){
+			System.err.println("MSM::multimediaElement::creatSplitSubtitles - error when writing to file: "+fileUrl);
+		}
+		
+	}
+	
+	private String secToTime(float sec, int shift) {
+	    float seconds = (sec-shift) % 60;
+	    return String.format("00:00:%06.3f", seconds);
+	}
+	
+	private String secToTime2(float sec) {
+	    float seconds = sec % 60;
+	    int minutes = (int)sec / 60;
+	    if (minutes >= 60) {
+	        int hours = minutes / 60;
+	        minutes %= 60;
+	        if( hours >= 24) {
+	            int days = hours / 24;
+	            return String.format("%d days %02d:%02d:%02.3f", days,hours%24, minutes, seconds);
+	        }
+	        return String.format("00:00:%02.3f", seconds);
+	    }
+	    return String.format("00:00:%02.3f", seconds);
 	}
 }
