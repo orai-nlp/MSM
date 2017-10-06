@@ -453,8 +453,8 @@ public final class multimediaElement {
 			if (w.start<s){
 				continue;
 			}
-			//if the end time previous to the given end time add the word to the window
-			if (w.end<=e){
+			//if the start time is previous to the given end time add the word to the window
+			if (w.start<=e){
 				sb.append(w.form).append(" ");					
 			}
 			//the end time is posterior to the given end time. End loop and return the window
