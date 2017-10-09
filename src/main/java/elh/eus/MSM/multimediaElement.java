@@ -436,7 +436,7 @@ public final class multimediaElement {
 
 				.setVideoCodec("copy")     // Video using x264
 				.setVideoFrameRate(24, 1)     // at 24 frames per second
-				.setVideoResolution(640, 480) // at 640x480 resolution
+				.setVideoResolution(320, 240) // at 640x480 resolution
 
 				.setStrict(FFmpegBuilder.Strict.EXPERIMENTAL) // Allow FFmpeg to use experimental specs
 				.done();
@@ -497,7 +497,7 @@ public final class multimediaElement {
 				.setVideoCodec("libx264")     // Video using x264
 				.setVideoCopyInkf(true)    //copy including previous key frames at the begining.
 				.setVideoFrameRate(24, 1)     // at 24 frames per second
-				.setVideoResolution(640, 480) // at 640x480 resolution
+				.setVideoResolution(320, 240) // at 640x480 resolution
 				.setStrict(FFmpegBuilder.Strict.EXPERIMENTAL) // Allow FFmpeg to use experimental specs				
 				.done();
 		
