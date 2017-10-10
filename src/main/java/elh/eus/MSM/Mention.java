@@ -240,7 +240,7 @@ public class Mention {
 	 * @param isLocal
 	 */
 	public Mention(String lang, String text, Date date, String url, long source_id, boolean isLocal) {
-		this(lang,text,date,url,source_id,isLocal,"","");		
+		this(lang,text,date,url,source_id,isLocal,"-1","");		
 	}
 	
 	/**
@@ -298,7 +298,9 @@ public class Mention {
 		setOrigTweetId(0);
 		setQuotedTweetId(0);
 		setIsLocalArea(isLocal);
-
+		//A tweet does not contain offset and mediaUrl information for the moment.
+		setOffset("-1");
+		setMediaUrl("");
 		
 		//geoInformation
 		String geoStr = "unknown";
