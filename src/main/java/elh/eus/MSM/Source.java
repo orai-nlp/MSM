@@ -241,6 +241,51 @@ public class Source {
 	}
 	
 	
+	/**
+	 * Retrieve sources belonging to local area from database. Normally in order to use with a crawler
+	 * 
+	 * @param conn
+	 * @param type (twitter|press|behagune)
+	 * @return
+	 * @throws NamingException
+	 * @throws SQLException
+	 */
+	public static Set<Long> retrieveLocalAreaFromDB(Connection conn, String type) throws NamingException, SQLException {
+
+		Set<Long> result = new HashSet<Long>(); 
+		Statement stmt = conn.createStatement();
+		StringBuilder sb = new StringBuilder();
+		sb.append("SELECT source_id FROM behagunea_app_source where is_local_area=1");
+		
+		String andWhere = " and ";
+		
+		switch (type)
+		{
+		case "twitter": sb.append(andWhere).append("type='Twitter'");break;
+		case "feed": sb.append(andWhere).append("type='Press'");break;
+		case "multimedia": sb.append(andWhere).append("type='multimedia'");break;
+		}
+				
+		String query = sb.toString();
+		System.err.println("elh-MSM::Keyword::retrieveFromDB - query:"+query);
+		ResultSet rs = stmt.executeQuery(query);		
+		
+		try{	
+			while (rs.next()) {
+				result.add(rs.getLong("source_id"));
+			}			
+			stmt.close();
+		} catch (SQLException sqle ) {
+			sqle.printStackTrace();
+		} //finally {
+		//	if (stmt != null) { stmt.close(); }
+		//}
+
+		rs.close();		
+		return result;
+	}
+	
+	
 	public boolean existsInDB (Connection conn)
 	{
 		int result = 0;

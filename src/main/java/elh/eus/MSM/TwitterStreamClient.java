@@ -342,7 +342,20 @@ public class TwitterStreamClient {
 				System.err.println("elh-MSM::TwitterStreamClient - census file COULD NOT BE READ, crawler will continue without census "+censusf);
 			} 
 		}
-		
+		else if (censusf.equalsIgnoreCase("db"))
+		{
+			try {
+				Connection conn = MSMUtils.DbConnection(
+						params.getProperty("dbuser"), 
+						params.getProperty("dbpass"), 
+						params.getProperty("dbhost"), 
+						params.getProperty("dbname"));
+				census = Source.retrieveLocalAreaFromDB(conn, "twitter");				
+			}catch (Exception e) {
+				System.err.println("elh-MSM::TwitterStreamClient - could not retrieve census from DB, "
+						+ "the crawler will continue without census");			
+			}
+		}
 		
 		
 		//END OF FILTER STREAM API PARAMETER HANDLING

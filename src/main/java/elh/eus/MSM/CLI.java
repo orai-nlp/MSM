@@ -448,7 +448,8 @@ public class CLI {
 		.help("Census is used to store tweets by users in a certain geographic area. A path to a file must be given as an argument. "
 				+ "The file contains a list of Twitter users. The users and their tweets will be marked in"
 				+ " the database as 'local'. The file must contain one user per line in the following format:\n"
-				+ "\t userId<tab>screenName[<tab>Additional Fields]\n");
+				+ "\t userId<tab>screenName[<tab>Additional Fields]\n"
+				+ "NOTE: if the value 'db' is give instead of a file path MSM will try to generate the census from the database.\n");
 	}
 	
 	public final void loadFeedReaderParameters()
