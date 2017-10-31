@@ -22,6 +22,7 @@ package elh.eus.MSM;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -253,7 +254,12 @@ public final class multimediaElement {
 		SAXBuilder sax = new SAXBuilder();
 		XPathFactory xFactory = XPathFactory.instance();
 		
-		InputStream stream = new FileInputStream(getTranscriptionURL());	
+		InputStream stream;
+		try {
+			stream = new FileInputStream(getTranscriptionURL());	
+		} catch (FileNotFoundException fe){
+			stream = new FileInputStream(StringUtils.stripAccents(getTranscriptionURL()));
+		}		
 		Document transcription = sax.build(stream);
 		//This xpath extracts all the words in a transcription. 
 		//NOTE: This is a simplification of the structure,

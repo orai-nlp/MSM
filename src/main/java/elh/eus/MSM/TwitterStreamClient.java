@@ -342,7 +342,7 @@ public class TwitterStreamClient {
 				System.err.println("elh-MSM::TwitterStreamClient - census file COULD NOT BE READ, crawler will continue without census "+censusf);
 			} 
 		}
-		else if (censusf.equalsIgnoreCase("db"))
+		else if (censusf!=null && censusf.equalsIgnoreCase("db"))
 		{
 			try {
 				Connection conn = MSMUtils.DbConnection(
