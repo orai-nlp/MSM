@@ -35,6 +35,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
@@ -381,8 +382,8 @@ public final class multimediaElement {
 					String offset = String.valueOf(splitStart);
 					// cut the video and get the split containing the current mention
 					String splitPath = getMentionSplit(converted, splitStart);
-					// generate subtitles for the splite
-					createSplitSubtitles(transWords, splitStart, splitEnd, splitPath);
+					// generate subtitles for the split
+					createSplitSubtitles(transWords, splitStart, splitEnd, splitPath,result,kwrdPatterns);
 					String splitURL = Paths.get(splitPath).getFileName().toString();
 					//BE CAREFUL: isLocal is hardcoded to true
 					Mention m = new Mention(this.getLang(),splitText,getEmisionDate(),getOriginURL(),getChannelId(),true,String.valueOf(splitStart),splitURL);
@@ -522,7 +523,7 @@ public final class multimediaElement {
 	 * @param e
 	 * @param url
 	 */
-	private void createSplitSubtitles(List<Word> wrds, float s, float e, String url){
+	private void createSplitSubtitles(List<Word> wrds, float s, float e, String url, Set<Keyword> kwrds,HashMap<Integer,Pattern> kwrdPatterns){
 		String fileUrl = url.replaceFirst("\\.[^\\.]+$", ".vtt");
 		// sentTimeInterval is the size of time window where words must be concatenated as a single sentence. 
 		float sentTimeInterval = (float) 1.5;		
@@ -545,7 +546,7 @@ public final class multimediaElement {
 				if (timeCue.equalsIgnoreCase(""))
 				{
 					timeCue = secToTime(w.start,shift)+" --> ";
-					text = w.form+" ";
+					text = w.form.trim()+" ";
 					if (w.form.matches(".*[.:;?!]\\s*$"))
 					{
 						sb.append(timeCue).append(secToTime(w.end, shift))
@@ -557,12 +558,12 @@ public final class multimediaElement {
 				}
 				else if ((w.start <= interval) && (! w.form.matches(".*[.:;?!]\\s*$")))
 				{					
-					text += w.form+" ";
+					text += w.form.trim()+" ";
 				}
 				else  //create subtitle line
 				{					
 					sb.append(timeCue).append(secToTime(w.end, shift))
-					.append("\n").append(text).append(" ").append(w.form).append("\n\n");
+					.append("\n").append(text).append(" ").append(w.form.trim()).append("\n\n");
 					timeCue = "";
 					text = "";
 					interval=w.end+sentTimeInterval;
@@ -573,9 +574,40 @@ public final class multimediaElement {
 				break;					
 			}
 		}
+		//mark keywords found in the subtitle.			
+		String sbs = sb.toString().replaceAll(" +", " ");		
+		sb= new StringBuilder(sbs);
+		StringBuilder sbFinal = sb;
+		for (Keyword k : kwrds){
+			Matcher m;
+			//check if keywords are found in the sentence
+			// case sensitive search
+			if (k.getCaseSensitiveSearch())
+			{
+				m = kwrdPatterns.get(k.getId()).matcher(sb);
+				if (m.find())
+				{
+					sbFinal=new StringBuilder();
+					sbFinal.append(sb.subSequence(0, m.start())).append("<b>").append(sb.subSequence(m.start(),m.end())).append("</b>").append(sb.subSequence(m.end(), sb.length()));
+					sb=sbFinal;					
+				}
+			}
+			// case insensitive search
+			else
+			{
+				m = kwrdPatterns.get(k.getId()).matcher(sb.toString().toLowerCase());
+				if (m.find())
+				{
+					sbFinal=new StringBuilder();
+					sbFinal.append(sb.subSequence(0, m.start())).append("<b>").append(sb.subSequence(m.start(),m.end())).append("</b>").append(sb.subSequence(m.end(), sb.length()));
+					sb=sbFinal;
+				}
+			}
+			
+		}
 		try{
 			FileOutputStream out = new FileOutputStream(new File(fileUrl));
-			out.write(sb.toString().getBytes());
+			out.write(sbFinal.toString().getBytes());
 			out.close();			
 		} catch	(IOException ioe){
 			System.err.println("MSM::multimediaElement::creatSplitSubtitles - error when writing to file: "+fileUrl);
