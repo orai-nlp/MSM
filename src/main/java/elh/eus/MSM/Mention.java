@@ -52,6 +52,7 @@ public class Mention {
 	private boolean isLocalArea;
 	private String offset;
 	private String mediaUrl;
+	private Long feedId;
 	
 	/**
 	 * Setter and getter functions  
@@ -212,10 +213,19 @@ public class Mention {
 	public void setMediaUrl(String mediaUrl) {
 		this.mediaUrl = mediaUrl;
 	}
+
+	public long getFeedId() {
+		return feedId;
+	}
+
+	public void setFeedId(Long feedId) {
+		this.feedId = feedId;
+	}
 	//END OF GETTERS AND SETTERS
 	
 	//CONSTRUCTORS
-	
+		
+		
 	/**
 	 * 
 	 * Constructor for tweet derived mentions
@@ -240,7 +250,7 @@ public class Mention {
 	 * @param isLocal
 	 */
 	public Mention(String lang, String text, Date date, String url, long source_id, boolean isLocal) {
-		this(lang,text,date,url,source_id,isLocal,"-1","");		
+		this(lang,text,date,url,source_id,isLocal,"-1","",(long) 0);		
 	}
 	
 	/**
@@ -255,11 +265,13 @@ public class Mention {
 	 * @param isLocal
 	 * @param offset
 	 * @param mediaUrl
+	 * @param feedId
 	 */
-	public Mention(String lang, String text, Date date, String url, long source_id, boolean isLocal, String offset, String mediaUrl) {
+	public Mention(String lang, String text, Date date, String url, long source_id, boolean isLocal, String offset, String mediaUrl,Long feedId) {
 		setLang(lang);
 		setText(text);
 		setDate(date);
+		System.err.println("MSM::Mention - multimedia constructor: date:"+date);
 		setUrl(url);
 		//setKeywords(kwrds);
 		setSource_id(source_id);
@@ -271,13 +283,14 @@ public class Mention {
 		setIsLocalArea(isLocal);
 		setOffset(offset);
 		setMediaUrl(mediaUrl);
+		setFeedId(feedId);
 	}
 
 	//END OF CONSTRUCTORS
 	
 	/**
 	 * 
-	 *  This is the void thant actually creates the mentions starting from a tweet
+	 *  This is the void that actually creates the mentions starting from a tweet
 	 * 
 	 * @param statusTwitter4j
 	 * @param lang
@@ -301,6 +314,8 @@ public class Mention {
 		//A tweet does not contain offset and mediaUrl information for the moment.
 		setOffset("-1");
 		setMediaUrl("");
+		setFeedId((long) 0);
+
 		
 		//geoInformation
 		String geoStr = "unknown";
@@ -365,10 +380,10 @@ public class Mention {
 			System.err.println("mention2db: current id "+getMention_id());
 			
 			// prepare the sql statements to insert the mention in the DB and insert.
-	        String mentionIns = "insert into behagunea_app_mention (mention_id, date, source_id, url, text, lang, polarity, favourites, retweets, geoinfo, native_id, retweet_id, quote_id, is_local_area, offset, media_url) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+	        String mentionIns = "insert into behagunea_app_mention (mention_id, date, source_id, url, text, lang, polarity, favourites, retweets, geoinfo, native_id, retweet_id, quote_id, is_local_area, offset, media_url,feed_id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 	        stmtM = conn.prepareStatement(mentionIns, Statement.RETURN_GENERATED_KEYS);
 	        stmtM.setInt(1, getMention_id());
-	       // System.err.println("daaaaaaataaaaa: "+getDate());
+	        System.err.println("daaaaaaataaaaa: "+getDate());
 			DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");				
 	        String dateString = dateFormat.format(getDate());
 	        stmtM.setString(2, dateString);
@@ -392,6 +407,7 @@ public class Mention {
 	        stmtM.setBoolean(14, getIsLocalArea());
 	        stmtM.setString(15, getOffset());
 	        stmtM.setString(16, getMediaUrl());
+	        stmtM.setLong(17, getFeedId());
 	        
 	        stmtM.executeUpdate();
 			//ResultSet rs = stmtM.getGeneratedKeys();

@@ -29,6 +29,7 @@ import java.io.InputStream;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -56,8 +57,8 @@ import net.bramp.ffmpeg.builder.FFmpegBuilder;
 
 public final class multimediaElement {
 
-	private int channelId;
-	private int feedId;
+	private long channelId;
+	private long feedId;
 	private String episode;
 	private String desc;
 	private String originURL;
@@ -73,7 +74,7 @@ public final class multimediaElement {
 	
 
 	
-	public int getChannelId() {
+	public long getChannelId() {
 		return channelId;
 	}
 
@@ -82,11 +83,11 @@ public final class multimediaElement {
 	}
 
 
-	public int getFeedId() {
+	public long getFeedId() {
 		return feedId;
 	}
 
-	public void setFeedId(int feedId) {
+	public void setFeedId(long feedId) {
 		this.feedId = feedId;
 	}
 
@@ -211,7 +212,8 @@ public final class multimediaElement {
 		setMediaType(show.getAttributeValue("media-mota"));
 		Date emision_date = MSMUtils.parseDate(show.getAttributeValue("emisio-data"));
 		Date download_date = MSMUtils.parseDate(show.getAttributeValue("deskarga-data"));
-			
+		
+		//System.err.println("MSM::MultimediaElement - constructor - emision-data:"+emision_date);
 		setEmisionDate(emision_date);
 		setDownloadDate(download_date);
 		
@@ -385,8 +387,15 @@ public final class multimediaElement {
 					// generate subtitles for the split
 					createSplitSubtitles(transWords, splitStart, splitEnd, splitPath,result,kwrdPatterns);
 					String splitURL = Paths.get(splitPath).getFileName().toString();
+					
+					//compute mention date based on the emision date of the programa and the starting offset of the split.
+					Calendar cal = Calendar.getInstance();
+					cal.setTime(getEmisionDate());
+					cal.add(Calendar.SECOND, Math.round(splitStart));
+					Date mentionDate=cal.getTime();
+					
 					//BE CAREFUL: isLocal is hardcoded to true
-					Mention m = new Mention(this.getLang(),splitText,getEmisionDate(),getOriginURL(),getChannelId(),true,String.valueOf(splitStart),splitURL);
+					Mention m = new Mention(this.getLang(),splitText,mentionDate,this.getOriginURL(),this.getChannelId(),true,String.valueOf(splitStart),splitURL,this.getFeedId());
 					m.setKeywords(result);
 					if (store.equalsIgnoreCase("db"))
 					{

@@ -55,6 +55,7 @@ public final class MSMUtils {
 	private static List<DateFormat> dateFormats= new ArrayList<DateFormat>(
 			Arrays.asList(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z"),
 					new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"),
+					new SimpleDateFormat("yyyy-MM-dd HH:mm"),
 					new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z")));
 	
 	/**
