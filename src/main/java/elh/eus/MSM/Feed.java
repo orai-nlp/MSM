@@ -146,23 +146,27 @@ public class Feed {
 		Statement stmt = conn.createStatement();
 
 		// our SQL SELECT query. 
-		String query = "SELECT * FROM "
+		String query= "SELECT * FROM behagunea_app_source AS s INNER JOIN"          // s.source_name, s.source_id, f.description, f.id, f.lang, uf.active, f.last_fetch "
+				+ "(behagunea_app_feed AS f INNER JOIN behagunea_app_user_feed AS uf ON f.id=uf.feed_id)"
+				+ " ON  s.source_id=f.source_id WHERE s.type='"+type+"' AND uf.active=1";
+
+		/*String query = "SELECT * FROM "
 				+ "behagunea_app_source JOIN behagunea_app_feed "
 				+ "ON behagunea_app_source.source_id=behagunea_app_feed.source_id "
-				+ "WHERE behagunea_app_source.type='"+type+"'";
+				+ "WHERE behagunea_app_source.type='"+type+"'";*/
 		// execute the query, and get a java resultset
 		ResultSet rs = stmt.executeQuery(query);
 
 		// iterate through the java resultset
 		while (rs.next())
 		{
-			long sid = rs.getLong("behagunea_app_feed.source_id");
-			int fid = rs.getInt("id");
-			String url = rs.getString("url");
-			String lastFetch = rs.getString("behagunea_app_feed.last_fetch");
-			String langs = rs.getString("lang");
+			long sid = rs.getLong("s.source_id");
+			int fid = rs.getInt("f.id");
+			String url = rs.getString("f.url");
+			String lastFetch = rs.getString("f.last_fetch");
+			String langs = rs.getString("f.lang");
 
-			Feed src = new Feed(fid,sid,url,lastFetch,langs, rs.getDouble("behagunea_app_source.influence"));				
+			Feed src = new Feed(fid,sid,url,lastFetch,langs, rs.getDouble("s.influence"));				
 			result.add(src);	
 		}
 		rs.close();			

@@ -3,7 +3,7 @@
 # 1 - talaia config file name without .cfg extension (no path) and without 'MSM-' prefix.
 #     e.g. if the config file name is  MSM-talaia_example.cfg the parameter should be 'talaia_example'
 
-#. /mnt/ebs/talaia_eupol/crawler/variables.sh
+
 . /etc/profile
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
