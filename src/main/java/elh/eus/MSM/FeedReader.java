@@ -40,7 +40,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Properties;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -61,6 +63,8 @@ import org.apache.commons.validator.routines.UrlValidator;
 import org.apache.http.Header;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.CookieSpecs;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -120,6 +124,7 @@ public class FeedReader {
 	private static List<DateFormat> dateFormats= new ArrayList<DateFormat>(
 			Arrays.asList(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z"),
 					new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"),
+					new SimpleDateFormat("yyyy-MM-dd"),
 					new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z")));
 
 
@@ -327,12 +332,23 @@ public class FeedReader {
 		// reload language identification with the feed possible languages
 		// loadAcceptedLangs(f.getLangs());
 		SyndFeed feed = new SyndFeedImpl();
-		try{
-			HttpClient client = HttpClientBuilder.create().setRedirectStrategy(new LaxRedirectStrategy()).build();
+		try{			
+			//HttpClient client = HttpClientBuilder.create().setRedirectStrategy(new LaxRedirectStrategy()).build();
+			RequestConfig globalConfig = RequestConfig.custom()
+			        .setCookieSpec(CookieSpecs.DEFAULT)
+			        .build();
+			CloseableHttpClient client = HttpClients.custom()
+			        .setDefaultRequestConfig(globalConfig)
+			        .build();
+			RequestConfig localConfig = RequestConfig.copy(globalConfig)
+			        .setCookieSpec(CookieSpecs.STANDARD)
+			        .build();
 			// (CloseableHttpClient client = HttpClients.createDefault()..createMinimal()) 
 			//client.setRedirectStrategy(new LaxRedirectStrategy());
-			HttpUriRequest method = new HttpGet(f.getFeedURL());
-			org.apache.http.HttpResponse response = client.execute(method);
+			
+			HttpGet get = new HttpGet(f.getFeedURL().trim());
+			get.setConfig(localConfig);
+			org.apache.http.HttpResponse response = client.execute(get);
 			//try (CloseableHttpResponse response = client.execute(method);
 			InputStream stream = response.getEntity().getContent();	
 			SyndFeedInput input = new SyndFeedInput();
@@ -341,9 +357,13 @@ public class FeedReader {
 			try {
 				feed = input.build(new XmlReader(stream));
 				// String ftype =feed.getFeedType();
-			} catch (FeedException | IOException fe) {				
+			} catch (NoSuchElementException nsee ){
 				System.err.println(
-						"FeadReader::getFeed ->  Feed ERROR with" + f.getFeedURL() + " :\n " + fe.getMessage());
+						"FeadReader::getFeed ->  Feed ERROR with" + f.getFeedURL() + " seems the feed returned empty :\n ");
+				nsee.printStackTrace();
+			} catch (FeedException | IOException fe) {
+				System.err.println(
+						"FeadReader::getFeed ->  Feed ERROR with" + f.getFeedURL() + " :\n ");
 				fe.printStackTrace();
 			}
 		} catch (IOException cpe) {			

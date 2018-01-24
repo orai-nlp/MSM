@@ -395,7 +395,11 @@ public class Mention {
 	        stmtM.setString(7, getPolarity());
 	        stmtM.setInt(8, getRetweets());
 	        stmtM.setInt(9, getFavourites());
-	        stmtM.setString(10, getGeoInfo());
+	        String geo = getGeoInfo();
+	        if (geo == null){
+	        	geo = "unknown";
+	        }
+	        stmtM.setString(10, geo);
 	        if (getNativeId()!=0){
 		        stmtM.setLong(11, getNativeId());	        	
 	        }
