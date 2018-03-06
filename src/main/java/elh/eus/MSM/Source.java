@@ -45,6 +45,7 @@ public class Source {
 	private int followers;
 	private int friends;
 	private String geoInfo;
+	private String location;
 	private boolean isLocalArea;
 
 	
@@ -115,6 +116,15 @@ public class Source {
 	public void setGeoInfo(String id) {
 		this.geoInfo = id;
 	}
+	
+	public String getLocation() {
+		return location;
+	}
+	
+	public void setLocation(String id) {
+		this.location = id;
+	}
+	
 	public boolean getIsLocalArea() {
 		return isLocalArea;
 	}
@@ -165,16 +175,17 @@ public class Source {
 		setIsLocalArea(isLocal);
 	}
 	
-	public Source(long id, String screenName, String type, String domain,double inf, int ff,int fr, String geoinfo, boolean isLocal){
+	public Source(long id, String screenName, String type, String domain,double inf, int ff,int fr, String location, boolean isLocal){
 		this(id, screenName,type,domain,inf,isLocal);
 		setFollowers(ff);
 		setFriends(fr);
 		//geoInfo
 		String geoStr = "unknown";
-		if(geoinfo != null)
+		if(location != null)
 		{
-			geoStr = geoinfo;
+			geoStr = location;
 		}
+		setLocation(geoStr);
 		setGeoInfo(geoStr);
 	}
 	
@@ -241,7 +252,7 @@ public class Source {
 			else
 			{
 				while (rs.next()) {
-					Source src = new Source(rs.getLong("source_id"), rs.getString("source_name"),rs.getString("type"),rs.getString("domain"),rs.getDouble("influence"), rs.getInt("followers"), rs.getInt("friends"),rs.getString("geoinfo"),rs.getBoolean("is_local_area"));				
+					Source src = new Source(rs.getLong("source_id"), rs.getString("source_name"),rs.getString("type"),rs.getString("domain"),rs.getDouble("influence"), rs.getInt("followers"), rs.getInt("friends"),rs.getString("location"),rs.getBoolean("is_local_area"));				
 					result.add(src);
 				}
 			}
@@ -255,6 +266,76 @@ public class Source {
 		rs.close();		
 		return result;
 	}
+	
+	/**
+	 * Retrieve sources from database for geocoding. 
+	 * 
+	 * @param conn
+	 * @param type (twitter|press)
+	 * @return
+	 * @throws NamingException
+	 * @throws SQLException
+	 */
+	public static Set<Source> retrieveForGeoCodingFromDB(Connection conn, String type, String opt) throws NamingException, SQLException {
+
+		Set<Source> result = new HashSet<Source>(); 
+		Statement stmt = conn.createStatement();
+		StringBuilder sb = new StringBuilder();
+		sb.append("SELECT * FROM behagunea_app_source where location !='unknown' ");
+		switch (opt)
+		{
+		case "unknown": sb.append(" and (geoinfo='' or geoinfo='unknown')");break;
+		case "error":  sb.append(" and geoinfo='error'");break;
+		case "all":  break;
+		}
+		
+		String andWhere = " where ";
+		if (sb.toString().contains(" where "))
+		{
+			andWhere=" and ";
+		}
+		
+		if (type.equalsIgnoreCase("twitter"))
+		{			
+			sb.append(andWhere).append("type='Twitter'");
+		}
+		else if (type.equalsIgnoreCase("feed"))
+		{
+			sb.append(andWhere).append("type='press'");
+		}
+		
+		//limited to 500 sources per call not to exceed rate limit.
+		String query = sb.append(" order by source_id desc limit 50").toString();
+		System.err.println("elh-MSM::Keyword::retrieveFromDB - query:"+query);
+		ResultSet rs = stmt.executeQuery(query);		
+		
+		try{	
+			if (type.equalsIgnoreCase("feed"))
+			{
+				while (rs.next()) {
+					Source src = new Source(rs.getLong("source_id"), rs.getString("source_name"),rs.getString("type"),rs.getString("domain"),rs.getDouble("influence"),rs.getBoolean("is_local_area"));				
+					result.add(src);
+				}
+			}
+			else
+			{
+				while (rs.next()) {
+					Source src = new Source(rs.getLong("source_id"), rs.getString("source_name"),rs.getString("type"),rs.getString("domain"),rs.getDouble("influence"), rs.getInt("followers"), rs.getInt("friends"),rs.getString("location"),rs.getBoolean("is_local_area"));				
+					result.add(src);
+				}
+			}
+			stmt.close();
+		} catch (SQLException sqle ) {
+			sqle.printStackTrace();
+		} //finally {
+		//	if (stmt != null) { stmt.close(); }
+		//}
+
+		rs.close();		
+		return result;
+	}
+	
+	
 	
 	
 	/**
@@ -331,7 +412,7 @@ public class Source {
 		int success = 0;
 		//PreparedStatement stmtS = null;		
 		try {	
-			String sourceIns = "insert ignore into behagunea_app_source (source_id, type, source_name, user_id, followers,friends,geoinfo,is_local_area) values (?,?,?,?,?,?,?,?)";
+			String sourceIns = "insert ignore into behagunea_app_source (source_id, type, source_name, user_id, followers,friends,location,geoinfo,is_local_area) values (?,?,?,?,?,?,?,?,?)";
 			stmtM = conn.prepareStatement(sourceIns, Statement.RETURN_GENERATED_KEYS);
 			stmtM.setLong(1, getId());
 			stmtM.setString(2, "Twitter");
@@ -339,7 +420,8 @@ public class Source {
 			stmtM.setInt(4, 1); //BEWARE: user_id is always given '1'. This must be reviewed in the future.	        
 			stmtM.setInt(5, getFollowers());
 			stmtM.setInt(6, getFriends());
-			stmtM.setString(7, getGeoInfo());
+			stmtM.setString(7, getLocation());
+			stmtM.setString(8, getGeoInfo());
 			stmtM.setBoolean(8, getIsLocalArea());
 			stmtM.executeUpdate();
 			stmtM.close();

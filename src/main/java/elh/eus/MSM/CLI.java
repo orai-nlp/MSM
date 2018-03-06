@@ -104,6 +104,11 @@ public class CLI {
 	private Subparser twitterUserParser;
 	
 	/**
+	 * The parser that manages the geocoding of the user locations.
+	 */
+	private Subparser userLocationGeocoderParser;
+	
+	/**
 	 * Construct a CLI object with the three sub-parsers to manage the command
 	 * line parameters.
 	 */
@@ -118,6 +123,8 @@ public class CLI {
 		loadInfluenceTaggerParameters();
 		twitterUserParser = subParsers.addParser("twtUser").help("Twitter user info CLI");
 		loadTwitterUserInfoParameters();
+		userLocationGeocoderParser = subParsers.addParser("geocode").help("Geocoder for twitter user locations info CLI");
+		loadUserLocationGeocoderParameters();
 
 	}
 	
@@ -200,13 +207,17 @@ public class CLI {
 			else if (args[0].equals("influence")) {
 				tagInfluence();
 			}
+			else if (args[0].equals("geocode")) {
+				tagGeoCode();
+			}
 			else if (args[0].equals("twtUser")) {
 				twtUserUInfo();
 			}
+			
 		} catch (ArgumentParserException e) {
 			argParser.handleError(e);
 			System.out.println("Run java -jar target/MSM-" + version
-					+ ".jar (twitter|feed|influence|twtUser) -help for details");
+					+ ".jar (twitter|feed|influence|twtUser|geocode) -help for details");
 			System.exit(1);
 		}
 	}
@@ -332,6 +343,10 @@ public class CLI {
 		
 	}
 	
+	/**
+	 * Influence tagging interface
+	 * 
+	 * */
 	public final void tagInfluence()
 	{
 		String cfg = parsedArguments.getString("config");	
@@ -407,7 +422,92 @@ public class CLI {
 		}
 				
 	}
+	
+	/**
+	 * Geocode tagging interface
+	 * 
+	 * */
+	public final void tagGeoCode()
+	{
+		String cfg = parsedArguments.getString("config");	
+		String sources = parsedArguments.getString("sources");	
+		boolean db = parsedArguments.getBoolean("database");
+		String type = parsedArguments.getString("type");
+		String opt = parsedArguments.getString("which");
+		
+		Properties params = new Properties();
+		try {
+			params.load(new FileInputStream(new File(cfg)));
+		} catch (FileNotFoundException fe){
+			System.err.println("elh-MSM::tagGeoCode - Config file not found "+cfg);
+			System.exit(1);
+		} catch (IOException ioe){
+			System.err.println("elh-MSM::tagGeoCode - Config file could not read "+cfg);
+			System.exit(1);
+		} 				
+		
+		
+		Set<Source> sourceList = new HashSet<Source>();
+		geoCode geoTagger = new geoCode(cfg, db);
+		try {
+			
+			if (sources.equalsIgnoreCase("db"))
+			{
+				Connection conn = MSMUtils.DbConnection(params.getProperty("dbuser"),
+													params.getProperty("dbpass"),
+													params.getProperty("dbhost"),
+													params.getProperty("dbname"));
+				sourceList = Source.retrieveForGeoCodingFromDB(conn,type,opt);
+				//System.err.println("elh-MSM::Influcence CLI (db): sources found to look for their influence: "+sourceList.size());				
+				geoTagger.tagGeoCode(sourceList);
+				conn.close();
+			}
+			else
+			{
+				String[] srcSplit = sources.split("\\s*,\\s*");
+				for (String src : srcSplit)
+				{
+					sourceList.add(new Source(src));
+				}
+				//System.err.println("elh-MSM::Influcence CLI (commandline): sources found to look for their influence: "+sourceList.size());
+				geoTagger.tagGeoCode(sourceList);				
+			}
+			
+			
+		} catch (Exception e) {			
+			e.printStackTrace();
+		} 
+		
+		if (db) // store influences into the database
+		{
+			try {
+				Connection conn = MSMUtils.DbConnection(params.getProperty("dbuser"),
+						params.getProperty("dbpass"),
+						params.getProperty("dbhost"),
+						params.getProperty("dbname"));
+				int count = geoTagger.geocode2db(sourceList, conn);
+				System.out.println("geolocation for "+count+" sources stored in the database");
+				conn.close();
+			} catch (NamingException | SQLException e) {
+				System.err.println("elh-MSM::tagGeoCode - Error when storing geolocation in the DB ");
+				e.printStackTrace();
+			} 					
+		}
+		else // print influence to stdout
+		{
+			for (Source src : sourceList)
+			{
+				System.out.println("Src: "+src.getScreenName()+" - geolocation:"+src.getGeoInfo());
+			}
+		}
+				
+	}
 
+	/**
+	 * 
+	 * Twitter user information retrieval interface
+	 * 
+	 * */
 	public final void twtUserUInfo()
 	{
 		String cfg = parsedArguments.getString("config");
@@ -526,6 +626,8 @@ public class CLI {
 				+ "\t\tWARNING2:Depending on the number of sources in the database this could take a very long time.\n");
 	}
 	
+	
+	
 	public final void loadTwitterUserInfoParameters()
 	{
 		twitterUserParser.addArgument("-c", "--config")
@@ -549,6 +651,40 @@ public class CLI {
 				+ "\t - \"db\" : standard output\n"
 				+ "\t - \"solr\" : standard output\n");
 	}
+	
+	public final void loadUserLocationGeocoderParameters()
+	{
+		userLocationGeocoderParser.addArgument("-s", "--sources")
+		.required(false)
+		.setDefault("db")
+		.help("web domain (pageRank or twitter screen name (KloutIndex) to look for its influence for."
+				+ "Many sources may be introduced separated by ',' char."
+				+ "If you want to retrieve sources from the database left this option empty or use the 'db' value\n");
+		userLocationGeocoderParser.addArgument("-c", "--config")		
+		.required(true)
+		.help("Configuration file that contains the necessary parameters to connect to the corresponding geocoding service APIs"
+				+ "and Database you want to interact with the database\n");
+		userLocationGeocoderParser.addArgument("-db", "--database")		
+		.action(Arguments.storeTrue())
+		.help("Whether influences shall be stored in a database or printed to stdout (default). "
+				+ "Database parameters must be given in the configuration file.\n");
+		userLocationGeocoderParser.addArgument("-t", "--type")
+		.choices("twitter", "feed", "all")
+		.setDefault("all")
+		.help("type of the sources to look for its geolocation for:"
+				+ "\t - \"twitter\" : sources are twitter user screen names\n"
+				+ "\t - \"domain\" : sources are web domains\n"
+				+ "\t - \"all\" : sources are mixed (default) system will detect the source type for each source\n");
+		userLocationGeocoderParser.addArgument("-w", "--which")
+		.choices("unknown", "error", "all")
+		.setDefault("unknown")
+		.help("which sources to look for its influence for (only for database interaction):\n"
+				+ "\t - \"unknown\" : sources that have not been yet processed at all\n"
+				+ "\t - \"error\" : sources that have been processed but no influence could be retrieved\n"
+				+ "\t - \"all\" : all sources.\n\t\tWARNING: this will override values in the database.\n"
+				+ "\t\tWARNING2:Depending on the number of sources in the database this could take a very long time.\n");
+	}
+	
 	
 	/**
 	 * Dummy function to get the version of this software from the pom.properties file.

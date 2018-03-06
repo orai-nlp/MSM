@@ -43,6 +43,7 @@ import java.util.List;
 
 import javax.naming.NamingException;
 
+import twitter4j.JSONArray;
 import twitter4j.JSONException;
 import twitter4j.JSONObject;
 
@@ -262,10 +263,36 @@ public final class MSMUtils {
 		{
 			sb.append((char) cp);
 		}
+		//System.out.println(sb.toString());
 		JSONObject json = new JSONObject(sb.toString());	
 	     
 		return json;
 	  }
+
+	/**
+	 * Function to read a JSON object from an url
+	 * 
+	 * @param url
+	 * @return
+	 * @throws IOException
+	 * @throws JSONException
+	 */
+	public static JSONArray readJsonArrayFromUrl(String url) throws IOException, JSONException
+	{		
+		URL urlObj = new URL(url);
+		BufferedReader rd = new BufferedReader(new InputStreamReader(urlObj.openStream()));
+		StringBuilder sb = new StringBuilder();
+		int cp;
+		while ((cp = rd.read()) != -1) 
+		{
+			sb.append((char) cp);
+		}
+		//System.out.println(sb.toString());
+		JSONArray json = new JSONArray(sb.toString());	
+	     
+		return json;
+	  }
+
 	
 	
 	/**
