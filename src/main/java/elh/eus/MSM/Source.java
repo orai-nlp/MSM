@@ -44,6 +44,7 @@ public class Source {
 	private double influence;
 	private int followers;
 	private int friends;
+	private String geoInfo;
 	private boolean isLocalArea;
 
 	
@@ -107,6 +108,13 @@ public class Source {
 		this.friends = id;
 	}
 	
+	public String getGeoInfo() {
+		return geoInfo;
+	}
+	
+	public void setGeoInfo(String id) {
+		this.geoInfo = id;
+	}
 	public boolean getIsLocalArea() {
 		return isLocalArea;
 	}
@@ -157,10 +165,17 @@ public class Source {
 		setIsLocalArea(isLocal);
 	}
 	
-	public Source(long id, String screenName, String type, String domain,double inf, int ff,int fr, boolean isLocal){
+	public Source(long id, String screenName, String type, String domain,double inf, int ff,int fr, String geoinfo, boolean isLocal){
 		this(id, screenName,type,domain,inf,isLocal);
 		setFollowers(ff);
 		setFriends(fr);
+		//geoInfo
+		String geoStr = "unknown";
+		if(geoinfo != null)
+		{
+			geoStr = geoinfo;
+		}
+		setGeoInfo(geoStr);
 	}
 	
 	/**
@@ -169,9 +184,10 @@ public class Source {
 	 */
 	public Source(User u, boolean isLocal)
 	{
-		this(u.getId(), u.getScreenName(),"Twitter","",-1,u.getFollowersCount(),u.getFriendsCount(),isLocal);
+		this(u.getId(), u.getScreenName(),"Twitter","",-1,u.getFollowersCount(),u.getFriendsCount(),u.getLocation(), isLocal);
 	}
-	
+
+
 	/**
 	 * Retrieve sources from database. Normally in order to launch a crawler or search engine queries
 	 * 
@@ -225,7 +241,7 @@ public class Source {
 			else
 			{
 				while (rs.next()) {
-					Source src = new Source(rs.getLong("source_id"), rs.getString("source_name"),rs.getString("type"),rs.getString("domain"),rs.getDouble("influence"), rs.getInt("followers"), rs.getInt("friends"),rs.getBoolean("is_local_area"));				
+					Source src = new Source(rs.getLong("source_id"), rs.getString("source_name"),rs.getString("type"),rs.getString("domain"),rs.getDouble("influence"), rs.getInt("followers"), rs.getInt("friends"),rs.getString("geoinfo"),rs.getBoolean("is_local_area"));				
 					result.add(src);
 				}
 			}
@@ -315,7 +331,7 @@ public class Source {
 		int success = 0;
 		//PreparedStatement stmtS = null;		
 		try {	
-			String sourceIns = "insert ignore into behagunea_app_source (source_id, type, source_name, user_id, followers,friends,is_local_area) values (?,?,?,?,?,?,?)";
+			String sourceIns = "insert ignore into behagunea_app_source (source_id, type, source_name, user_id, followers,friends,geoinfo,is_local_area) values (?,?,?,?,?,?,?,?)";
 			stmtM = conn.prepareStatement(sourceIns, Statement.RETURN_GENERATED_KEYS);
 			stmtM.setLong(1, getId());
 			stmtM.setString(2, "Twitter");
@@ -323,7 +339,8 @@ public class Source {
 			stmtM.setInt(4, 1); //BEWARE: user_id is always given '1'. This must be reviewed in the future.	        
 			stmtM.setInt(5, getFollowers());
 			stmtM.setInt(6, getFriends());
-			stmtM.setBoolean(7, getIsLocalArea());
+			stmtM.setString(7, getGeoInfo());
+			stmtM.setBoolean(8, getIsLocalArea());
 			stmtM.executeUpdate();
 			stmtM.close();
 			success=1;

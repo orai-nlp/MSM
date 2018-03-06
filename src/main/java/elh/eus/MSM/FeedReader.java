@@ -359,16 +359,16 @@ public class FeedReader {
 				// String ftype =feed.getFeedType();
 			} catch (NoSuchElementException nsee ){
 				System.err.println(
-						"FeadReader::getFeed ->  Feed ERROR with" + f.getFeedURL() + " seems the feed returned empty :\n ");
+						"FeadReader::getFeed ->  Feed ERROR with " + f.getFeedURL() + " seems the feed returned empty :\n ");
 				nsee.printStackTrace();
 			} catch (FeedException | IOException fe) {
 				System.err.println(
-						"FeadReader::getFeed ->  Feed ERROR with" + f.getFeedURL() + " :\n ");
+						"FeadReader::getFeed ->  Feed ERROR with " + f.getFeedURL() + " :\n ");
 				fe.printStackTrace();
 			}
 		} catch (IOException cpe) {			
 			System.err.println(
-					"FeadReader::getFeed ->  HTTP ERROR with" + f.getFeedURL() + " :\n " + cpe.getMessage());
+					"FeadReader::getFeed ->  HTTP ERROR with " + f.getFeedURL() + " :\n " + cpe.getMessage());
 			cpe.printStackTrace();
 		}
 
