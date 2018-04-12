@@ -682,12 +682,17 @@ public class TwitterStreamClient {
 				User u = s.getUser();
 				Source author = new Source(u,census.contains(u.getId()));
 				int authorStored = 0;
+				int authorUpdated = 0;
 				if (!author.existsInDB(conn))
 				{
-					authorStored = author.source2db(conn);
+					authorUpdated = author.source2db(conn);
+				}
+				else
+				{
+					authorUpdated = author.sourceLocation2db(conn);
 				}
 				success = m.mention2db(conn);
-				System.err.println("elh-MSM::TwitterStreamClient -  mention stored into the DB! "+success+" "+authorStored);
+				System.err.println("elh-MSM::TwitterStreamClient -  mention stored into the DB! "+success+" author: "+authorStored+" author update: "+authorUpdated);
 
 				//orig status is used to stored original statuses from retweets and quotes
 				Status origStatus = null;
@@ -720,7 +725,7 @@ public class TwitterStreamClient {
 					long mId = m2.existsInDB(conn);
 					if (mId>=0)
 					{
-						m2.updateRetweetFavouritesInDB(conn, mId);									
+						m2.updateRetweetFavourites2db(conn, mId);									
 					}				
 					// there are no keywords to look for so all the tweets are to be stored.
 					else if (!kwordBasedSearch)
@@ -728,9 +733,14 @@ public class TwitterStreamClient {
 						User u2 = origStatus.getUser();
 						Source author2 = new Source(u2,local);
 						authorStored = 0;
+						authorUpdated = 0;
 						if (!author2.existsInDB(conn))
 						{
 							authorStored = author2.source2db(conn);
+						}
+						else
+						{
+							authorUpdated = author.sourceLocation2db(conn);
 						}
 						success = m2.mention2db(conn);									
 					}
@@ -745,14 +755,19 @@ public class TwitterStreamClient {
 							User u2 = origStatus.getUser();
 							Source author2 = new Source(u2,local);
 							authorStored = 0;
+							authorUpdated = 0;
 							if (!author2.existsInDB(conn))
 							{
 								authorStored = author2.source2db(conn);
 							}
+							else
+							{
+								authorUpdated = author.sourceLocation2db(conn);
+							}
 							success = m2.mention2db(conn);
 						}							
 					}	
-					System.err.println("elh-MSM::TwitterStreamClient - rt|quoted tweet mention stored into the DB!"+success+" "+authorStored);        			        				
+					System.err.println("elh-MSM::TwitterStreamClient - rt|quoted tweet mention stored into the DB!"+success+" author: "+authorStored+" author update: "+authorUpdated);        			        				
 				}
 				conn.close();
 				break;

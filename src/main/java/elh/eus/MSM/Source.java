@@ -32,6 +32,7 @@ import java.util.regex.Pattern;
 import javax.naming.NamingException;
 
 import org.apache.commons.validator.routines.UrlValidator;
+import org.apache.commons.lang3.StringUtils;
 
 import twitter4j.User;
 
@@ -181,12 +182,13 @@ public class Source {
 		setFriends(fr);
 		//geoInfo
 		String geoStr = "unknown";
-		if(location != null)
+		System.err.println("MSM - Source Constructor: location:"+location+" source:"+screenName);
+		if(StringUtils.isNotEmpty(location))
 		{
 			geoStr = location;
 		}
 		setLocation(geoStr);
-		setGeoInfo(geoStr);
+		setGeoInfo("unknown");
 	}
 	
 	/**
@@ -305,7 +307,7 @@ public class Source {
 		}
 		
 		//limited to 500 sources per call not to exceed rate limit.
-		String query = sb.append(" order by source_id desc limit 50").toString();
+		String query = sb.append(" order by source_id desc limit 2000").toString();
 		System.err.println("elh-MSM::Keyword::retrieveFromDB - query:"+query);
 		ResultSet rs = stmt.executeQuery(query);		
 		
@@ -422,7 +424,7 @@ public class Source {
 			stmtM.setInt(6, getFriends());
 			stmtM.setString(7, getLocation());
 			stmtM.setString(8, getGeoInfo());
-			stmtM.setBoolean(8, getIsLocalArea());
+			stmtM.setBoolean(9, getIsLocalArea());
 			stmtM.executeUpdate();
 			stmtM.close();
 			success=1;
@@ -431,5 +433,36 @@ public class Source {
 			e.printStackTrace();
 		}
 		return success;
+	}
+	
+	/**
+	 * Update location into the database.
+	 * 
+	 * @param conn
+	 * @return
+	 */
+	public int sourceLocation2db(Connection conn) {	
+
+		int success = 1;
+		try {
+			Statement stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery("SELECT location FROM behagunea_app_source where source_id="+getId());
+			String result="";
+			if(rs.next()){
+	            result = rs.getString(1);
+	        }
+			
+			if (result.equalsIgnoreCase("unknown")){
+				String updateComm = "UPDATE behagunea_app_source "
+						+ "SET location=\""+getLocation()+"\" WHERE source_id="+getId();
+				// execute update
+				stmt.executeUpdate(updateComm);				
+			}
+			stmt.close();
+		} catch (SQLException e){
+			e.printStackTrace();
+			success=0;
+		}
+		return (success);
 	}
 }

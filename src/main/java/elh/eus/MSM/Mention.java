@@ -507,7 +507,7 @@ public class Mention {
 	 * @param conn
 	 * @return
 	 */
-	public int updateRetweetFavouritesInDB (Connection conn, long mId)
+	public int updateRetweetFavourites2db (Connection conn, long mId)
 	{
 		int success = 1;
 		try {

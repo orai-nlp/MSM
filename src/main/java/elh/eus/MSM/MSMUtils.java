@@ -263,14 +263,14 @@ public final class MSMUtils {
 		{
 			sb.append((char) cp);
 		}
-		//System.out.println(sb.toString());
+		//System.err.println(sb.toString());
 		JSONObject json = new JSONObject(sb.toString());	
 	     
 		return json;
 	  }
 
 	/**
-	 * Function to read a JSON object from an url
+	 * Function to read a JSON array of objects from an url
 	 * 
 	 * @param url
 	 * @return
@@ -287,7 +287,7 @@ public final class MSMUtils {
 		{
 			sb.append((char) cp);
 		}
-		//System.out.println(sb.toString());
+		//System.err.println(sb.toString());
 		JSONArray json = new JSONArray(sb.toString());	
 	     
 		return json;

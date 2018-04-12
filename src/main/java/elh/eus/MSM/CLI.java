@@ -458,7 +458,7 @@ public class CLI {
 													params.getProperty("dbhost"),
 													params.getProperty("dbname"));
 				sourceList = Source.retrieveForGeoCodingFromDB(conn,type,opt);
-				//System.err.println("elh-MSM::Influcence CLI (db): sources found to look for their influence: "+sourceList.size());				
+				System.err.println("elh-MSM::Influcence CLI (db): sources found to look for their location: "+sourceList.size());				
 				geoTagger.tagGeoCode(sourceList);
 				conn.close();
 			}
@@ -598,7 +598,7 @@ public class CLI {
 		influenceTaggerParser.addArgument("-s", "--sources")
 		.required(false)
 		.setDefault("db")
-		.help("web domain (pageRank or twitter screen name (KloutIndex) to look for its influence for."
+		.help("web domain (pageRank) or twitter screen name (KloutIndex) to look for its influence for."
 				+ "Many sources may be introduced separated by ',' char."
 				+ "If you want to retrieve sources from the database left this option empty or use the 'db' value\n");
 		influenceTaggerParser.addArgument("-c", "--config")		
@@ -657,8 +657,8 @@ public class CLI {
 		userLocationGeocoderParser.addArgument("-s", "--sources")
 		.required(false)
 		.setDefault("db")
-		.help("web domain (pageRank or twitter screen name (KloutIndex) to look for its influence for."
-				+ "Many sources may be introduced separated by ',' char."
+		.help("location to look for its geo-coordinate infor."
+				+ "Many locations may be introduced separated by ',' char."
 				+ "If you want to retrieve sources from the database left this option empty or use the 'db' value\n");
 		userLocationGeocoderParser.addArgument("-c", "--config")		
 		.required(true)

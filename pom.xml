@@ -8,7 +8,7 @@
 	<description>MSM, crawler solution developed by ELhuyar Foundation (elhuyar.eus). Handles twitter stream connections, feed reading, and a custom multimedia feed parsing. Although it works with standard output it is mainly designed to work with a Mysql DB.</description>
 	<developers>
 		<developer>
-			<id>isanvi</id>
+			<id>isanvicente</id>
 			<name>Iñaki San Vicente</name>
 			<email>i.sanvicente@elhuyar.eus</email>
 		</developer>
@@ -52,7 +52,7 @@
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
-			<version>3.6</version>
+			<version>3.7</version>
 		</dependency>		
 		<dependency>
   			<groupId>org.apache.httpcomponents</groupId>

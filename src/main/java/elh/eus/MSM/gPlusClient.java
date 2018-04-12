@@ -165,7 +165,7 @@ public class gPlusClient {
 								long mId = m2.existsInDB(conn);
 								if (mId>=0)
 								{
-									m2.updateRetweetFavouritesInDB(conn, mId);									
+									m2.updateRetweetFavourites2db(conn, mId);									
 								}
 								else
 								{
@@ -233,7 +233,7 @@ public class gPlusClient {
 								if (mId>=0)
 								{
 									System.err.println("elh-MSM::TwitterStreamClient - retweet - original already in DB"	);																	
-									m2.updateRetweetFavouritesInDB(conn, mId);									
+									m2.updateRetweetFavourites2db(conn, mId);									
 								}
 								else
 								{
