@@ -439,7 +439,7 @@ public class Mention {
 			//stmtS.close();
 			success=1;
 		} catch (SQLException e) {
-			System.err.println("elh-MSM::Mention mention2db - Error when trying to store mention into db.");
+			System.err.println("MSM::Mention mention2db - Error when trying to store mention into db.");
 			e.printStackTrace();			
 		}
 
@@ -468,7 +468,7 @@ public class Mention {
 			stmtKM.close();						
 			
 		} catch (SQLException e) {
-			System.err.println("elh-MSM::Mention mention2db - Error when trying add keyword to mention "+getMention_id()+" into db.");
+			System.err.println("MSM::Mention mention2db - Error when trying add keyword to mention "+getMention_id()+" into db.");
 			e.printStackTrace();
 		}
 

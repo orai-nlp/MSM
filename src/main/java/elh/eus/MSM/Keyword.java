@@ -198,7 +198,7 @@ public class Keyword {
 		}
 		
 		String query = "SELECT * FROM behagunea_app_keyword where type='"+type+"'"+langCondition;
-		//System.err.println("elh-MSM::Keyword::retrieveFromDB - query:"+query);
+		//System.err.println("MSM::Keyword::retrieveFromDB - query:"+query);
 		ResultSet rs = stmt.executeQuery(query);
 		
 		

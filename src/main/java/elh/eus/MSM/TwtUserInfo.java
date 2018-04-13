@@ -37,15 +37,15 @@ public class TwtUserInfo {
 	 * @param config
 	 * @param store
 	 */
-	public TwtUserInfo(String config, String store)
+	public TwtUserInfo(String config, String store, Integer limit)
 	{
 		try {
 			params.load(new FileInputStream(new File(config)));
 		} catch (FileNotFoundException fe){
-			System.err.println("elh-MSM::TwitterStreamClient - Config file not found "+config);
+			System.err.println("MSM::TwitterStreamClient - Config file not found "+config);
 			System.exit(1);
 		} catch (IOException ioe){
-			System.err.println("elh-MSM::TwitterStreamClient - Config file could not read "+config);
+			System.err.println("MSM::TwitterStreamClient - Config file could not read "+config);
 			System.exit(1);
 		} 
 		
@@ -59,10 +59,10 @@ public class TwtUserInfo {
 			String[] follows = params.getProperty("userIds").split(",");
 			for (String s : follows)
 			{
-				//System.err.println("elh-MSM::TwtUserInfo - followings: "+s);
+				//System.err.println("MSM::TwtUserInfo - followings: "+s);
 				usrIds.add(Long.parseLong(s));
 			}	
-			System.err.println("elh-MSM::TwtUserInfo - retrieved "+usrIds.size()+" users from config file");
+			System.err.println("MSM::TwtUserInfo - retrieved "+usrIds.size()+" users from config file");
 		}
 		// If no user Ids were defined in config file try to get them from the DB
 		if (usrIds.isEmpty()){	
@@ -72,14 +72,14 @@ public class TwtUserInfo {
 						params.getProperty("dbpass"), 
 						params.getProperty("dbhost"), 
 						params.getProperty("dbname")); 
-				Set<Source> srcList = Source.retrieveFromDB(conn,"twitter","all");
+				Set<Source> srcList = Source.retrieveFromDB(conn,"twitter","all",limit);
 				for (Source src : srcList)
 				{
 					usrIds.add(src.getId());
 				}
-				System.err.println("elh-MSM::TwtUserInfo - retrieved "+usrIds.size()+" users from DB");
+				System.err.println("MSM::TwtUserInfo - retrieved "+usrIds.size()+" users from DB");
 			} catch (Exception e){
-				System.err.println("elh-MSM::TwtUserInfo - connection with the DB could not be established,"
+				System.err.println("MSM::TwtUserInfo - connection with the DB could not be established,"
 						+ "MSM will try to read user ids from config file.");
 				//e.printStackTrace();			
 			}
@@ -87,7 +87,7 @@ public class TwtUserInfo {
 		
 		if (usrIds.isEmpty())
 		{
-			System.err.println("elh-MSM::TwtUserInfo - No user info could be found, aborting process");
+			System.err.println("MSM::TwtUserInfo - No user info could be found, aborting process");
 			System.exit(1);
 		}
 		
@@ -130,7 +130,7 @@ public class TwtUserInfo {
 					System.out.println(i+"\t"+id);
 				}
 			}catch (TwitterException twte){
-				System.err.println("elh-MSM::TwtUserInfo - Error when retrieving user info from Twitter id: "+id);
+				System.err.println("MSM::TwtUserInfo - Error when retrieving user info from Twitter id: "+id);
 				//System.out.println("--> "+id+"\t-1\t-1");
 				twte.printStackTrace();					
 			}		
@@ -138,7 +138,7 @@ public class TwtUserInfo {
 			{
 				Thread.sleep(1000*61); //1000 milliseconds is one second.					
 			} catch (InterruptedException inte) {
-				System.err.println("elh-MSM::TwtUserInfo - Error when waiting for the next call to Twitter");			
+				System.err.println("MSM::TwtUserInfo - Error when waiting for the next call to Twitter");			
 				inte.printStackTrace();
 			}
 		}				

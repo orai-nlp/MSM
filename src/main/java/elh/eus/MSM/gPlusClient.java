@@ -104,7 +104,7 @@ public class gPlusClient {
         		try {
 					FileUtils.writeStringToFile(new File(logFilePath), status.toString());
 				} catch (IOException e) {
-					System.err.println("elh-MSM::TwitterStreamClient -IO error when writing to twitter client log");
+					System.err.println("MSM::TwitterStreamClient -IO error when writing to twitter client log");
 					e.printStackTrace();
 				}
         	}
@@ -153,13 +153,13 @@ public class gPlusClient {
 							}
 							success = m.mention2db(conn);
 							
-							System.err.println("elh-MSM::TwitterStreamClient - mention stored into the DB!"+success+" "+authorStored);
+							System.err.println("MSM::TwitterStreamClient - mention stored into the DB!"+success+" "+authorStored);
 							
 							//mention is a retweet, so store the original tweet as well, or update it in case 
 							//it is already in the database							
 							if (m.getIsRetweet())
 							{
-								//System.err.println("elh-MSM::TwitterStreamClient - retweet found!!!"	);
+								//System.err.println("MSM::TwitterStreamClient - retweet found!!!"	);
 								Mention m2 = new Mention(status.getRetweetedStatus(),lang, false); //local area treatment not done
 								m2.setKeywords(kwrds);
 								long mId = m2.existsInDB(conn);
@@ -177,15 +177,15 @@ public class gPlusClient {
 									}
 									success = m2.mention2db(conn);									
 								}
-								System.err.println("elh-MSM::TwitterStreamClient - retweeted mention stored into the DB!"+success+" "+authorStored);
+								System.err.println("MSM::TwitterStreamClient - retweeted mention stored into the DB!"+success+" "+authorStored);
 							}
 							conn.close();
 							break;
 						} catch (SQLException sqle) {
-							System.err.println("elh-MSM::TwitterStreamClient - connection with the DB could not be established");
+							System.err.println("MSM::TwitterStreamClient - connection with the DB could not be established");
 							sqle.printStackTrace();
 						} catch (Exception e) {
-							System.err.println("elh-MSM::TwitterStreamClient - error when storing mention");
+							System.err.println("MSM::TwitterStreamClient - error when storing mention");
 							e.printStackTrace();
 						}
 						break;
@@ -220,24 +220,24 @@ public class gPlusClient {
 								authorStored = author.source2db(conn);
 							}
 							success = m.mention2db(conn);
-							System.err.println("elh-MSM::TwitterStreamClient -  mention stored into the DB!"+success+" "+authorStored);
+							System.err.println("MSM::TwitterStreamClient -  mention stored into the DB!"+success+" "+authorStored);
 							
 							//mention is a retweet, so store the original tweet as well, or update it in case 
 							//it is already in the database							
 							if (m.getIsRetweet())
 							{
 								Status rtStatus = status.getRetweetedStatus();
-								//System.err.println("elh-MSM::TwitterStreamClient - retweet found!!!"	);								
+								//System.err.println("MSM::TwitterStreamClient - retweet found!!!"	);								
 								Mention m2 = new Mention(rtStatus,lang, false); //local area treatment not done								
 								long mId = m2.existsInDB(conn);
 								if (mId>=0)
 								{
-									System.err.println("elh-MSM::TwitterStreamClient - retweet - original already in DB"	);																	
+									System.err.println("MSM::TwitterStreamClient - retweet - original already in DB"	);																	
 									m2.updateRetweetFavourites2db(conn, mId);									
 								}
 								else
 								{
-									System.err.println("elh-MSM::TwitterStreamClient - retweet  - original new, add to DB"	);																	
+									System.err.println("MSM::TwitterStreamClient - retweet  - original new, add to DB"	);																	
 									//m2.setKeywords(kwrds);
 									Source author2 = new Source(rtStatus.getUser(),false);
 									authorStored = 0;
@@ -247,15 +247,15 @@ public class gPlusClient {
 									}
 									success = m2.mention2db(conn);									
 								}
-								System.err.println("elh-MSM::TwitterStreamClient - retweeted mention stored into the DB!"+success+" "+authorStored);
+								System.err.println("MSM::TwitterStreamClient - retweeted mention stored into the DB!"+success+" "+authorStored);
 							}
 							conn.close();
 							break;
 						} catch (SQLException sqle) {
-							System.err.println("elh-MSM::TwitterStreamClient - connection with the DB could not be established");
+							System.err.println("MSM::TwitterStreamClient - connection with the DB could not be established");
 							sqle.printStackTrace();
 						} catch (Exception e) {
-							System.err.println("elh-MSM::TwitterStreamClient - error when storing mention");
+							System.err.println("MSM::TwitterStreamClient - error when storing mention");
 							e.printStackTrace();
 						}
 						break;
@@ -270,7 +270,7 @@ public class gPlusClient {
 			}
 			else
 			{
-				System.err.println("elh-MSM::TwitterStreamClient - mention discarded because of lang requirements. lang: "+lang+" - "+acceptedLangs.toString());				
+				System.err.println("MSM::TwitterStreamClient - mention discarded because of lang requirements. lang: "+lang+" - "+acceptedLangs.toString());				
 			}
 			
 		}
@@ -348,10 +348,10 @@ public class gPlusClient {
 		try {
 			params.load(new FileInputStream(new File(config)));
 		} catch (FileNotFoundException fe){
-			System.err.println("elh-MSM::TwitterStreamClient - Config file not found "+config);
+			System.err.println("MSM::TwitterStreamClient - Config file not found "+config);
 			System.exit(1);
 		} catch (IOException ioe){
-			System.err.println("elh-MSM::TwitterStreamClient - Config file could not read "+config);
+			System.err.println("MSM::TwitterStreamClient - Config file could not read "+config);
 			System.exit(1);
 		} 
 		
@@ -380,7 +380,7 @@ public class gPlusClient {
 			{
 				terms = Arrays.asList(params.getProperty("searchTerms").split(","));	
 				keywords = Keyword.createFromList(terms,acceptedLangs);
-				System.err.println("elh-MSM::TwitterStreamClient - retrieved "+keywords.size()+" keywords from config file");											
+				System.err.println("MSM::TwitterStreamClient - retrieved "+keywords.size()+" keywords from config file");											
 			}
 			
 			// If no search terms were defined in config file try to get search terms from the DB
@@ -404,16 +404,16 @@ public class gPlusClient {
 					kwrdSet.remove("");
 					terms = new ArrayList<String>(kwrdSet);
 					//searchTerms = Arrays.asList(kwrdSet).toString().replaceAll("(^\\[|\\]$)", "").replace(", ", ",").toLowerCase();
-					System.err.println("elh-MSM::TwitterStreamClient - retrieved "+keywords.size()+" keywords from DB");				
+					System.err.println("MSM::TwitterStreamClient - retrieved "+keywords.size()+" keywords from DB");				
 
 				} catch (Exception e){
-					System.err.println("elh-MSM::TwitterStreamClient - connection with the DB could not be established,"
+					System.err.println("MSM::TwitterStreamClient - connection with the DB could not be established,"
 							+ "MSM will try to read search terms from config file.");
 					//e.printStackTrace();			
 				}
 			}//terms from db
 
-			System.err.println("elh-MSM::TwitterStreamClient - Search terms: "+terms.toString());
+			System.err.println("MSM::TwitterStreamClient - Search terms: "+terms.toString());
 
 			//tracking terms
 			if (!terms.isEmpty())
@@ -423,7 +423,7 @@ public class gPlusClient {
 			}
 			else if (parameters.equals("terms"))
 			{
-				System.err.println("elh-MSM::TwitterStreamClient - WARNING: no search terms could be found."
+				System.err.println("MSM::TwitterStreamClient - WARNING: no search terms could be found."
 						+ "this can result in an Flood of tweets...");
 			}
 
@@ -437,7 +437,7 @@ public class gPlusClient {
 				List<String> locs = Arrays.asList(params.getProperty("location").split("::"));
 				for (String s : locs)
 				{
-					System.err.println("elh-MSM::TwitterStreamClient - location: "+s);
+					System.err.println("MSM::TwitterStreamClient - location: "+s);
 					String[] coords = s.split(",");
 					Location loc = new Location(
 							new Coordinate(Double.parseDouble(coords[0]),Double.parseDouble(coords[1])),
@@ -446,14 +446,14 @@ public class gPlusClient {
 					locations.add(loc);
 				}
 			}
-			System.err.println("elh-MSM::TwitterStreamClient - retrieved "+locations.size()+" locations from config file");
+			System.err.println("MSM::TwitterStreamClient - retrieved "+locations.size()+" locations from config file");
 			if (!locations.isEmpty())
 			{
 				hosebirdEndpoint.locations(locations);								
 			}
 			else if (parameters.equals("geo"))
 			{
-				System.err.println("elh-MSM::TwitterStreamClient - WARNING: no geolocations could be found."
+				System.err.println("MSM::TwitterStreamClient - WARNING: no geolocations could be found."
 						+ "this can result in an Flood of tweets...");
 			}
 			
@@ -467,18 +467,18 @@ public class gPlusClient {
 				String[] follows = params.getProperty("followings").split(",");
 				for (String s : follows)
 				{
-					//System.err.println("elh-MSM::TwitterStreamClient - followings: "+s);
+					//System.err.println("MSM::TwitterStreamClient - followings: "+s);
 					users.add(Long.parseLong(s));
 				}				
 			}
-			System.err.println("elh-MSM::TwitterStreamClient - retrieved "+users.size()+" users from config file");
+			System.err.println("MSM::TwitterStreamClient - retrieved "+users.size()+" users from config file");
 			if (!users.isEmpty())
 			{
 				hosebirdEndpoint.followings(users);				
 			}
 			else if (parameters.equals("users"))
 			{
-				System.err.println("elh-MSM::TwitterStreamClient - WARNING: no users to follow could be found."
+				System.err.println("MSM::TwitterStreamClient - WARNING: no users to follow could be found."
 						+ "this can result in an Flood of tweets...");
 			}
 		}
@@ -522,7 +522,7 @@ public class gPlusClient {
 			}
 
 		} catch (Exception e) {
-			System.err.println("elh-MSM::TwitterStreamClient - Authentication problem");			
+			System.err.println("MSM::TwitterStreamClient - Authentication problem");			
 			e.printStackTrace();
 			System.exit(1);
 		}
@@ -531,7 +531,7 @@ public class gPlusClient {
 
 	private void loadAcceptedLangs(String property) {
 		this.acceptedLangs=Arrays.asList(property.split(","));	
-		System.err.println("elh-MSM::TwitterStreamClient - Accepted languages: "+acceptedLangs);
+		System.err.println("MSM::TwitterStreamClient - Accepted languages: "+acceptedLangs);
 	}
 	
 	
@@ -566,7 +566,7 @@ public class gPlusClient {
 				pstr = "\\b"+k.getText().replace('_',' ').toLowerCase();
 			}
 			Pattern p = Pattern.compile(pstr);
-			System.err.println("elh-MSM::TwitterStreamClient::constructKeywordPatterns - currentPattern:"+p.toString());
+			System.err.println("MSM::TwitterStreamClient::constructKeywordPatterns - currentPattern:"+p.toString());
 
 			kwrdPatterns.put(k.getId(), p);
 			if (k.isAnchor())
@@ -617,14 +617,14 @@ public class gPlusClient {
 			anchorFound = anchorPattern.matcher(searchText).find();
 		}
 	
-		System.err.println("elh-MSM::TwitterStreamClientReader::parseTweetForKeywords - independent:"+independentkwrds.size()
+		System.err.println("MSM::TwitterStreamClientReader::parseTweetForKeywords - independent:"+independentkwrds.size()
 				+" - dependent: "+dependentkwrds.size()+"\n - searchText:"+searchText);
 				
 		
 		//keywords that do not need any anchor
 		for (Keyword k : independentkwrds)
 		{				
-			//System.err.println("elh-MSM::TwitterStreamClient::parseTweetForKeywords - independent key:"
+			//System.err.println("MSM::TwitterStreamClient::parseTweetForKeywords - independent key:"
 			//	+k.getText()+" l="+k.getLang()+" pattern:"+kwrdPatterns.get(k.getId()).toString());
 			String kLang = k.getLang();
 			if ((kwrdPatterns.get(k.getId()).matcher(searchText).find()) && 
@@ -632,7 +632,7 @@ public class gPlusClient {
 			//if((k.getLang().equalsIgnoreCase(lang) && kwrdPatterns.get(k.getId()).matcher(searchText).find())|| 
 			//		(k.getLang().equalsIgnoreCase("all") && kwrdPatterns.get(k.getId()).matcher(searchText).find()))
 			{	
-				System.err.println("elh-MSM::TwitterStreamClient::parseTweetForKeywords - independent key found!!!: "+k.getText()+" id: "+k.getId());
+				System.err.println("MSM::TwitterStreamClient::parseTweetForKeywords - independent key found!!!: "+k.getText()+" id: "+k.getId());
 				result.add(k);
 			}								
 		}			
@@ -647,13 +647,13 @@ public class gPlusClient {
 				if ((kwrdPatterns.get(k.getId()).matcher(searchText).find()) && 
 							(kLang.equalsIgnoreCase(lang)|| kLang.equalsIgnoreCase("all") || lang.equalsIgnoreCase("unk")))
 				{
-					System.err.println("elh-MSM::TwitterStreamClient::parseTweetForKeywords - dependent key found!!!: "+k.getText()+" id: "+k.getId());						
+					System.err.println("MSM::TwitterStreamClient::parseTweetForKeywords - dependent key found!!!: "+k.getText()+" id: "+k.getId());						
 					result.add(k);
 				}					
 			}
 		}	
 		
-		System.err.println("elh-MSM::TwitteStreamClient::parseTweetForKeywords - keywords found: "+result.size());						
+		System.err.println("MSM::TwitteStreamClient::parseTweetForKeywords - keywords found: "+result.size());						
 		
 		return result;
 	}

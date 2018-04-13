@@ -230,7 +230,7 @@ public final class multimediaElement {
 		}
 		else
 		{
-			System.err.println("elh-MSM::Feed (constructor) - given feed url is not valid "+src);
+			System.err.println("MSM::Feed (constructor) - given feed url is not valid "+src);
 			System.exit(1);
 		}*/
 	}
@@ -292,7 +292,7 @@ public final class multimediaElement {
 		
 			String anchorText = StringUtils.stripAccents(windowWords(transWords, wstart, wend).toLowerCase()); 
 			boolean anchorFound = anchors.matcher(anchorText).find();
-		//System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - anchorPattern: "+anchorPattern.toString()
+		//System.err.println("MSM::FeedReader::parseArticleForKeywords - anchorPattern: "+anchorPattern.toString()
 		//		+"\n -- found? "+anchorFound+" lang: "+lang+" indep/dep:"+independentkwrds.size()+"/"+dependentkwrds.size());
 			
 			float splitStart = wstart; 
@@ -335,11 +335,11 @@ public final class multimediaElement {
 						kwrdFound = kwrdPatterns.get(k.getId()).matcher(searchTextLC).find();
 					}
 
-					//System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key:"
+					//System.err.println("MSM::FeedReader::parseArticleForKeywords - independent key:"
 					//	+k.getText()+" l="+k.getLang()+" pattern:"+kwrdPatterns.get(k.getId()).toString());
 					if(k.getLang().equalsIgnoreCase(lang) && kwrdFound)
 					{	
-						//System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key found!!!: "+k.getText()+" id: "+k.getId());
+						//System.err.println("MSM::FeedReader::parseArticleForKeywords - independent key found!!!: "+k.getText()+" id: "+k.getId());
 						result.add(k);
 						screenTagList.add(k.getScreenTag());
 					}								
@@ -372,7 +372,7 @@ public final class multimediaElement {
 
 						if (k.getLang().equalsIgnoreCase(lang) && kwrdFound)
 						{
-							//System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - dependent key found!!!: "+k.getText()+" id: "+k.getId());						
+							//System.err.println("MSM::FeedReader::parseArticleForKeywords - dependent key found!!!: "+k.getText()+" id: "+k.getId());						
 							result.add(k);
 							screenTagList.add(k.getScreenTag());
 						}					
@@ -400,11 +400,11 @@ public final class multimediaElement {
 					if (store.equalsIgnoreCase("db"))
 					{
 						m.mention2db(dbconn);
-						System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - mention2db: "+splitText);
+						System.err.println("MSM::FeedReader::parseArticleForKeywords - mention2db: "+splitText);
 					}
 					else
 					{
-						System.out.println("elh-MSM::FeedReader::parseArticleForKeywords - mention found!: "+splitText);
+						System.out.println("MSM::FeedReader::parseArticleForKeywords - mention found!: "+splitText);
 						m.print();		
 					}
 				}
@@ -430,7 +430,7 @@ public final class multimediaElement {
 	
 	public void convertStream (String mediaUrl, String converted) throws IOException{
 		//convert original video to usable format
-	    System.err.println("elh-MSM::MultimediaElement::convertStream - "+mediaUrl+" to "+converted);
+	    System.err.println("MSM::MultimediaElement::convertStream - "+mediaUrl+" to "+converted);
 		FFmpeg ffmpegWrapper = new FFmpeg(this.ffmpeg+File.separator+"ffmpeg");				
 		FFprobe ffprobeWrapper = new FFprobe(this.ffmpeg+File.separator+"ffprobe");
 		FFmpegProbeResult ffInput = ffprobeWrapper.probe(mediaUrl);

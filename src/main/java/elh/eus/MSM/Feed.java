@@ -108,7 +108,7 @@ public class Feed {
 		}
 		else
 		{
-			System.err.println("elh-MSM::Feed (constructor) - given feed url is not valid "+src);
+			System.err.println("MSM::Feed (constructor) - given feed url is not valid "+src);
 			System.exit(1);
 		}
 	}

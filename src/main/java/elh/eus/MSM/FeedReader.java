@@ -151,12 +151,12 @@ public class FeedReader {
 		try {
 			DBconn = MSMUtils.DbConnection(params.getProperty("dbuser"),params.getProperty("dbpass"),params.getProperty("dbhost"),params.getProperty("dbname"));
 			kwrds = Keyword.retrieveFromDB(DBconn, "press", params.getProperty("langs", "all"));
-			System.err.println("elh-MSM::FeedReader(config,store) - retrieved "+kwrds.size()+" keywords");
+			System.err.println("MSM::FeedReader(config,store) - retrieved "+kwrds.size()+" keywords");
 
 			closeDBConnection();
 		}catch (Exception e)
 		{
-			System.err.println("elh-MSM::FeedReader(config,store) - DB Error when trying to load keywords");
+			System.err.println("MSM::FeedReader(config,store) - DB Error when trying to load keywords");
 			e.printStackTrace();
 
 
@@ -207,7 +207,7 @@ public class FeedReader {
 				{
 					p = Pattern.compile("\\b"+k.getText().replace('_',' ').toLowerCase());
 				}
-				//System.err.println("elh-MSM::FeedReader::constructKeywordPatterns - currentPattern:"+p.toString());
+				//System.err.println("MSM::FeedReader::constructKeywordPatterns - currentPattern:"+p.toString());
 
 				kwrdPatterns.put(k.getId(), p);
 
@@ -243,10 +243,10 @@ public class FeedReader {
 		try {
 			params.load(new FileInputStream(new File(config)));
 		} catch (FileNotFoundException fe){
-			System.err.println("elh-MSM::FeedReader - Config file not found "+config);
+			System.err.println("MSM::FeedReader - Config file not found "+config);
 			System.exit(1);
 		} catch (IOException ioe){
-			System.err.println("elh-MSM::FeedReader - Config file could not read "+config);
+			System.err.println("MSM::FeedReader - Config file could not read "+config);
 			System.exit(1);
 		} 
 
@@ -266,9 +266,9 @@ public class FeedReader {
 			try {
 				census = MSMUtils.loadOneColumnResource(new FileInputStream(censusf));
 			} catch (FileNotFoundException fe){
-				System.err.println("elh-MSM::FeedReader - census file NOT FOUND, crawler will continue without census"+censusf);
+				System.err.println("MSM::FeedReader - census file NOT FOUND, crawler will continue without census"+censusf);
 			} catch (IOException ioe){
-				System.err.println("elh-MSM::FeedReader - census file COULD NOT BE READ, crawler will continue without census "+censusf);
+				System.err.println("MSM::FeedReader - census file COULD NOT BE READ, crawler will continue without census "+censusf);
 			} 
 		}
 		
@@ -277,7 +277,7 @@ public class FeedReader {
 			try {
 				DBconn = MSMUtils.DbConnection(params.getProperty("dbuser"),params.getProperty("dbpass"),params.getProperty("dbhost"),params.getProperty("dbname"));
 			} catch (NamingException | SQLException e) {
-				System.err.println("elh-MSM::FeedReader - Database connection could not be stablished.");
+				System.err.println("MSM::FeedReader - Database connection could not be stablished.");
 				System.exit(1);
 			}
 		}
@@ -637,7 +637,7 @@ public class FeedReader {
 		
 		String wholeText = StringUtils.stripAccents(doc.getContent()).toLowerCase(); 
 		boolean anchorFound = anchorPattern.matcher(wholeText).find();
-		//System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - anchorPattern: "+anchorPattern.toString()
+		//System.err.println("MSM::FeedReader::parseArticleForKeywords - anchorPattern: "+anchorPattern.toString()
 		//		+"\n -- found? "+anchorFound+" lang: "+lang+" indep/dep:"+independentkwrds.size()+"/"+dependentkwrds.size());
 
 
@@ -669,7 +669,7 @@ public class FeedReader {
 				//check if a keyword with the same tag has been already matched, if so do not check the key. 
 				if (screenTagList.contains(k.getScreenTag()))
 				{
-					System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - indpndnt keyword found,"
+					System.err.println("MSM::FeedReader::parseArticleForKeywords - indpndnt keyword found,"
 							+ " but not stored because another key was matched with the same screen tag: "+k.getText());
 					continue;
 				}
@@ -686,11 +686,11 @@ public class FeedReader {
 					kwrdFound = kwrdPatterns.get(k.getId()).matcher(searchTextLC).find();
 				}
 				
-				//System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key:"
+				//System.err.println("MSM::FeedReader::parseArticleForKeywords - independent key:"
 				//	+k.getText()+" l="+k.getLang()+" pattern:"+kwrdPatterns.get(k.getId()).toString());
 				if(k.getLang().equalsIgnoreCase(lang) && kwrdFound)
 				{	
-					//System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - independent key found!!!: "+k.getText()+" id: "+k.getId());
+					//System.err.println("MSM::FeedReader::parseArticleForKeywords - independent key found!!!: "+k.getText()+" id: "+k.getId());
 					result.add(k);
 					screenTagList.add(k.getScreenTag());
 				}								
@@ -703,7 +703,7 @@ public class FeedReader {
 					//check if a keyword with the same tag has been already matched, if so do not check the key. 
 					if (screenTagList.contains(k.getScreenTag()))
 					{
-						System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - dpndnt keyword found,"
+						System.err.println("MSM::FeedReader::parseArticleForKeywords - dpndnt keyword found,"
 								+ " but not stored because another key was matched with the same screen tag: "+k.getText());
 						continue;
 					}
@@ -723,7 +723,7 @@ public class FeedReader {
 					
 					if (k.getLang().equalsIgnoreCase(lang) && kwrdFound)
 					{
-						//System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - dependent key found!!!: "+k.getText()+" id: "+k.getId());						
+						//System.err.println("MSM::FeedReader::parseArticleForKeywords - dependent key found!!!: "+k.getText()+" id: "+k.getId());						
 						result.add(k);
 						screenTagList.add(k.getScreenTag());
 					}					
@@ -737,11 +737,11 @@ public class FeedReader {
 				if (store.equalsIgnoreCase("db"))
 				{
 					m.mention2db(DBconn);
-					System.err.println("elh-MSM::FeedReader::parseArticleForKeywords - mention2db: "+par);
+					System.err.println("MSM::FeedReader::parseArticleForKeywords - mention2db: "+par);
 				}
 				else
 				{
-					System.out.println("elh-MSM::FeedReader::parseArticleForKeywords - mention found!: "+par);
+					System.out.println("MSM::FeedReader::parseArticleForKeywords - mention found!: "+par);
 					m.print();		
 				}
 			}			
@@ -842,11 +842,11 @@ public class FeedReader {
 		
 		if (store.equalsIgnoreCase("db"))
 		{
-			System.err.println("elh-MSM::FeedReader::processFullArticle - 2db not implemented yet. "+link);
+			System.err.println("MSM::FeedReader::processFullArticle - 2db not implemented yet. "+link);
 		}
 		else
 		{
-			System.err.println("elh-MSM::FeedReader::processFullArticle - article to stout: "+link);
+			System.err.println("MSM::FeedReader::processFullArticle - article to stout: "+link);
 			StringBuilder tp = new StringBuilder();
 			tp.append("<doc>\n").append("<url>").append(link).append("</url>\n");
 			tp.append("<lang>").append(lang).append("</lang>\n");
@@ -864,7 +864,7 @@ public class FeedReader {
 	 */
 	private void loadAcceptedLangs(String property) {
 		this.acceptedLangs=Arrays.asList(property.split(","));	
-		System.err.println("elh-MSM::FeedReader - Accepted languages: "+acceptedLangs);
+		System.err.println("MSM::FeedReader - Accepted languages: "+acceptedLangs);
 	}
 
 	/**
@@ -875,7 +875,7 @@ public class FeedReader {
 		try {
 			DBconn.close();
 		} catch (SQLException e) {
-			System.err.println("elh-MSM::FeedReader::closeDBConnection - ERROR when closing DB connection. "
+			System.err.println("MSM::FeedReader::closeDBConnection - ERROR when closing DB connection. "
 					+ "Either it is already closed or it was never openned");
 			e.printStackTrace();
 		}

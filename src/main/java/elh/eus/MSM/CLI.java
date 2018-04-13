@@ -67,10 +67,10 @@ public class CLI {
 	/**
 	 * Argument parser instance.
 	 */
-	private ArgumentParser argParser = ArgumentParsers.newArgumentParser(
-			"elh-MSM-" + version + ".jar").description(
-					"elh-MSM-" + version
-					+ " is a crawling module developed by Elhuyar Foundation.\n");
+	private ArgumentParser argParser = ArgumentParsers.newFor("MSM-" + version + ".jar")
+			.build()
+				.defaultHelp(true)
+				.description("MSM-" + version + " is a crawling module developed by Elhuyar Foundation.\n");
 	/**
 	 * Sub parser instance.
 	 */
@@ -251,10 +251,10 @@ public class CLI {
 		try {
 			params.load(new FileInputStream(new File(cfg)));
 		} catch (FileNotFoundException fe){
-			System.err.println("elh-MSM::CLI (feedReader) - Config file not found "+cfg);
+			System.err.println("MSM::CLI (feedReader) - Config file not found "+cfg);
 			System.exit(1);
 		} catch (IOException ioe){
-			System.err.println("elh-MSM::CLI (feedReader) - Config file could not read "+cfg);
+			System.err.println("MSM::CLI (feedReader) - Config file could not read "+cfg);
 			System.exit(1);
 		} 				
 		
@@ -328,14 +328,14 @@ public class CLI {
 				}
 				
 				
-				System.err.println("elh-MSM::FeedReader (CLI) - "+feedList.size()+" "+type+" feeds and "+kwrdList.size()+" keywords");
+				System.err.println("MSM::FeedReader (CLI) - "+feedList.size()+" "+type+" feeds and "+kwrdList.size()+" keywords");
 				FeedReader fReader = new FeedReader(cfg, feedList, kwrdList, store, census);
 				fReader.processFeeds(store, type, ffmpeg);
 			}
 			
 		} catch (SQLException se) {			
 			se.printStackTrace();	
-			System.err.println("elh-MSM::FeedReader (CLI) - ERROR when connecting to the DB: "+params.getProperty("dbuser")+" "+params.getProperty("dbpass")+" "+params.getProperty("dbhost")+" "+params.getProperty("dbname"));
+			System.err.println("MSM::FeedReader (CLI) - ERROR when connecting to the DB: "+params.getProperty("dbuser")+" "+params.getProperty("dbpass")+" "+params.getProperty("dbhost")+" "+params.getProperty("dbname"));
 		} catch (Exception e) {			
 			e.printStackTrace();			
 		} 
@@ -354,15 +354,16 @@ public class CLI {
 		boolean db = parsedArguments.getBoolean("database");
 		String type = parsedArguments.getString("type");
 		String opt = parsedArguments.getString("which");
+		Integer limit = parsedArguments.getInt("limit");
 		
 		Properties params = new Properties();
 		try {
 			params.load(new FileInputStream(new File(cfg)));
 		} catch (FileNotFoundException fe){
-			System.err.println("elh-MSM::InfluenceTagger - Config file not found "+cfg);
+			System.err.println("MSM::InfluenceTagger - Config file not found "+cfg);
 			System.exit(1);
 		} catch (IOException ioe){
-			System.err.println("elh-MSM::InfluenceTagger - Config file could not read "+cfg);
+			System.err.println("MSM::InfluenceTagger - Config file could not read "+cfg);
 			System.exit(1);
 		} 				
 		
@@ -377,8 +378,8 @@ public class CLI {
 													params.getProperty("dbpass"),
 													params.getProperty("dbhost"),
 													params.getProperty("dbname"));
-				sourceList = Source.retrieveFromDB(conn,type,opt);
-				//System.err.println("elh-MSM::Influcence CLI (db): sources found to look for their influence: "+sourceList.size());				
+				sourceList = Source.retrieveFromDB(conn,type,opt,limit);
+				//System.err.println("MSM::Influcence CLI (db): sources found to look for their influence: "+sourceList.size());				
 				infTagger.tagInfluence(sourceList);
 				conn.close();
 			}
@@ -389,7 +390,7 @@ public class CLI {
 				{
 					sourceList.add(new Source(src));
 				}
-				//System.err.println("elh-MSM::Influcence CLI (commandline): sources found to look for their influence: "+sourceList.size());
+				//System.err.println("MSM::Influcence CLI (commandline): sources found to look for their influence: "+sourceList.size());
 				infTagger.tagInfluence(sourceList);				
 			}
 			
@@ -409,7 +410,7 @@ public class CLI {
 				System.out.println("influence for "+count+" sources stored in the database");
 				conn.close();
 			} catch (NamingException | SQLException e) {
-				System.err.println("elh-MSM::InfluenceTagger - Error when storing influence in the DB ");
+				System.err.println("MSM::InfluenceTagger - Error when storing influence in the DB ");
 				e.printStackTrace();
 			} 					
 		}
@@ -434,15 +435,17 @@ public class CLI {
 		boolean db = parsedArguments.getBoolean("database");
 		String type = parsedArguments.getString("type");
 		String opt = parsedArguments.getString("which");
+		Integer limit = parsedArguments.getInt("limit");
+
 		
 		Properties params = new Properties();
 		try {
 			params.load(new FileInputStream(new File(cfg)));
 		} catch (FileNotFoundException fe){
-			System.err.println("elh-MSM::tagGeoCode - Config file not found "+cfg);
+			System.err.println("MSM::tagGeoCode - Config file not found "+cfg);
 			System.exit(1);
 		} catch (IOException ioe){
-			System.err.println("elh-MSM::tagGeoCode - Config file could not read "+cfg);
+			System.err.println("MSM::tagGeoCode - Config file could not read "+cfg);
 			System.exit(1);
 		} 				
 		
@@ -457,8 +460,8 @@ public class CLI {
 													params.getProperty("dbpass"),
 													params.getProperty("dbhost"),
 													params.getProperty("dbname"));
-				sourceList = Source.retrieveForGeoCodingFromDB(conn,type,opt);
-				System.err.println("elh-MSM::Influcence CLI (db): sources found to look for their location: "+sourceList.size());				
+				sourceList = Source.retrieveForGeoCodingFromDB(conn,type,opt,limit);
+				System.err.println("MSM::Influcence CLI (db): sources found to look for their location: "+sourceList.size());				
 				geoTagger.tagGeoCode(sourceList);
 				conn.close();
 			}
@@ -469,7 +472,7 @@ public class CLI {
 				{
 					sourceList.add(new Source(src));
 				}
-				//System.err.println("elh-MSM::Influcence CLI (commandline): sources found to look for their influence: "+sourceList.size());
+				//System.err.println("MSM::Influcence CLI (commandline): sources found to look for their influence: "+sourceList.size());
 				geoTagger.tagGeoCode(sourceList);				
 			}
 			
@@ -489,7 +492,7 @@ public class CLI {
 				System.out.println("geolocation for "+count+" sources stored in the database");
 				conn.close();
 			} catch (NamingException | SQLException e) {
-				System.err.println("elh-MSM::tagGeoCode - Error when storing geolocation in the DB ");
+				System.err.println("MSM::tagGeoCode - Error when storing geolocation in the DB ");
 				e.printStackTrace();
 			} 					
 		}
@@ -512,10 +515,12 @@ public class CLI {
 	{
 		String cfg = parsedArguments.getString("config");
 		String store = parsedArguments.getString("store");
+		Integer limit = parsedArguments.getInt("limit");
+
 		//String params = parsedArguments.getString("params");
 		
 		try {
-			TwtUserInfo userInfoClient = new TwtUserInfo(cfg, store);
+			TwtUserInfo userInfoClient = new TwtUserInfo(cfg, store,limit);
 		} catch (Exception e) {			
 			e.printStackTrace();
 		} 		
@@ -624,6 +629,11 @@ public class CLI {
 				+ "\t - \"error\" : sources that have been processed but no influence could be retrieved\n"
 				+ "\t - \"all\" : all sources.\n\t\tWARNING: this will override values in the database.\n"
 				+ "\t\tWARNING2:Depending on the number of sources in the database this could take a very long time.\n");
+		influenceTaggerParser.addArgument("-l", "--limit")		
+		.setDefault(500)
+		.help("limit the number of sources processed in the execution (only for database interaction): default is 500\n"
+				+ "--limit = 0 means no limit is established, and thus the command will atempt to process all sources found in the db (not processed yet).\n"
+				+ "This parameter is important not to exceed the twitter api rate limits. Increase it at your own risk.\n");
 	}
 	
 	
@@ -650,6 +660,11 @@ public class CLI {
 				+ "\t - \"stout\" : standard output\n"
 				+ "\t - \"db\" : standard output\n"
 				+ "\t - \"solr\" : standard output\n");
+		twitterUserParser.addArgument("-l", "--limit")		
+		.setDefault(500)
+		.help("limit the number of users processed in the execution (only for database interaction): default is 500\n"
+				+ "--limit = 0 means no limit is established, and thus the command will atempt to process all sources found in the db (not processed yet).\n"
+				+ "This parameter is important depending on the number of APIs you have available and your usage rate limits.\n");
 	}
 	
 	public final void loadUserLocationGeocoderParameters()
@@ -683,6 +698,11 @@ public class CLI {
 				+ "\t - \"error\" : sources that have been processed but no influence could be retrieved\n"
 				+ "\t - \"all\" : all sources.\n\t\tWARNING: this will override values in the database.\n"
 				+ "\t\tWARNING2:Depending on the number of sources in the database this could take a very long time.\n");
+		userLocationGeocoderParser.addArgument("-l", "--limit")		
+		.setDefault(1000)
+		.help("limit the number of sources processed in the execution (only for database interaction): default is 1000\n"
+				+ "--limit = 0 means no limit is established, and thus the command will atempt to process all sources found in the db (not processed yet).\n"
+				+ "This parameter is important depending on the number of APIs you have available and your usage rate limits.\n");
 	}
 	
 	
@@ -699,9 +719,9 @@ public class CLI {
 		          ));
 			v = pom.getProperty("version");
 		} catch (FileNotFoundException fe){
-			System.err.println("elh-MSM::CLI - pom.properties not found ");			
+			System.err.println("MSM::CLI - pom.properties not found ");			
 		} catch (IOException ioe){
-			System.err.println("elh-MSM::InfluenceTagger - pom.properties could not be read ");
+			System.err.println("MSM::InfluenceTagger - pom.properties could not be read ");
 		} 	
 		
 		return v;

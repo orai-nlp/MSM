@@ -54,10 +54,10 @@ public class InfluenceTagger {
 		try {
 			params.load(new FileInputStream(new File(config)));
 		} catch (FileNotFoundException fe){
-			System.err.println("elh-MSM::InfluenceTagger - Config file not found "+config);
+			System.err.println("MSM::InfluenceTagger - Config file not found "+config);
 			System.exit(1);
 		} catch (IOException ioe){
-			System.err.println("elh-MSM::InfluenceTagger - Config file could not read "+config);
+			System.err.println("MSM::InfluenceTagger - Config file could not read "+config);
 			System.exit(1);
 		} 				
 		
@@ -167,10 +167,10 @@ public class InfluenceTagger {
 
 		} catch (JSONException je) {
 			je.printStackTrace();
-			System.out.println("elh-MSM::InfluenceTagger - JSON error when trying to get influence (AHrefs)"
+			System.out.println("MSM::InfluenceTagger - JSON error when trying to get influence (AHrefs)"
 					+ "for domain "+id);			
 		} catch (IOException ioe) {			
-			System.out.println("elh-MSM::InfluenceTagger - IO error when trying to get influence (AHrefs)"
+			System.out.println("MSM::InfluenceTagger - IO error when trying to get influence (AHrefs)"
 					+ "for domain "+id);			
 		}
 
@@ -227,7 +227,7 @@ public class InfluenceTagger {
 		{
 			if (src.getInfluence() == 0.0)
 			{
-				System.err.println("elh-MSM::InfluenceTagger::influence2db - 0 influence for source "+src.getScreenName()
+				System.err.println("MSM::InfluenceTagger::influence2db - 0 influence for source "+src.getScreenName()
 						+" - -1 will be stored in the database");
 				src.setInfluence(-1);
 			}

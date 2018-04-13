@@ -60,10 +60,10 @@ public class SearchEngineAPI {
 		try {
 			params.load(new FileInputStream(new File(config)));
 		} catch (FileNotFoundException fe){
-			System.err.println("elh-MSM::SearchEngineAPI - Config file not found "+config);
+			System.err.println("MSM::SearchEngineAPI - Config file not found "+config);
 			System.exit(1);
 		} catch (IOException ioe){
-			System.err.println("elh-MSM::SearchEngineAPI - Config file could not read "+config);
+			System.err.println("MSM::SearchEngineAPI - Config file could not read "+config);
 			System.exit(1);
 		} 
 

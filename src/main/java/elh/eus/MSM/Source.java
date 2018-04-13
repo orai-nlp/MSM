@@ -210,7 +210,7 @@ public class Source {
 	 * @throws NamingException
 	 * @throws SQLException
 	 */
-	public static Set<Source> retrieveFromDB(Connection conn, String type, String opt) throws NamingException, SQLException {
+	public static Set<Source> retrieveFromDB(Connection conn, String type, String opt,Integer limit) throws NamingException, SQLException {
 
 		Set<Source> result = new HashSet<Source>(); 
 		Statement stmt = conn.createStatement();
@@ -239,8 +239,8 @@ public class Source {
 		}
 		
 		//limited to 500 sources per call not to exceed rate limit.
-		String query = sb.append(" order by source_id desc limit 500").toString();
-		System.err.println("elh-MSM::Keyword::retrieveFromDB - query:"+query);
+		String query = sb.append(" order by source_id desc limit ").append(limit.toString()).toString();
+		System.err.println("MSM::Keyword::retrieveFromDB - query:"+query);
 		ResultSet rs = stmt.executeQuery(query);		
 		
 		try{	
@@ -278,7 +278,7 @@ public class Source {
 	 * @throws NamingException
 	 * @throws SQLException
 	 */
-	public static Set<Source> retrieveForGeoCodingFromDB(Connection conn, String type, String opt) throws NamingException, SQLException {
+	public static Set<Source> retrieveForGeoCodingFromDB(Connection conn, String type, String opt,Integer limit) throws NamingException, SQLException {
 
 		Set<Source> result = new HashSet<Source>(); 
 		Statement stmt = conn.createStatement();
@@ -306,9 +306,9 @@ public class Source {
 			sb.append(andWhere).append("type='press'");
 		}
 		
-		//limited to 500 sources per call not to exceed rate limit.
-		String query = sb.append(" order by source_id desc limit 2000").toString();
-		System.err.println("elh-MSM::Keyword::retrieveFromDB - query:"+query);
+		//limited to xxx (default 1000) sources per call not to exceed rate limit.
+		String query = sb.append(" order by source_id desc limit ").append(limit.toString()).toString();
+		System.err.println("MSM::Keyword::retrieveFromDB - query:"+query);
 		ResultSet rs = stmt.executeQuery(query);		
 		
 		try{	
@@ -366,7 +366,7 @@ public class Source {
 		}
 				
 		String query = sb.toString();
-		System.err.println("elh-MSM::Keyword::retrieveFromDB - query:"+query);
+		System.err.println("MSM::Keyword::retrieveFromDB - query:"+query);
 		ResultSet rs = stmt.executeQuery(query);		
 		
 		try{	
@@ -429,7 +429,7 @@ public class Source {
 			stmtM.close();
 			success=1;
 		}catch (SQLException e){
-			System.err.println("elh-MSM::Source source2db - Error when trying to store source into db.");
+			System.err.println("MSM::Source source2db - Error when trying to store source into db.");
 			e.printStackTrace();
 		}
 		return success;
@@ -441,9 +441,9 @@ public class Source {
 	 * @param conn
 	 * @return
 	 */
-	public int sourceLocation2db(Connection conn) {	
+	public int updateLocation2db(Connection conn) {	
 
-		int success = 1;
+		int success = 2;
 		try {
 			Statement stmt = conn.createStatement();
 			ResultSet rs = stmt.executeQuery("SELECT location FROM behagunea_app_source where source_id="+getId());
@@ -456,7 +456,8 @@ public class Source {
 				String updateComm = "UPDATE behagunea_app_source "
 						+ "SET location=\""+getLocation()+"\" WHERE source_id="+getId();
 				// execute update
-				stmt.executeUpdate(updateComm);				
+				stmt.executeUpdate(updateComm);
+				success=1;
 			}
 			stmt.close();
 		} catch (SQLException e){
