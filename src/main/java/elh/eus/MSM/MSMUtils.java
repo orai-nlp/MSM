@@ -253,10 +253,10 @@ public final class MSMUtils {
 	 * @throws IOException
 	 * @throws JSONException
 	 */
-	public static JSONObject readJsonFromUrl(String url) throws IOException, JSONException
-	{		
-		URL urlObj = new URL(url);
-		BufferedReader rd = new BufferedReader(new InputStreamReader(urlObj.openStream()));
+	public static JSONObject readJsonFromUrl(URL url) throws IOException, JSONException
+	{				
+		System.err.println(url.toString());
+		BufferedReader rd = new BufferedReader(new InputStreamReader(url.openStream()));
 		StringBuilder sb = new StringBuilder();
 		int cp;
 		while ((cp = rd.read()) != -1) 
@@ -277,10 +277,10 @@ public final class MSMUtils {
 	 * @throws IOException
 	 * @throws JSONException
 	 */
-	public static JSONArray readJsonArrayFromUrl(String url) throws IOException, JSONException
-	{		
-		URL urlObj = new URL(url);
-		BufferedReader rd = new BufferedReader(new InputStreamReader(urlObj.openStream()));
+	public static JSONArray readJsonArrayFromUrl(URL url) throws IOException, JSONException
+	{			
+		System.err.println(url.toString());
+		BufferedReader rd = new BufferedReader(new InputStreamReader(url.openStream()));
 		StringBuilder sb = new StringBuilder();
 		int cp;
 		while ((cp = rd.read()) != -1) 

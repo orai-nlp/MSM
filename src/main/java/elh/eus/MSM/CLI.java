@@ -630,7 +630,8 @@ public class CLI {
 				+ "\t - \"all\" : all sources.\n\t\tWARNING: this will override values in the database.\n"
 				+ "\t\tWARNING2:Depending on the number of sources in the database this could take a very long time.\n");
 		influenceTaggerParser.addArgument("-l", "--limit")		
-		.setDefault(500)
+		.type(Integer.class)
+		.setDefault(500)		
 		.help("limit the number of sources processed in the execution (only for database interaction): default is 500\n"
 				+ "--limit = 0 means no limit is established, and thus the command will atempt to process all sources found in the db (not processed yet).\n"
 				+ "This parameter is important not to exceed the twitter api rate limits. Increase it at your own risk.\n");
@@ -661,6 +662,7 @@ public class CLI {
 				+ "\t - \"db\" : standard output\n"
 				+ "\t - \"solr\" : standard output\n");
 		twitterUserParser.addArgument("-l", "--limit")		
+		.type(Integer.class)
 		.setDefault(500)
 		.help("limit the number of users processed in the execution (only for database interaction): default is 500\n"
 				+ "--limit = 0 means no limit is established, and thus the command will atempt to process all sources found in the db (not processed yet).\n"
@@ -699,6 +701,7 @@ public class CLI {
 				+ "\t - \"all\" : all sources.\n\t\tWARNING: this will override values in the database.\n"
 				+ "\t\tWARNING2:Depending on the number of sources in the database this could take a very long time.\n");
 		userLocationGeocoderParser.addArgument("-l", "--limit")		
+		.type(Integer.class)
 		.setDefault(1000)
 		.help("limit the number of sources processed in the execution (only for database interaction): default is 1000\n"
 				+ "--limit = 0 means no limit is established, and thus the command will atempt to process all sources found in the db (not processed yet).\n"
