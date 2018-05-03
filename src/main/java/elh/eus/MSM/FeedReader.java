@@ -298,7 +298,8 @@ public class FeedReader {
 		case "multimedia":
 			for (Feed f : getFeeds())
 			{
-				getMultimediaFeed(f, store, ffmpeg);
+				float splitWindow = Float.valueOf(params.getProperty("multimediaFeed.splitWindowlangs", "5"));
+				getMultimediaFeed(f, store, ffmpeg, splitWindow);
 			}
 			break;
 		default:
@@ -411,7 +412,15 @@ public class FeedReader {
 					}
 				}
 				String date = dateFormat.format(pubDate);
-
+				
+				// the following lines set the last fetch date 24 hours before the stored date. 
+				// This is done in order to deal with feeds that publish news with past dates.
+				// The 24 hour period is arbitrary.
+				Calendar c = Calendar.getInstance();
+				c.setTime(lastFetchDate_date);
+				c.add(Calendar.DATE, -1);
+				lastFetchDate_date=c.getTime();
+				
 				if ((!nullDate && pubDate.after(lastFetchDate_date)) || (nullDate && lastFetchDate_date.before(pubDate)) )
 				{
 					newEnts++;
@@ -485,11 +494,12 @@ public class FeedReader {
 	
 	/**
 	 * Core function of the class. Code to process a single feed
+	 * @param splitWindow 
 	 * 
 	 * @param Feed f
 	 * 
 	 */
-	private void getMultimediaFeed (Feed f, String store, String ffmpeg){
+	private void getMultimediaFeed (Feed f, String store, String ffmpeg, float splitWindow){
 
 		System.err.println("FeadReader::getFeed -> parse feed "+f.getFeedURL()+" lastFetched: "+f.getLastFetchDate());
 		String link = "";
@@ -587,7 +597,7 @@ public class FeedReader {
 				{
 					try {
 					    System.err.println("FeadReader::getMultimediaFeed - parsing multimedia feed for keywords");
-					    entry.parseForKeywords(kwrds, kwrdPatterns, independentkwrds, dependentkwrds, anchorPattern, 60,store,DBconn);
+					    entry.parseForKeywords(kwrds, kwrdPatterns, independentkwrds, dependentkwrds, anchorPattern, 60,store,DBconn,splitWindow);
 					} catch (IOException e) {
 						System.err.println("FeadReader::getMultimediaFeed -> XML parsing error when parsing "
 											+entry.getTranscriptionURL()+" transcription file for entry "+entry.getShowURL());

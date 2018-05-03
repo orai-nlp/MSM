@@ -53,13 +53,11 @@ public class geoCode {
 		geoAPIs.put("openstreetmaps","http://nominatim.openstreetmap.org/search?format=json&limit=1&q=");
 		geoAPIlimits.put("openstreetmaps",20000);
 		//mapquest open api (based on openstreetmaps)
-		//geoAPIs.put("mapquest", "http://open.mapquestapi.com/nominatim/v1/search.php?key=##KEY##&format=json&limit=1&q=");
-		//geoAPIlimits.put("mapquest", 500);
+		geoAPIs.put("mapquest-open", "http://open.mapquestapi.com/nominatim/v1/search.php?key=##KEY##&format=json&limit=1&q=");
+		geoAPIlimits.put("mapquest", 500);
 		// mapquest geocoding api
 		geoAPIs.put("mapquest", "http://mapquestapi.com/geocoding/v1/address?key=##KEY##&format=json&maxResults=1&location=");
 		geoAPIlimits.put("mapquest", 500);
-		//geoAPIs.put("mapquest", "http://open.mapquestapi.com/nominatim/v1/search.php?key=##KEY##&format=json&limit=1&q=");
-		//geoAPIlimits.put("mapquest", 500);
 		geoAPIs.put("googlemaps","https://maps.googleapis.com/maps/api/geocode/json?key=##KEY##&address=");
 		geoAPIlimits.put("googlemaps",20000);
 		geoAPIs.put("LocationIQ","https://eu1.locationiq.org/v1/search.php?key=##KEY##&format=json&limit=1&q=");
@@ -111,11 +109,15 @@ public class geoCode {
 			
 			//"http://open.mapquestapi.com/nominatim/v1/search.php?key=KEY&format=json&limit=1&q="
 		}
-		System.err.println("MSM::geoCode - provided keys for these APIs "+geoAPIs.keySet().toString());					
+		System.err.println("MSM::geoCode - provided keys for these APIs "+geoAPIs.keySet().toString());		
 		return geoAPIs;
 	}
 
-
+	public void selectAPI(String API) {
+		HashMap<String, String> api = new HashMap<String, String> ();
+		api.put(API, geoAPIs.get(API));
+		geoAPIs = api;
+	}
 	/** 
 	 * Geo Code retrieving functions
      * Key Rate Limits : 
@@ -123,8 +125,11 @@ public class geoCode {
      *     - LocationIQ:  1 call per second | 10.000 Calls per day, on the free account, non commercial.
      *     - Mapquest: 15,000 requests per month on the free plan
      *     			- Mapquest has two APIs, openstreetmap based and their own based on licensed data.
-     *     			- We implement the licensed data API at the moment.
-     *     - OpenCage: 2,500 calls per day on the free account.
+     *     			- We implement the open data API at the moment. In house evaluations showed that the
+     *     			  licensed data API has lower performance, specially for search strings
+     *     			  that have no real location behind. 
+     *     - OpenCage: 2,500 calls per day on the free account. We do not use this API normally. 
+     *                In house evaluation show a low performance for unreal location strings.
      *     - GoogleMaps: unlimited for testing?
      * 
      * WARNING: this function controls the remaining requests for each of the APIs provided, 
@@ -132,8 +137,7 @@ public class geoCode {
      *          If you reach the day limit of an API but execute MSM again it won't be aware that the limit
      *          has been reached. This should be in the future done by controlling the limit with the responses returned by the APIs
      * 
-     * 
-     */
+     */	
 	private String retrieveGeoCode (String query) 
 	{
 		if (query.length() == 0){
@@ -215,7 +219,7 @@ public class geoCode {
 						json=jsona.getJSONObject(0);
 					}
 				
-					// openstreetmaps, locationiq have bounding box objects. From documentation:
+					// openstreetmaps, locationiq, mapquest-open have bounding box objects. From documentation:
 					//Array of bounding box coordinates where this element is located. The order is as below:
 					//	- min lat / bottom-left Latitude
 					//	- max lat / top-right Latitude

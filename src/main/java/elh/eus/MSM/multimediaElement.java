@@ -236,10 +236,27 @@ public final class multimediaElement {
 	}
 
 
-	public void parseForKeywords(Set<Keyword> kwrds, HashMap<Integer,Pattern> kwrdPatterns, Set<Keyword> indepKwrds, Set<Keyword> depKwords, Pattern anchors, float anchorWindow, String store, Connection dbconn) throws JDOMException, IOException{
+	/**
+	 * 
+	 *    Function search for keywords in the transcription of a multimedia file (using the audio stream).
+	 *    If a keyword is found a split of size specified by the user (default is 10 seconds) is cut around 
+	 *    the keyword found, and stored as a mention.  
+	 *    
+	 * @param kwrds
+	 * @param kwrdPatterns
+	 * @param indepKwrds
+	 * @param depKwords
+	 * @param anchors
+	 * @param anchorWindow
+	 * @param store
+	 * @param dbconn
+	 * @param splitDuration : float, defines in seconds the duration of the video split around keyword.
+
+	 * @throws JDOMException
+	 * @throws IOException
+	 */
+	public void parseForKeywords(Set<Keyword> kwrds, HashMap<Integer,Pattern> kwrdPatterns, Set<Keyword> indepKwrds, Set<Keyword> depKwords, Pattern anchors, float anchorWindow, String store, Connection dbconn, float splitDuration) throws JDOMException, IOException{
 		
-		// this variable defines in second the duration of the video split around keyword
-		float splitDuration = 10;
 		// this variable defines the step (in second) to move the split window forward.
 		float step = 5;
 		

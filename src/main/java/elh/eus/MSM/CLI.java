@@ -371,7 +371,7 @@ public class CLI {
 		Set<Source> sourceList = new HashSet<Source>();
 		InfluenceTagger infTagger = new InfluenceTagger(cfg, db);
 		try {
-			
+			//load source locations from db
 			if (sources.equalsIgnoreCase("db"))
 			{
 				Connection conn = MSMUtils.DbConnection(params.getProperty("dbuser"),
@@ -383,7 +383,7 @@ public class CLI {
 				infTagger.tagInfluence(sourceList);
 				conn.close();
 			}
-			else
+			else //load locations from command line arguments
 			{
 				String[] srcSplit = sources.split("\\s*,\\s*");
 				for (String src : srcSplit)
@@ -393,7 +393,6 @@ public class CLI {
 				//System.err.println("MSM::Influcence CLI (commandline): sources found to look for their influence: "+sourceList.size());
 				infTagger.tagInfluence(sourceList);				
 			}
-			
 			
 		} catch (Exception e) {			
 			e.printStackTrace();
@@ -436,6 +435,7 @@ public class CLI {
 		String type = parsedArguments.getString("type");
 		String opt = parsedArguments.getString("which");
 		Integer limit = parsedArguments.getInt("limit");
+		String API = parsedArguments.getString("api");
 
 		
 		Properties params = new Properties();
@@ -452,6 +452,9 @@ public class CLI {
 		
 		Set<Source> sourceList = new HashSet<Source>();
 		geoCode geoTagger = new geoCode(cfg, db);
+		if (!API.equalsIgnoreCase("all")){
+			geoTagger.selectAPI(API);
+		}
 		try {
 			
 			if (sources.equalsIgnoreCase("db"))
@@ -465,17 +468,21 @@ public class CLI {
 				geoTagger.tagGeoCode(sourceList);
 				conn.close();
 			}
-			else
+			else //try to get locations from command line or config file
 			{
-				String[] srcSplit = sources.split("\\s*,\\s*");
+				String[] srcSplit = sources.split("::");
+				//create dummy sources to work on.
+				int n=1;
 				for (String src : srcSplit)
 				{
-					sourceList.add(new Source(src));
+					Source s = new Source("usr_"+String.valueOf(n));
+					s.setLocation(src);
+					sourceList.add(s);					
+					n++;
 				}
 				//System.err.println("MSM::Influcence CLI (commandline): sources found to look for their influence: "+sourceList.size());
 				geoTagger.tagGeoCode(sourceList);				
 			}
-			
 			
 		} catch (Exception e) {			
 			e.printStackTrace();
@@ -498,9 +505,10 @@ public class CLI {
 		}
 		else // print influence to stdout
 		{
+			System.out.println("Src_screenName\tLocation\tgeolocation");
 			for (Source src : sourceList)
 			{
-				System.out.println("Src: "+src.getScreenName()+" - geolocation:"+src.getGeoInfo());
+				System.out.println(src.getScreenName()+"\t"+src.getLocation()+"\t"+src.getGeoInfo());
 			}
 		}
 				
@@ -547,8 +555,8 @@ public class CLI {
 		.setDefault("stout")
 		.help("Whether tweets shall be stored in a database, an Apache solr Index or printed to stdout (default).\n"
 				+ "\t - \"stout\" : standard output\n"
-				+ "\t - \"db\" : standard output\n"
-				+ "\t - \"solr\" : standard output\n");
+				+ "\t - \"db\" : database\n"
+				+ "\t - \"solr\" : solr (not implemented yet)\n");
 		tweetCrawlParser.addArgument("-cn", "--census")				
 		.help("Census is used to store tweets by users in a certain geographic area. A path to a file must be given as an argument. "
 				+ "The file contains a list of Twitter users. The users and their tweets will be marked in"
@@ -567,7 +575,7 @@ public class CLI {
 		feedReaderParser.addArgument("-t", "--type")
 		.choices("press", "multimedia")
 		.setDefault("press")
-		.help("The type of feed we are dealing with."
+		.help("The type of feed we are dealing with.\n"
 				+ "\t - \"press\" : written digital press feeds. Standard rss feed parsers are used\n"
 				+ "\t - \"multimedia\" : feed coming from multimedia source (tv/radio) a custom parser is activated in this case.\n");
 		
@@ -589,8 +597,8 @@ public class CLI {
 		.setDefault("stout")
 		.help("Whether mentions shall be stored in a database, an Apache solr Index or printed to stdout (default).\n"
 				+ "\t - \"stout\" : standard output\n"
-				+ "\t - \"db\" : standard output\n"
-				+ "\t - \"solr\" : standard output\n");
+				+ "\t - \"db\" : database\n"
+				+ "\t - \"solr\" : solr (not implemented yet)\n");
 		feedReaderParser.addArgument("-cn", "--census")				
 		.help("Census is used to store mentions from sources in a certain geographic area. A path to a file must be given as an argument. "
 				+ "The file contains a list of source ids (as stored in the database). The sources and their mentions will be marked in"
@@ -659,8 +667,8 @@ public class CLI {
 		.setDefault("stout")
 		.help("Whether tweets shall be stored in a database, an Apache solr Index or printed to stdout (default).\n"
 				+ "\t - \"stout\" : standard output\n"
-				+ "\t - \"db\" : standard output\n"
-				+ "\t - \"solr\" : standard output\n");
+				+ "\t - \"db\" : database\n"
+				+ "\t - \"solr\" : solr (not implemented yet)\n");
 		twitterUserParser.addArgument("-l", "--limit")		
 		.type(Integer.class)
 		.setDefault(500)
@@ -674,8 +682,8 @@ public class CLI {
 		userLocationGeocoderParser.addArgument("-s", "--sources")
 		.required(false)
 		.setDefault("db")
-		.help("location to look for its geo-coordinate infor."
-				+ "Many locations may be introduced separated by ',' char."
+		.help("location to look for its geo-coordinate info."
+				+ "Many locations may be introduced separated by '::' string (semicolon may be used inside the location string, that is why they are not used as separators)."
 				+ "If you want to retrieve sources from the database left this option empty or use the 'db' value\n");
 		userLocationGeocoderParser.addArgument("-c", "--config")		
 		.required(true)
@@ -700,12 +708,18 @@ public class CLI {
 				+ "\t - \"error\" : sources that have been processed but no influence could be retrieved\n"
 				+ "\t - \"all\" : all sources.\n\t\tWARNING: this will override values in the database.\n"
 				+ "\t\tWARNING2:Depending on the number of sources in the database this could take a very long time.\n");
+		userLocationGeocoderParser.addArgument("-a", "--api")
+		.choices("mapquest","mapquest-open","openstreetmaps", "googlemaps", "LocationIQ", "OpenCage","all")
+		.setDefault("all")
+		.help("Geocoding is by default multi API, using all the APIs for which the user obtains keys (they must be specified in the config file).\n"
+				+ "Through this parameter the user may specify a single API to use for geocoding.\n"
+				+ "BEWARE to set --limit option according to your usage rate limits.\n");
 		userLocationGeocoderParser.addArgument("-l", "--limit")		
 		.type(Integer.class)
 		.setDefault(1000)
 		.help("limit the number of sources processed in the execution (only for database interaction): default is 1000\n"
 				+ "--limit = 0 means no limit is established, and thus the command will atempt to process all sources found in the db (not processed yet).\n"
-				+ "This parameter is important depending on the number of APIs you have available and your usage rate limits.\n");
+				+ "This parameter is important depending on the number of APIs you have available and your usage rate limits.\n");			
 	}
 	
 	
