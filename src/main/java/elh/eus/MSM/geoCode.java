@@ -54,7 +54,7 @@ public class geoCode {
 		geoAPIlimits.put("openstreetmaps",20000);
 		//mapquest open api (based on openstreetmaps)
 		geoAPIs.put("mapquest-open", "http://open.mapquestapi.com/nominatim/v1/search.php?key=##KEY##&format=json&limit=1&q=");
-		geoAPIlimits.put("mapquest", 500);
+		geoAPIlimits.put("mapquest-open", 500);
 		// mapquest geocoding api
 		geoAPIs.put("mapquest", "http://mapquestapi.com/geocoding/v1/address?key=##KEY##&format=json&maxResults=1&location=");
 		geoAPIlimits.put("mapquest", 500);
@@ -84,7 +84,7 @@ public class geoCode {
 		} 				
 		
 		initializeGeoAPIs();
-		geoAPIs = loadGeoAPIs(params);
+		loadGeoAPIs(params);
 		//if (APIKey.equalsIgnoreCase("none"))
 		//{
 		//	System.err.println("MSM::geoCode WARNING - no API Key could be found, geocode won't be retrieved, if you have no code default to OpenStreetMap API");
@@ -93,8 +93,9 @@ public class geoCode {
 	}
 	
 
-	private HashMap<String, String> loadGeoAPIs(Properties params2) {
-		for (String gapi: geoAPIs.keySet())
+	private void loadGeoAPIs(Properties params2) {
+		List<String> keys2rm = new ArrayList<String>(geoAPIs.keySet());
+		for (String gapi: keys2rm)
 		{						
 			String key= params.getProperty("geoAPI."+gapi,"none");
 			if (key.equalsIgnoreCase("none") && !gapi.equalsIgnoreCase("openstreetmaps")){
@@ -110,7 +111,6 @@ public class geoCode {
 			//"http://open.mapquestapi.com/nominatim/v1/search.php?key=KEY&format=json&limit=1&q="
 		}
 		System.err.println("MSM::geoCode - provided keys for these APIs "+geoAPIs.keySet().toString());		
-		return geoAPIs;
 	}
 
 	public void selectAPI(String API) {
@@ -159,14 +159,15 @@ public class geoCode {
 		List<String> keys = new ArrayList<String>(geoAPIs.keySet());
 		String randomKey = keys.get( random.nextInt(APInum) );
 		String APIaddress  = geoAPIs.get(randomKey);
-		
+
+		System.err.println("MSM::geoCode - API to use for the next query: "+randomKey);	
+
 		// update the remaining requests in the API.
 		Integer remaining = geoAPIlimits.get(randomKey);		
 		geoAPIlimits.put(randomKey,remaining-1);
 		if (remaining-1 < 1){
 			geoAPIs.remove(randomKey);
-		}
-		System.err.println("MSM::geoCode - API to use for the next query: "+randomKey);	
+		}		
 				
 		try	{
 			URL APIurl = new URL(APIaddress+qstr);			

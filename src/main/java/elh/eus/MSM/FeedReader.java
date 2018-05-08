@@ -333,25 +333,33 @@ public class FeedReader {
 		// reload language identification with the feed possible languages
 		// loadAcceptedLangs(f.getLangs());
 		SyndFeed feed = new SyndFeedImpl();
-		try{			
-			//HttpClient client = HttpClientBuilder.create().setRedirectStrategy(new LaxRedirectStrategy()).build();
-			RequestConfig globalConfig = RequestConfig.custom()
-			        .setCookieSpec(CookieSpecs.DEFAULT)
-			        .build();
-			CloseableHttpClient client = HttpClients.custom()
-			        .setDefaultRequestConfig(globalConfig)
-			        .build();
-			RequestConfig localConfig = RequestConfig.copy(globalConfig)
-			        .setCookieSpec(CookieSpecs.STANDARD)
-			        .build();
-			// (CloseableHttpClient client = HttpClients.createDefault()..createMinimal()) 
-			//client.setRedirectStrategy(new LaxRedirectStrategy());
+		try{
+			InputStream stream;
+			String url = f.getFeedURL().trim();
+			if (url.startsWith("file://")){
+				stream = new FileInputStream(url.replaceFirst("file://", ""));
+			}
+			else
+			{
+				//HttpClient client = HttpClientBuilder.create().setRedirectStrategy(new LaxRedirectStrategy()).build();
+				RequestConfig globalConfig = RequestConfig.custom()
+						.setCookieSpec(CookieSpecs.DEFAULT)
+						.build();
+				CloseableHttpClient client = HttpClients.custom()
+						.setDefaultRequestConfig(globalConfig)
+						.build();
+				RequestConfig localConfig = RequestConfig.copy(globalConfig)
+						.setCookieSpec(CookieSpecs.STANDARD)
+						.build();
+				// (CloseableHttpClient client = HttpClients.createDefault()..createMinimal()) 
+				//client.setRedirectStrategy(new LaxRedirectStrategy());
 			
-			HttpGet get = new HttpGet(f.getFeedURL().trim());
-			get.setConfig(localConfig);
-			org.apache.http.HttpResponse response = client.execute(get);
-			//try (CloseableHttpResponse response = client.execute(method);
-			InputStream stream = response.getEntity().getContent();	
+				HttpGet get = new HttpGet(f.getFeedURL().trim());
+				get.setConfig(localConfig);
+				org.apache.http.HttpResponse response = client.execute(get);
+				//try (CloseableHttpResponse response = client.execute(method);
+				stream = response.getEntity().getContent();
+			}
 			SyndFeedInput input = new SyndFeedInput();
 			input.setPreserveWireFeed(true);
 			// try to read a feed.

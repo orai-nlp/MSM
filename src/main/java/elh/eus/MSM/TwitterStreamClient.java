@@ -679,6 +679,14 @@ public class TwitterStreamClient {
 						params.getProperty("dbpass"),
 						params.getProperty("dbhost"),
 						params.getProperty("dbname"));
+				
+				//if mention is in db 
+				if (m.existsInDB(conn)>0)
+				{
+					System.err.println("MSM::TwitterStreamClient -  mention already in DB! "+m.getNativeId());
+					break;
+				}
+				
 				User u = s.getUser();
 				Source author = new Source(u,census.contains(u.getId()));
 				int authorStored = 0;
