@@ -510,6 +510,8 @@ public class FeedReader {
 	private void getMultimediaFeed (Feed f, String store, String ffmpeg, float splitWindow){
 
 		System.err.println("FeadReader::getFeed -> parse feed "+f.getFeedURL()+" lastFetched: "+f.getLastFetchDate());
+		System.err.println("FeadReader::getFeed -> window length: "+splitWindow);
+
 		String link = "";
 
 		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");				

@@ -179,11 +179,12 @@ public final class multimediaElement {
 	
 	/**
 	 * Word class is used to store word xml element to ease the search of multiword keywords.
+	 * 
 	 * */
 	private class Word {
 		float start;
 		float end;
-		float conf;
+		float conf; //conf is meant to store a confidence value given by the transcription engine. At the moment is is not used
 		String form;
 		
 		Word(float s, float e, float c, String f){
@@ -258,7 +259,7 @@ public final class multimediaElement {
 	public void parseForKeywords(Set<Keyword> kwrds, HashMap<Integer,Pattern> kwrdPatterns, Set<Keyword> indepKwrds, Set<Keyword> depKwords, Pattern anchors, float anchorWindow, String store, Connection dbconn, float splitDuration) throws JDOMException, IOException{
 		
 		// this variable defines the step (in second) to move the split window forward.
-		float step = 5;
+		float step = splitDuration/2;
 		
 		// create a temporal mkv file
 		String converted = getMediaURL();//.replaceFirst("\\.[^\\.]+$",".mp4");
@@ -398,9 +399,8 @@ public final class multimediaElement {
 
 				if (result != null && !result.isEmpty())
 				{
-					String offset = String.valueOf(splitStart);
 					// cut the video and get the split containing the current mention
-					String splitPath = getMentionSplit(converted, splitStart);
+					String splitPath = getMentionSplit(converted, splitStart,(long)splitDuration);
 					// generate subtitles for the split
 					createSplitSubtitles(transWords, splitStart, splitEnd, splitPath,result,kwrdPatterns);
 					String splitURL = Paths.get(splitPath).getFileName().toString();
@@ -501,7 +501,14 @@ public final class multimediaElement {
 		return sb.toString();
 	}
 	
-	private String getMentionSplit(String fullVideoPath, float splitStart) throws IOException
+	/**
+	 * @param fullVideoPath
+	 * @param splitStart : the second in the original video to start spliting
+	 * @param duration: length of the split in seconds
+	 * @return
+	 * @throws IOException
+	 */
+	private String getMentionSplit(String fullVideoPath, float splitStart,long duration) throws IOException
 	{
 		String fileUrl = getMediaURL().replaceFirst("\\.[^\\.]+$", "_"+splitStart+".mp4");
 		
@@ -520,7 +527,7 @@ public final class multimediaElement {
 				.disableSubtitle()       // No subtiles
 				
 				.setStartOffset((long) splitStart, TimeUnit.SECONDS) //set split start
-				.setDuration(10, TimeUnit.SECONDS) //set split duration
+				.setDuration(duration, TimeUnit.SECONDS) //set split duration
 				
 				.setAudioChannels(1)         // Mono audio
 				.setAudioCodec("aac")        // using the aac codec
