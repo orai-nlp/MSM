@@ -154,8 +154,15 @@ public class CLI {
 	}
 
 
+	/**
+	 * 
+	 * Google plus crawler is not yet implemented.
+	 * 
+	 * 	TODO implement google plus crawler.
+	 * 
+	 */
 	private void gPlusCrawler() {
-		// TODO Auto-generated method stub
+
 		String cfg = parsedArguments.getString("config");
 		String store = parsedArguments.getString("store");
 		String params = parsedArguments.getString("params");

@@ -22,12 +22,9 @@ import twitter4j.JSONArray;
 import twitter4j.JSONException;
 import twitter4j.JSONObject;
 
-//import org.apache.log4j.Logger;
-/*import org.json.JSONArray;
-import org.json.JSONObject;
-import org.json.JSONString;*/
-//import org.json.simple.parser.JSONParser;
-
+/**
+ * TODO : implement rate limit control based on each API returned information.
+ * */
 public class geoCode {
 
 	

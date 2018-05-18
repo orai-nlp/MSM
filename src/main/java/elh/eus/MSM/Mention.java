@@ -358,6 +358,11 @@ public class Mention {
 	 * 
 	 * @param conn
 	 * @return
+	 * 
+	 * TODO : At the moment mention id is set by looking at the highest id in the DB and adding 1. Problem with this is that if two mentions are 
+	 * stored concurrently one of the can raise an error because both try to store a new mention with the same id. This happens seldom, but still 
+	 * should be handled correctly.
+	 *  
 	 */
 	public int mention2db(Connection conn) {	
 
