@@ -24,6 +24,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Set;
 
+import com.google.api.services.youtube.model.Video;
+
 import twitter4j.GeoLocation;
 import twitter4j.Status;
 
@@ -288,6 +290,10 @@ public class Mention {
 
 	//END OF CONSTRUCTORS
 	
+	public Mention(Video video, String lang2, boolean isLocal) {
+		// TODO Auto-generated constructor stub
+	}
+
 	/**
 	 * 
 	 *  This is the void that actually creates the mentions starting from a tweet

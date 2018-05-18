@@ -87,6 +87,11 @@ public class CLI {
 	 */
 	private Subparser gplusCrawlParser;
 
+	/**
+	 * The parser that manages the twitter crawler sub-command.
+	 */
+	private Subparser youtubeClientParser;
+
 	
 	/**
 	 * The parser that manages the feed reader sub-command.
@@ -117,6 +122,8 @@ public class CLI {
 		loadTwitterCrawlerParameters();
 		gplusCrawlParser = subParsers.addParser("gplus").help("gplus crawling CLI");
 		loadGplusCrawlerParameters();
+		youtubeClientParser = subParsers.addParser("youtube").help("youtube searching CLI");
+		loadYoutubeClientParameters();
 		feedReaderParser = subParsers.addParser("feed").help("Feed reaader CLI");
 		loadFeedReaderParameters();
 		influenceTaggerParser = subParsers.addParser("influence").help("Influence tagger CLI");
@@ -128,7 +135,40 @@ public class CLI {
 
 	}
 	
+	/**
+	 * 
+	 *    Parameter handling for youtube client
+	 * 
+	 */
+	private void loadYoutubeClientParameters() {
+		// TODO Auto-generated method stub
+		youtubeClientParser.addArgument("-c", "--config")
+		.required(true)
+		.help("Configuration file that contains the necessary parameters to connect to the twitter public "
+				+ "stream for crawling.\n");
+		youtubeClientParser.addArgument("-p", "--params")		
+		.choices("terms", "users", "geo", "all")
+		.setDefault("all")
+		.help("Search parameters to use when connecting to the Twitter Streaming API. Parameter values are"
+				+ "either stored in the database or specified in the configuration file.\n"
+				+ "\t - \"terms\" : terms to track.\n"
+				+ "\t - \"users\" : users to follow.\n"
+				+ "\t - \"geo\" : bounding boxes defining geographic areas\n"
+				+ "\t - \"all\" : check for all of the previous parameters\n");
+		youtubeClientParser.addArgument("-s", "--store")		
+		.choices("stout", "db", "solr")
+		.setDefault("stout")
+		.help("Whether tweets shall be stored in a database, an Apache solr Index or printed to stdout (default).\n"
+				+ "\t - \"stout\" : standard output\n"
+				+ "\t - \"db\" : standard output\n"
+				+ "\t - \"solr\" : standard output\n");
+	}
 	
+	/**
+	 * 
+	 *    Parameter handling for Google+ client
+	 * 
+	 */
 	private void loadGplusCrawlerParameters() {
 		// TODO Auto-generated method stub
 		gplusCrawlParser.addArgument("-c", "--config")
@@ -202,12 +242,28 @@ public class CLI {
 		try {
 			parsedArguments = argParser.parseArgs(args);
 			System.err.println("CLI options: " + parsedArguments);
+			switch (args[0]) {
+			case "twitter": twitterCrawler(); break;
+			case "gplus": gPlusCrawler(); break;
+			case "youtube": youtubeClient(); break;
+			case "feed": feedReader(); break;
+			case "influence": tagInfluence(); break;
+			case "geocode": tagGeoCode(); break;
+			case "twtUser": twtUserUInfo(); break;			
+			default: System.out.println("Wrong argument: Run java -jar target/MSM-" +" version\n" 
+										+ ".jar (twitter|feed|influence|twtUser|geocode) -help for details");
+			}
+			
+			/*
 			if (args[0].equals("twitter")) {
 				twitterCrawler();
 			} 
 			else if (args[0].equals("gplus")) {
 				gPlusCrawler();
-			} 
+			}
+			else if (args[0].equals("gplus")) {
+				gPlusCrawler();
+			}
 			else if (args[0].equals("feed")) {
 				feedReader();
 			} 
@@ -219,7 +275,7 @@ public class CLI {
 			}
 			else if (args[0].equals("twtUser")) {
 				twtUserUInfo();
-			}
+			}*/
 			
 		} catch (ArgumentParserException e) {
 			argParser.handleError(e);
@@ -229,6 +285,9 @@ public class CLI {
 		}
 	}
 	
+	/**
+	 * Twitter crawler call. Handles command line parameters and calls the client.
+	 */
 	public final void twitterCrawler()
 	{
 		String cfg = parsedArguments.getString("config");
@@ -244,6 +303,11 @@ public class CLI {
 	}
 	
 	
+	/**
+	 *
+	 * Syndication feed crawler call. Handles command line parameters and calls the client.
+	 * 
+	 **/
 	public final void feedReader()
 	{
 		String cfg = parsedArguments.getString("config");
@@ -537,6 +601,22 @@ public class CLI {
 		
 		try {
 			TwtUserInfo userInfoClient = new TwtUserInfo(cfg, store,limit,onlyffCount);
+		} catch (Exception e) {			
+			e.printStackTrace();
+		} 		
+	}
+	
+	/**
+	 * Twitter crawler call. Handles command line parameters and calls the client.
+	 */
+	public final void youtubeClient()
+	{
+		String cfg = parsedArguments.getString("config");
+		String store = parsedArguments.getString("store");
+		String params = parsedArguments.getString("params");		
+		
+		try {
+			YoutubeClient youtubeClient = new YoutubeClient(cfg, store,params);
 		} catch (Exception e) {			
 			e.printStackTrace();
 		} 		
