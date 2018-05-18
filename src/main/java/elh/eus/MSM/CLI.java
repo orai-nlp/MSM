@@ -524,11 +524,12 @@ public class CLI {
 		String cfg = parsedArguments.getString("config");
 		String store = parsedArguments.getString("store");
 		Integer limit = parsedArguments.getInt("limit");
+		Boolean onlyffCount = parsedArguments.getBoolean("onlyffCount");
 
 		//String params = parsedArguments.getString("params");
 		
 		try {
-			TwtUserInfo userInfoClient = new TwtUserInfo(cfg, store,limit);
+			TwtUserInfo userInfoClient = new TwtUserInfo(cfg, store,limit,onlyffCount);
 		} catch (Exception e) {			
 			e.printStackTrace();
 		} 		
@@ -675,6 +676,10 @@ public class CLI {
 		.help("limit the number of users processed in the execution (only for database interaction): default is 500\n"
 				+ "--limit = 0 means no limit is established, and thus the command will atempt to process all sources found in the db (not processed yet).\n"
 				+ "This parameter is important depending on the number of APIs you have available and your usage rate limits.\n");
+		twitterUserParser.addArgument("-o", "--onlyffCount")		
+		.action(Arguments.storeTrue())
+		.help("If this flag is active only follower and friend info will be returned, but no follower and friends lists. "
+				+ "Returning only follower and friends count is much faster because of the higher rate limit of the API.\n");
 	}
 	
 	public final void loadUserLocationGeocoderParameters()
