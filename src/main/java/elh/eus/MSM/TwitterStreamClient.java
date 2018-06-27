@@ -191,7 +191,7 @@ public class TwitterStreamClient {
 	 * @param config
 	 * @param store
 	 */
-	public TwitterStreamClient (String config, String store, String parameters, String censusf)
+	public TwitterStreamClient (String config, String store, String parameters, String censusf, boolean twtLang)
 	{
 		try {
 			params.load(new FileInputStream(new File(config)));
@@ -206,7 +206,7 @@ public class TwitterStreamClient {
 		//where should the retrieved messages be stored [db|solr|stout]
 		setStore(store);
 		//Language identification
-		loadAcceptedLangs(params.getProperty("langs", "all"));
+		loadAcceptedLangs(params.getProperty("langs", "all"));		
 		LID = new LangDetect();
 		
 		/** Set up your blocking queues: Be sure to size these properly based on expected TPS of your stream */
@@ -216,6 +216,13 @@ public class TwitterStreamClient {
 		/** Declare the host you want to connect to, the endpoint, and authentication (basic auth or oauth) */
 		Hosts hosebirdHosts = new HttpHosts(Constants.STREAM_HOST);
 		StatusesFilterEndpoint hosebirdEndpoint = new StatusesFilterEndpoint();
+		
+		//whether we should trust twitter language filter or not
+		if (twtLang) {
+			hosebirdEndpoint.languages(acceptedLangs);
+		}
+		
+		
 		
 		/** TWITTER STREAMING API PARAMETER HANDLING */		
 		//tracking terms

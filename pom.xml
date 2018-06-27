@@ -121,6 +121,16 @@
       		<version>v3-rev176-1.22.0</version>
     	</dependency>
     	<dependency>
+    	<groupId>com.google.api-client</groupId>
+    		<artifactId>google-api-client-java6</artifactId>
+    		<version>1.23.0</version>
+		</dependency>
+		<dependency>
+    		<groupId>com.google.oauth-client</groupId>
+    		<artifactId>google-oauth-client-jetty</artifactId>
+    		<version>1.23.0</version>
+		</dependency>
+    	<dependency>
     		<groupId>eus.ixa</groupId>
     		<artifactId>ixa-pipe-tok</artifactId>
     		<version>1.8.5</version>
@@ -188,5 +198,5 @@
 		</plugins>
 	</build>
 	<url>https://github.com/Elhuyar/MSM.git</url>
-	<version>1.3.4</version>
+	<version>1.3.5</version>
 </project>

@@ -235,9 +235,11 @@ public class CLI {
 		String store = parsedArguments.getString("store");
 		String params = parsedArguments.getString("params");
 		String census = parsedArguments.getString("census");
+		boolean twitterLangid = parsedArguments.getBoolean("twitterLangid");
+		
 		
 		try {
-			TwitterStreamClient twitterClient = new TwitterStreamClient(cfg, store,params,census);
+			TwitterStreamClient twitterClient = new TwitterStreamClient(cfg, store,params,census,twitterLangid);
 		} catch (Exception e) {			
 			e.printStackTrace();
 		} 		
@@ -558,6 +560,12 @@ public class CLI {
 				+ "\t - \"users\" : users to follow.\n"
 				+ "\t - \"geo\" : bounding boxes defining geographic areas\n"
 				+ "\t - \"all\" : check for all of the previous parameters\n");
+		tweetCrawlParser.addArgument("-tl", "--twitterLangid")		
+		.action(Arguments.storeTrue())
+		.help("Whether the crawler shall trust twitter to filter languages or not. Default is no.\n"
+				+ "NOTE 1: languages are defined in the config file.\n"
+				+ "NOTE 2: before activating this option make sure twitter identifies all languages you are working with, especially in case of less-resourced languages."
+				+ "NOTE 3: even if this option is active MSM will perform its own language identification, and leverage it with Twitter info.\n");
 		tweetCrawlParser.addArgument("-s", "--store")		
 		.choices("stout", "db", "solr")
 		.setDefault("stout")
