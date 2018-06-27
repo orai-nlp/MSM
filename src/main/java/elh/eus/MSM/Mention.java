@@ -240,6 +240,20 @@ public class Mention {
 		mentionFromTweet(statusTwitter4j,lang, isLocal);
 	}
 	
+	
+	/**
+	 * 
+	 * Constructor for tweet derived mentions
+	 * 
+	 * @param statusTwitter4j
+	 * @param lang
+	 * @param isLocal
+	 */
+	public Mention(Video video, String lang, boolean isLocal) {
+		mentionFromYoutube(video,lang, isLocal);
+	}
+	
+	
 	/**
 	 * 
 	 * Constructor for rss feed origin mentions
@@ -294,6 +308,51 @@ public class Mention {
 		// TODO Auto-generated constructor stub
 	}
 
+	/**
+	 * 
+	 *  This is the void that actually creates the mentions starting from a tweet
+	 * 
+	 * @param statusTwitter4j
+	 * @param lang
+	 * @param isLocal
+	 */
+	private void mentionFromYoutube(Video video, String lang, boolean isLocal) {
+		setLang(lang);			
+		setText(video.getSnippet().getTitle());
+		setDate(new Date(video.getStatus().getPublishAt().getValue() + video.getStatus().getPublishAt().getTimeZoneShift() * 60000L));
+		setNativeId(Long.parseLong(video.getId()));
+		setUrl("https://youtube.com/"+video.getId());
+		setRetweets(video.getStatistics().getLikeCount().intValue());
+		setFavourites(video.getStatistics().getFavoriteCount().intValue());
+		setSource_id(video.getSnippet().getChannelId().hashCode());
+		setPolarity("NULL");
+		setIsRetweet(false);
+		setIsQuote(false);
+		setOrigTweetId(0);
+		setQuotedTweetId(0);
+		setIsLocalArea(isLocal);
+		//A tweet does not contain offset and mediaUrl information for the moment.
+		setOffset("-1");
+		setMediaUrl("");
+		setFeedId((long) 0);
+
+		
+		//geoInformation
+		String geoStr = "unknown";
+		if(video.getRecordingDetails().getLocation() != null)
+		{			
+			geoStr = "";
+			geoStr = geoStr+"long="+String.valueOf(video.getRecordingDetails().getLocation().getLongitude());
+			geoStr = geoStr+"_lat="+String.valueOf(video.getRecordingDetails().getLocation().getLatitude());
+			setGeoInfo(geoStr);
+		} 
+		
+		setIsRetweet(false);
+		setIsQuote(false);		
+		
+	}
+	
+	
 	/**
 	 * 
 	 *  This is the void that actually creates the mentions starting from a tweet
@@ -358,6 +417,9 @@ public class Mention {
 		}
 		
 	}
+	
+	
+	
 	
 	/**
 	 * Store mention into the database.
