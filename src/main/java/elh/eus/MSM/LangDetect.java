@@ -19,6 +19,7 @@ This file is part of MSM.
 package elh.eus.MSM;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -47,16 +48,28 @@ public class LangDetect {
 	//Pattern to trust Twitter lang identification for certain languages
 	private Pattern twtLangs = Pattern.compile("(en|es|fr|de|tr)");
 	//Pattern to normalize hashtags and user names
-	private Pattern userhashtag = Pattern.compile("[#@]([\\p{L}\\p{M}\\p{Nd}_]+\\b)");
+	private Pattern hashtag = Pattern.compile("[#]([\\p{L}\\p{M}\\p{Nd}_]+\\b)");
+	private Pattern user = Pattern.compile("[@]([\\p{L}\\p{M}\\p{Nd}_]+\\b)");
 	//Pattern to  match urls in tweets. There are more efficient ways to do this but, for 
 	//the moment this is a fast solution
 	private Pattern urlPattern = Pattern.compile("([fh]t?tps?://)?[a-zA-Z_0-9\\-]+(\\.\\w[a-zA-Z_0-9\\-]+)+(/[#&\\n\\-=?\\+\\%/\\.\\w]+)?");  
 	
 	public LangDetect()
 	{
+		this(new ArrayList<String>());		
+	}
+	
+	public LangDetect(List<String> langprofs)
+	{
 		try {
-			//load all languages:
-			languageProfiles = new LanguageProfileReader().readAllBuiltIn();			
+			if (langprofs.isEmpty()) {
+				//load all languages:
+				languageProfiles = new LanguageProfileReader().readAllBuiltIn();
+			}
+			else {
+				//load only specific language profiles
+				languageProfiles = new LanguageProfileReader().read(langprofs);
+			}
 		}
 		catch (IOException ioe){
 			System.err.println("Utils::detectLanguage -> Error when loading language models");
@@ -162,7 +175,8 @@ public class LangDetect {
 	{
 		String result = "unk";
 		//query:
-		String detectStr = userhashtag.matcher(input).replaceAll(" $1");
+		String detectStr = hashtag.matcher(input).replaceAll(" $1");
+		detectStr = user.matcher(input).replaceAll(" ");
 		detectStr = urlPattern.matcher(detectStr).replaceAll("").replaceAll("\\s+", " ");
 		TextObject textObject = textObjectFactory.forText(detectStr);
 		List<DetectedLanguage> langs = languageDetector.getProbabilities(textObject);		
@@ -189,6 +203,32 @@ public class LangDetect {
 		//System.err.println("Utils::detectTwtLanguage -> final language: "+result);
 		
 		return result;
+	}
+	
+
+	/**
+	 *   return the probabilities for an input text. 
+	 *   
+	 *    
+	 * 
+	 * @param input
+	 * @return
+	 */
+	public String probabilities(String input)
+	{	
+		//query:
+		TextObject textObject = textObjectFactory.forText(input);
+		List<DetectedLanguage> langs = languageDetector.getProbabilities(textObject);
+		StringBuilder sb = new StringBuilder();
+		sb.append("{");
+		for (DetectedLanguage l : langs)
+		{			
+			//System.err.println("Utils::detectLanguage -> lang for text "+textObject+" ("+langs.indexOf(l) +") -> "+l.toString()+" ("+l.getLocale().getLanguage()+")");
+			double prob = l.getProbability();
+			sb.append(l.getLocale()).append(":").append(String.valueOf(l.getProbability())).append("; ");
+		}
+		sb.append("}");		
+		return sb.toString();
 	}
 	
 }

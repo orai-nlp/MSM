@@ -24,14 +24,30 @@ package elh.eus.MSM;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
 import javax.naming.NamingException;
+
+import org.apache.commons.io.FileUtils;
+
+import com.optimaize.langdetect.i18n.LdLocale;
+import com.optimaize.langdetect.ngram.NgramExtractors;
+import com.optimaize.langdetect.profiles.LanguageProfile;
+import com.optimaize.langdetect.profiles.LanguageProfileBuilder;
+import com.optimaize.langdetect.profiles.LanguageProfileWriter;
+import com.optimaize.langdetect.text.CommonTextObjectFactories;
+import com.optimaize.langdetect.text.TextObject;
+import com.optimaize.langdetect.text.TextObjectFactory;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
@@ -98,6 +114,13 @@ public class CLI {
 	 */
 	private Subparser influenceTaggerParser;
 
+	
+	/**
+	 * The parser that manages the language detection sub-command.
+	 */
+	private Subparser langDetectParser;
+	
+	
 	/**
 	 * The parser that manages the twitter user info sub-command.
 	 */
@@ -123,6 +146,8 @@ public class CLI {
 		loadInfluenceTaggerParameters();
 		twitterUserParser = subParsers.addParser("twtUser").help("Twitter user info CLI");
 		loadTwitterUserInfoParameters();
+		langDetectParser = subParsers.addParser("langid").help("language Detection CLI");
+		loadLangDetectParameters();
 		userLocationGeocoderParser = subParsers.addParser("geocode").help("Geocoder for twitter user locations info CLI");
 		loadUserLocationGeocoderParameters();
 
@@ -220,11 +245,14 @@ public class CLI {
 			else if (args[0].equals("twtUser")) {
 				twtUserUInfo();
 			}
+			else if (args[0].equals("langid")) {
+				langDetect();
+			}
 			
 		} catch (ArgumentParserException e) {
 			argParser.handleError(e);
 			System.out.println("Run java -jar target/MSM-" + version
-					+ ".jar (twitter|feed|influence|twtUser|geocode) -help for details");
+					+ ".jar (twitter|feed|influence|twtUser|langid|geocode) -help for details");
 			System.exit(1);
 		}
 	}
@@ -544,6 +572,84 @@ public class CLI {
 		} 		
 	}
 	
+	public final void langDetect()
+	{
+		String strings = parsedArguments.getString("strings");
+		String langs = parsedArguments.getString("langs");
+		String type = parsedArguments.getString("type");
+
+		boolean twitterlangs = parsedArguments.getBoolean("twitterLangid");
+		boolean train = parsedArguments.getBoolean("train");
+		boolean allLangprofs = parsedArguments.getBoolean("onlySpecificLanguageProfiles");
+		
+
+		
+		
+		List<String> acceptedLangs = Arrays.asList(langs.split(","));
+		
+		LangDetect lid;
+		if (allLangprofs) {
+			lid = new LangDetect(acceptedLangs);
+		}
+		else {
+			lid = new LangDetect();
+		}
+		String input = strings;
+		String lang = "unk";
+		if (MSMUtils.checkFile(strings))
+		{
+			try {
+				input = FileUtils.readFileToString(new File(strings), StandardCharsets.UTF_8);
+			} catch (IOException e) {
+				System.err.println("MSM::langDetect - ERROR when reading from file.");				
+			}
+		}			
+		
+		if (train && input.equals(strings))
+		{
+			//create text object factory:
+			TextObjectFactory textObjectFactory = CommonTextObjectFactories.forIndexingCleanText();
+
+			//load your training text:
+			TextObject inputText = textObjectFactory.create()
+			        .append(input);
+			        
+
+			//create the profile:
+			LanguageProfile languageProfile = new LanguageProfileBuilder(LdLocale.fromString(langs))
+			        .ngramExtractor(NgramExtractors.standard())
+			        .minimalFrequency(5) //adjust please
+			        .addText(inputText)
+			        .build();
+
+			//store it to disk if you like:
+			try {
+				new LanguageProfileWriter().write(languageProfile, new FileOutputStream(new File(input+"_"+langs+"_ldprofile")));
+			} catch (IOException e) {
+				System.err.println("MSM::langDetect - ERROR when writing language profile to file "+input+"_"+langs+"_ldprofile .");
+				System.exit(1);
+			}
+		}
+		else if (train)
+		{
+			System.err.println("MSM::langDetect - ERROR: train activated but invalid file given. Exiting now");
+			System.exit(1);
+		}
+		
+		switch (type)
+		{
+		case "twitter":
+			lang = lid.detectTwtLanguage(input,langs);
+			break;
+		default: 
+			lang = lid.detectFeedLanguage(input,langs);
+		}
+	
+		System.out.println(input+"\n"+lang+" - probs: "+lid.probabilities(input)+"\n-------------------------------------------");
+	}
+
+	
+	
 	
 	public final void loadTwitterCrawlerParameters()
 	{
@@ -741,6 +847,46 @@ public class CLI {
 				+ "--limit = 0 means no limit is established, and thus the command will atempt to process all sources found in the db (not processed yet).\n"
 				+ "This parameter is important depending on the number of APIs you have available and your usage rate limits.\n");			
 	}
+	
+	
+	private void loadLangDetectParameters()
+	{
+		langDetectParser.addArgument("-s", "--strings")
+		.required(true)		
+		.help("string to look for its language, or file containing strings. The language detection unit is the whole file"
+				+ "Many locations may be introduced separated by '::' string (semicolon may be used inside the location string, that is why they are not used as separators).\n");
+		langDetectParser.addArgument("-l", "--langs")		
+		.setDefault("eu,es,en,fr")
+		.help("list of accepted langs. Use iso-639 codes separated by commas (e.g. --langs=es,eu,en,fr) Default is 'eu,es,en,fr'.\n"
+				+ "NOTE 1: languages are defined in the config file.\n"
+				+ "NOTE 2: before activating this option make sure twitter identifies all languages you are working with, especially in case of less-resourced languages."
+				+ "NOTE 3: even if this option is active MSM will perform its own language identification, and leverage it with Twitter info.\n");
+		langDetectParser.addArgument("-tl", "--twitterLangid")		
+		.action(Arguments.storeTrue())
+		.help("Whether the crawler shall trust twitter to filter languages or not. Default is no.\n"
+				+ "NOTE 1: languages are defined in the config file.\n"
+				+ "NOTE 2: before activating this option make sure twitter identifies all languages you are working with, especially in case of less-resourced languages."
+				+ "NOTE 3: even if this option is active MSM will perform its own language identification, and leverage it with Twitter info.\n");
+		langDetectParser.addArgument("-o", "--onlySpecificLanguageProfiles")		
+		.action(Arguments.storeTrue())
+		.help("Do not load all language profiles, only those specified in --langs argument.\n");		
+		langDetectParser.addArgument("-t", "--type")
+		.choices("twitter", "longtext")
+		.setDefault("twitter")
+		.help("which type of texts are we dealing with:\n"
+				+ "\t - \"twitter\" : microbloging messages or short messages\n"
+				+ "\t - \"longtext\" : paragraphs or longer sentences\n"				
+				+ "\t\tWARNING: Nothing.\n");
+		langDetectParser.addArgument("-tr", "--train")
+		.action(Arguments.storeTrue())
+		.help("train niew model with the given files in the --strings parameter\n"
+				+ "\t\tWARNING: langs argument value is used as the language name to store the new language profile."
+				+ "\t\tWARNING: type is sued to generate short or standard text profile"
+				+ "\t\tWARNING: profile is stored in the same place of the input file, with the lang name and \"ld_profile\" string. e.g. input_es_ldprofile\n");
+		
+		
+	}
+	
 	
 	
 	/**
