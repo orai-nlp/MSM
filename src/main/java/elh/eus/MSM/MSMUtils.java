@@ -190,7 +190,9 @@ public final class MSMUtils {
 	
 	
 	/**
-	 * Function opens a connection with a mysql database given connection information.
+	 * Function opens a connection with a mysql database given connection information. 
+	 * IMPORTANT NOTE: ssl is disabled in order to avoid connection problems, and because we work in secure environments. 
+	 *                 If connection is going to be made with a remote DB and security may be compromised this should be changed to user proper identity verification.
 	 * 
 	 * @param usr
 	 * @param pass
@@ -206,7 +208,8 @@ public final class MSMUtils {
 			ds.setUser(usr);
 			ds.setPassword(pass);
 			ds.setServerName(host);
-			ds.setDatabaseName(db);			
+			ds.setDatabaseName(db);	
+			ds.setUseSSL(false);
 			//System.err.println("Utils::DbConnection -> connection attributes: "+ds.getUrl());
 			Connection conn = ds.getConnection();
 			return conn;		

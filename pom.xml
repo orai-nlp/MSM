@@ -146,6 +146,12 @@
     		<artifactId>ffmpeg</artifactId>
     		<version>0.6.2</version>
 		</dependency>
+		<dependency>
+    		<groupId>com.carrotsearch</groupId>
+    		<artifactId>langid-java</artifactId>
+    		<version>1.0.0</version>
+		</dependency>
+		
 		
 	</dependencies>
 

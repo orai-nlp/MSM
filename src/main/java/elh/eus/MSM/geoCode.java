@@ -18,6 +18,8 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 
+import javax.naming.NamingException;
+
 import twitter4j.JSONArray;
 import twitter4j.JSONException;
 import twitter4j.JSONObject;
@@ -34,6 +36,16 @@ public class geoCode {
 	
 	private HashMap<String,Integer> geoAPIlimits = new HashMap<String, Integer>();	
 	
+	private Connection dbconn;
+	
+	public Connection getDbconn() {
+		return dbconn;
+	}
+
+	public void setDbconn(Connection dbconn) {
+		this.dbconn = dbconn;
+	}
+	
 	/**
 	 * Initialization of available geocoding APIs. Each API has an request url and a rate limit 
 	 * associated to their free plans. If higher pricing plans are obtained this values should be changed.
@@ -47,7 +59,7 @@ public class geoCode {
 	 *
 	 */
 	private void initializeGeoAPIs(){
-		geoAPIs.put("openstreetmaps","http://nominatim.openstreetmap.org/search?format=json&limit=1&q=");
+		geoAPIs.put("openstreetmaps","https://nominatim.openstreetmap.org/search?format=json&limit=1&q=");
 		geoAPIlimits.put("openstreetmaps",20000);
 		//mapquest open api (based on openstreetmaps)
 		geoAPIs.put("mapquest-open", "http://open.mapquestapi.com/nominatim/v1/search.php?key=##KEY##&format=json&limit=1&q=");
@@ -81,16 +93,30 @@ public class geoCode {
 		} 				
 		
 		initializeGeoAPIs();
-		loadGeoAPIs(params);
+		loadGeoAPIs();
 		//if (APIKey.equalsIgnoreCase("none"))
 		//{
 		//	System.err.println("MSM::geoCode WARNING - no API Key could be found, geocode won't be retrieved, if you have no code default to OpenStreetMap API");
 		//}		
 
+		//if db parameter is true open a DB connection to store the geocodes retrieved. 
+		if (db) {
+			
+			try {
+				setDbconn(MSMUtils.DbConnection(params.getProperty("dbuser"),
+						params.getProperty("dbpass"),
+						params.getProperty("dbhost"),
+						params.getProperty("dbname")));
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} 
+		}
+		
 	}
 	
 
-	private void loadGeoAPIs(Properties params2) {
+	private void loadGeoAPIs() {
 		List<String> keys2rm = new ArrayList<String>(geoAPIs.keySet());
 		for (String gapi: keys2rm)
 		{						
@@ -210,7 +236,7 @@ public class geoCode {
 						}
 					}
 					break;
-				default:
+				default: //locationIQ, openstreetmaps
 					// get results from geocode api          
 					JSONArray jsona=MSMUtils.readJsonArrayFromUrl(APIurl);				
 					if (jsona.length()>0){
@@ -261,37 +287,81 @@ public class geoCode {
 	}
 	
 	/**
-	 * Tag the influence of the sources in the given list. 
-	 * Function returns the same list with the influence property filled. 
+	 * Tag the geocode of the sources in the given list. 
+	 * Function returns the same list with the geocode property filled. 
 	 * 
 	 * 
 	 * @param srcList
 	 * @return
 	 * @throws InterruptedException 
+	 * @throws SQLException 
 	 */
-	public Set<Source> tagGeoCode(Set<Source> srcList) throws InterruptedException{
+	public int tagGeoCode(Set<Source> srcList, boolean db) throws InterruptedException, SQLException
+	{
 		
-		//kk
+		int count = 0;
+		PreparedStatement infUpdate = null;
+		if (db) { // store geocode in the DB
+			infUpdate = getDbconn().prepareStatement("UPDATE behagunea_app_source SET geoinfo=? where source_id=? and type=?");			
+		}
+		else{ // print geocode to stdout
+			System.out.println("Src_screenName\tLocation\tgeolocation");
+		}
+		
 		for (Source src : srcList)
 		{
 			//System.err.println("MSM::InfluenceTagger::tagInfluence - name: "+src.getScreenName()+" type: "+src.getType());
 			if (src.getType().equalsIgnoreCase("twitter"))
 			{
 				src.setGeoInfo(retrieveGeoCode(src.getLocation()));	
-				System.err.println("MSM::geoCode - found geocode: "+src.getGeoInfo());
+				System.err.println("MSM::geoCode - found geocode: "+src.getGeoInfo());				
 			}
 			else
 			{
 				src.setGeoInfo(retrieveGeoCode(src.getLocation()));
 				System.err.println("MSM::geoCode - found geocode: "+src.getGeoInfo());
 			}
+			
+			if (db) // store geocode in the DB
+			{
+				try {
+					count += geocode2db(src,infUpdate);
+				}
+				catch (SQLException se) {
+					System.err.println("MSM::geoCode - found geocode, but couldn't store it in the database: "+src.getScreenName()+" ("+src.getId()+") - "+src.getGeoInfo());
+				}
+			}
+			else { // print geocode to stdout
+				System.out.println(src.getScreenName()+"\t"+src.getLocation()+"\t"+src.getGeoInfo());
+			}
+			
 			//wait not to get banned;
 			Thread.sleep(1010);
 		}
-		return srcList;
+		
+		if (infUpdate != null ) {
+			infUpdate.close();			
+		}
+		
+		return count;
 	}
+
 	
-	public int geocode2db(Set<Source> srcList, Connection conn) throws SQLException 
+	public int geocode2db(Source src, PreparedStatement infUpdate) throws SQLException 
+	{
+			
+		infUpdate.setString(1, src.getGeoInfo());
+		infUpdate.setLong(2, src.getId());
+		infUpdate.setString(3, src.getType());
+				
+		infUpdate.executeUpdate();
+		
+		return 1;
+	}
+
+	
+	
+	public int geocodes2db(Set<Source> srcList, Connection conn) throws SQLException 
 	{
 		PreparedStatement infUpdate = conn.prepareStatement("UPDATE behagunea_app_source SET geoinfo=? where source_id=? and type=?");
 
@@ -308,4 +378,6 @@ public class geoCode {
 		infUpdate.close();
 		return count;
 	}
+
+
 }

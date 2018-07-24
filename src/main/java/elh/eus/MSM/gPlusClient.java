@@ -123,7 +123,7 @@ public class gPlusClient {
 			String text = status.getText();
 			String lang = status.getLang();			
 			//we do not blindly trust twitter language identification, so we do our own checking.
-			lang = LID.detectTwtLanguage(text, lang);
+			lang = LID.detectTwtLanguage(text, lang)[0];
 			
 			//language must be accepted and tweet must not be a retweet
 			if ((acceptedLangs.contains("all") || acceptedLangs.contains(lang) || lang.equalsIgnoreCase("unk")))// && (! retweetPattern.matcher(text).matches()))

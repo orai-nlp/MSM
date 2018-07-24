@@ -30,10 +30,12 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
+import java.util.Scanner;
 import java.util.Set;
 
 import javax.naming.NamingException;
@@ -56,6 +58,7 @@ import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 import net.sourceforge.argparse4j.inf.Subparsers;
+import twitter4j.TwitterResponse;
 
 //import org.jdom2.JDOMException;
 
@@ -501,8 +504,7 @@ public class CLI {
 													params.getProperty("dbhost"),
 													params.getProperty("dbname"));
 				sourceList = Source.retrieveForGeoCodingFromDB(conn,type,opt,limit);
-				System.err.println("MSM::Influcence CLI (db): sources found to look for their location: "+sourceList.size());				
-				geoTagger.tagGeoCode(sourceList);
+				System.err.println("MSM::tagGeoCode CLI (db): sources found to look for their location: "+sourceList.size());								
 				conn.close();
 			}
 			else //try to get locations from command line or config file
@@ -517,37 +519,18 @@ public class CLI {
 					sourceList.add(s);					
 					n++;
 				}
-				//System.err.println("MSM::Influcence CLI (commandline): sources found to look for their influence: "+sourceList.size());
-				geoTagger.tagGeoCode(sourceList);				
+				System.err.println("MSM::Influcence CLI (commandline): sources found to look for their influence: "+sourceList.size());							
 			}
+			
+			int count = geoTagger.tagGeoCode(sourceList,db);
+			
+			System.err.println("MSM::tagGeoCode CLI -> sources found vs. geolocations stored: "+sourceList.size()+" - "+count);
+			
+			
 			
 		} catch (Exception e) {			
 			e.printStackTrace();
-		} 
-		
-		if (db) // store influences into the database
-		{
-			try {
-				Connection conn = MSMUtils.DbConnection(params.getProperty("dbuser"),
-						params.getProperty("dbpass"),
-						params.getProperty("dbhost"),
-						params.getProperty("dbname"));
-				int count = geoTagger.geocode2db(sourceList, conn);
-				System.out.println("geolocation for "+count+" sources stored in the database");
-				conn.close();
-			} catch (NamingException | SQLException e) {
-				System.err.println("MSM::tagGeoCode - Error when storing geolocation in the DB ");
-				e.printStackTrace();
-			} 					
-		}
-		else // print influence to stdout
-		{
-			System.out.println("Src_screenName\tLocation\tgeolocation");
-			for (Source src : sourceList)
-			{
-				System.out.println(src.getScreenName()+"\t"+src.getLocation()+"\t"+src.getGeoInfo());
-			}
-		}
+		} 				
 				
 	}
 
@@ -577,75 +560,150 @@ public class CLI {
 		String strings = parsedArguments.getString("strings");
 		String langs = parsedArguments.getString("langs");
 		String type = parsedArguments.getString("type");
-
+		String algorithm = parsedArguments.getString("algorithm");
+		
 		boolean twitterlangs = parsedArguments.getBoolean("twitterLangid");
 		boolean train = parsedArguments.getBoolean("train");
 		boolean allLangprofs = parsedArguments.getBoolean("onlySpecificLanguageProfiles");
 		
-
+		double confidenceThreshold = parsedArguments.getDouble("confidenceThreshold"); 
 		
+		boolean lowercase = parsedArguments.getBoolean("lowerCase");
 		
 		List<String> acceptedLangs = Arrays.asList(langs.split(","));
 		
 		LangDetect lid;
-		if (allLangprofs) {
-			lid = new LangDetect(acceptedLangs);
+		
+		if (algorithm.equalsIgnoreCase("langid")){
+			if (allLangprofs) {
+				lid = new LangDetect(acceptedLangs, algorithm);
+			}
+			else {
+				lid = new LangDetect(new ArrayList<String>(), algorithm);
+			}
 		}
-		else {
-			lid = new LangDetect();
+		else
+		{
+			
+			if (allLangprofs) {
+				lid = new LangDetect(acceptedLangs);
+			}
+			else {
+				lid = new LangDetect();
+			}						
+						
 		}
+		
+		if (lowercase) {
+			lid.setLowercase(true);
+		}
+		
+		String supposedLangs = "";
+		if (twitterlangs) {
+			supposedLangs = langs;
+		}
+		
+	
 		String input = strings;
 		String lang = "unk";
 		if (MSMUtils.checkFile(strings))
 		{
 			try {
-				input = FileUtils.readFileToString(new File(strings), StandardCharsets.UTF_8);
+				//input = FileUtils.readFileToString(new File(strings), StandardCharsets.UTF_8);
+				Scanner scanner = new Scanner(new File(strings));
+				while (scanner.hasNextLine()) {
+					input = scanner.nextLine();
+					String id="";
+					String user="";
+					String[] fields = input.split("\\t");
+					
+					if (fields.length >= 4 ) {
+						id = fields[0];
+						user = fields[1];
+						input = fields[3];
+					}
+					
+					
+					String[] result = new String[] {};	
+					switch (type)
+					{
+					case "twitter":
+						if (algorithm.equalsIgnoreCase("langid")){
+							result = lid.detectTwtLanguageLangid(input,supposedLangs,confidenceThreshold);
+						} 
+						else
+						{
+							result = lid.detectTwtLanguage(input,supposedLangs,confidenceThreshold);
+						}
+						break;
+					default: 
+						result = lid.detectFeedLanguage(input,supposedLangs,confidenceThreshold);
+					}
+					lang=result[0];
+					String probs = result[1];
+					
+					if (fields.length >= 4 ) {
+						System.out.println(id+"\t"+lang+"\t"+probs);						
+					}
+					else
+					{
+						System.out.println(input+"\n"+lang+" - probs: "+probs+"\n-------------------------------------------");						
+					}
+					
+				}
+				scanner.close();		
+				
 			} catch (IOException e) {
 				System.err.println("MSM::langDetect - ERROR when reading from file.");				
 			}
 		}			
-		
-		if (train && input.equals(strings))
+		else
 		{
-			//create text object factory:
-			TextObjectFactory textObjectFactory = CommonTextObjectFactories.forIndexingCleanText();
+			if (train && input.equals(strings))
+			{
+				//create text object factory:
+				TextObjectFactory textObjectFactory = CommonTextObjectFactories.forIndexingCleanText();
 
-			//load your training text:
-			TextObject inputText = textObjectFactory.create()
-			        .append(input);
-			        
+				//load your training text:
+				TextObject inputText = textObjectFactory.create()
+						.append(input);
 
-			//create the profile:
-			LanguageProfile languageProfile = new LanguageProfileBuilder(LdLocale.fromString(langs))
-			        .ngramExtractor(NgramExtractors.standard())
-			        .minimalFrequency(5) //adjust please
-			        .addText(inputText)
-			        .build();
 
-			//store it to disk if you like:
-			try {
-				new LanguageProfileWriter().write(languageProfile, new FileOutputStream(new File(input+"_"+langs+"_ldprofile")));
-			} catch (IOException e) {
-				System.err.println("MSM::langDetect - ERROR when writing language profile to file "+input+"_"+langs+"_ldprofile .");
+				//create the profile:
+				LanguageProfile languageProfile = new LanguageProfileBuilder(LdLocale.fromString(langs))
+						.ngramExtractor(NgramExtractors.standard())
+						.minimalFrequency(5) //adjust please
+						.addText(inputText)
+						.build();
+
+				//store it to disk if you like:
+				try {
+					new LanguageProfileWriter().write(languageProfile, new FileOutputStream(new File(input+"_"+langs+"_ldprofile")));
+				} catch (IOException e) {
+					System.err.println("MSM::langDetect - ERROR when writing language profile to file "+input+"_"+langs+"_ldprofile .");
+					System.exit(1);
+				}
+			}
+			else if (train)
+			{
+				System.err.println("MSM::langDetect - ERROR: train activated but invalid file given. Exiting now");
 				System.exit(1);
 			}
+
+			String[] result = new String[] {};
+			switch (type)
+			{
+			case "twitter":
+				result = lid.detectTwtLanguage(input,supposedLangs);
+				break;
+			default: 
+				result = lid.detectFeedLanguage(input,supposedLangs);
+			}
+			lang=result[0];
+			String probs = result[1];
+
+			System.out.println(input+"\n"+lang+" - probs: "+probs+"\n-------------------------------------------");
 		}
-		else if (train)
-		{
-			System.err.println("MSM::langDetect - ERROR: train activated but invalid file given. Exiting now");
-			System.exit(1);
-		}
-		
-		switch (type)
-		{
-		case "twitter":
-			lang = lid.detectTwtLanguage(input,langs);
-			break;
-		default: 
-			lang = lid.detectFeedLanguage(input,langs);
-		}
-	
-		System.out.println(input+"\n"+lang+" - probs: "+lid.probabilities(input)+"\n-------------------------------------------");
 	}
 
 	
@@ -851,22 +909,24 @@ public class CLI {
 	
 	private void loadLangDetectParameters()
 	{
+		langDetectParser.addArgument("-a", "--algorithm")
+		.setDefault("langid")
+		.choices("langid", "optimaize")
+		.help("algorithm to use for language identification, optimaize or langid. default is langid.\n");
 		langDetectParser.addArgument("-s", "--strings")
 		.required(true)		
 		.help("string to look for its language, or file containing strings. The language detection unit is the whole file"
 				+ "Many locations may be introduced separated by '::' string (semicolon may be used inside the location string, that is why they are not used as separators).\n");
 		langDetectParser.addArgument("-l", "--langs")		
 		.setDefault("eu,es,en,fr")
-		.help("list of accepted langs. Use iso-639 codes separated by commas (e.g. --langs=es,eu,en,fr) Default is 'eu,es,en,fr'.\n"
-				+ "NOTE 1: languages are defined in the config file.\n"
-				+ "NOTE 2: before activating this option make sure twitter identifies all languages you are working with, especially in case of less-resourced languages."
-				+ "NOTE 3: even if this option is active MSM will perform its own language identification, and leverage it with Twitter info.\n");
+		.help("list of accepted langs. Use iso-639 codes separated by commas (e.g. --langs=es,eu,en,fr) Default is 'eu,es,en,fr'.\n"			
+				+ "NOTE 1: before activating this option make sure twitter identifies all languages you are working with, especially in case of less-resourced languages.\n"
+				+ "NOTE 2: even if this option is active MSM will perform its own language identification, and leverage it with Twitter info.\n");
 		langDetectParser.addArgument("-tl", "--twitterLangid")		
 		.action(Arguments.storeTrue())
 		.help("Whether the crawler shall trust twitter to filter languages or not. Default is no.\n"
-				+ "NOTE 1: languages are defined in the config file.\n"
-				+ "NOTE 2: before activating this option make sure twitter identifies all languages you are working with, especially in case of less-resourced languages."
-				+ "NOTE 3: even if this option is active MSM will perform its own language identification, and leverage it with Twitter info.\n");
+				+ "NOTE 1: before activating this option make sure twitter identifies all languages you are working with, especially in case of less-resourced languages.\n"
+				+ "NOTE 2: even if this option is active MSM will perform its own language identification, and leverage it with Twitter info.\n");
 		langDetectParser.addArgument("-o", "--onlySpecificLanguageProfiles")		
 		.action(Arguments.storeTrue())
 		.help("Do not load all language profiles, only those specified in --langs argument.\n");		
@@ -883,8 +943,15 @@ public class CLI {
 				+ "\t\tWARNING: langs argument value is used as the language name to store the new language profile."
 				+ "\t\tWARNING: type is sued to generate short or standard text profile"
 				+ "\t\tWARNING: profile is stored in the same place of the input file, with the lang name and \"ld_profile\" string. e.g. input_es_ldprofile\n");
-		
-		
+		langDetectParser.addArgument("-c", "--confidenceThreshold")
+		.type(double.class)
+		.setDefault(0.7)
+		.help("Confidence threshold for language identification:"
+				+ "\n\tIf no candidate achieves the required threshold 'unk' is returned."
+				+ "\n\tIf more than one candidate achieves the required threshold the one with the highest probability is returned.\n");
+		langDetectParser.addArgument("-lc", "--lowerCase")		
+		.action(Arguments.storeTrue())
+		.help("Convert everything to lower case before doing language identification.\n");		
 	}
 	
 	

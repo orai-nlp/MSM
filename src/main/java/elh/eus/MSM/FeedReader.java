@@ -448,7 +448,7 @@ public class FeedReader {
 					//text = text.replaceAll("(?i)<p>", "").replaceAll("(?i)</p>", "\n\n").replaceAll("(?i)<br\\/?>","\n");
 
 					//detect language
-					String lang = LID.detectFeedLanguage(doc.getContent(), f.getLangs());
+					String lang = LID.detectFeedLanguage(doc.getContent(), f.getLangs())[0];
 
 					//if language accepted parse article for mentions. If found store them to DB or print them
 					if (acceptedLangs.contains("all") || acceptedLangs.contains(lang))
@@ -820,7 +820,7 @@ public class FeedReader {
 				// Hemen testuan gako hitzak bilatzeko kodea falta da, eta topatuz gero
 				// aipamen bat sortu eta datubasera sartzea.
 				//System.err.println("--------------------\n"+doc.getContent()+"\n----------------\n");
-				String lang = LID.detectFeedLanguage(doc.getContent(), langs);
+				String lang = LID.detectFeedLanguage(doc.getContent(), langs)[0];
 
 				if (acceptedLangs.contains("all") || acceptedLangs.contains(lang))
 				{
