@@ -58,6 +58,7 @@ import javax.naming.NamingException;
 
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.UrlValidator;
 import org.apache.http.Header;
@@ -374,7 +375,12 @@ public class FeedReader {
 				System.err.println(
 						"FeadReader::getFeed ->  Feed ERROR with " + f.getFeedURL() + " :\n ");
 				fe.printStackTrace();
+			} catch (Exception e) {
+				System.err.println(
+						"FeadReader::getFeed ->  Feed ERROR with when reading stream. " + f.getFeedURL() + " :\n ");
+				e.printStackTrace();
 			}
+			
 		} catch (IOException cpe) {			
 			System.err.println(
 					"FeadReader::getFeed ->  HTTP ERROR with " + f.getFeedURL() + " :\n " + cpe.getMessage());

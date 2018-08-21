@@ -165,7 +165,7 @@ public class Source {
 		setIsLocalArea(false);
 	}
 	
-	public Source(long id, String screenName, String type, String domain,double inf, boolean isLocal){
+	public Source(long id, String screenName, String type, String domain,double inf, boolean isLocal, String location){
 		setId(id);
 		setScreenName(screenName);
 		setType(type);
@@ -174,12 +174,6 @@ public class Source {
 		setFollowers(-1);
 		setFriends(-1);
 		setIsLocalArea(isLocal);
-	}
-	
-	public Source(long id, String screenName, String type, String domain,double inf, int ff,int fr, String location, boolean isLocal){
-		this(id, screenName,type,domain,inf,isLocal);
-		setFollowers(ff);
-		setFriends(fr);
 		//geoInfo
 		String geoStr = "unknown";
 		System.err.println("MSM - Source Constructor: location:"+location+" source:"+screenName);
@@ -189,6 +183,13 @@ public class Source {
 		}
 		setLocation(geoStr);
 		setGeoInfo("unknown");
+	}
+	
+	public Source(long id, String screenName, String type, String domain,double inf, int ff,int fr, String location, boolean isLocal){
+		this(id, screenName,type,domain,inf,isLocal, location);
+		setFollowers(ff);
+		setFriends(fr);		
+		
 	}
 	
 	/**
@@ -247,7 +248,7 @@ public class Source {
 			if (type.equalsIgnoreCase("feed"))
 			{
 				while (rs.next()) {
-					Source src = new Source(rs.getLong("source_id"), rs.getString("source_name"),rs.getString("type"),rs.getString("domain"),rs.getDouble("influence"),rs.getBoolean("is_local_area"));				
+					Source src = new Source(rs.getLong("source_id"), rs.getString("source_name"),rs.getString("type"),rs.getString("domain"),rs.getDouble("influence"),rs.getBoolean("is_local_area"),rs.getString("location"));				
 					result.add(src);
 				}
 			}
@@ -315,7 +316,7 @@ public class Source {
 			if (type.equalsIgnoreCase("feed"))
 			{
 				while (rs.next()) {
-					Source src = new Source(rs.getLong("source_id"), rs.getString("source_name"),rs.getString("type"),rs.getString("domain"),rs.getDouble("influence"),rs.getBoolean("is_local_area"));				
+					Source src = new Source(rs.getLong("source_id"), rs.getString("source_name"),rs.getString("type"),rs.getString("domain"),rs.getDouble("influence"),rs.getBoolean("is_local_area"),rs.getString("location"));				
 					result.add(src);
 				}
 			}

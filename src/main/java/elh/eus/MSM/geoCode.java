@@ -163,7 +163,7 @@ public class geoCode {
      */	
 	private String retrieveGeoCode (String query) 
 	{
-		if (query.length() == 0){
+		if (query == null || query.isEmpty()){
 			return "error";
 		}
 		
@@ -310,7 +310,7 @@ public class geoCode {
 		
 		for (Source src : srcList)
 		{
-			//System.err.println("MSM::InfluenceTagger::tagInfluence - name: "+src.getScreenName()+" type: "+src.getType());
+			//System.err.println("MSM::InfluenceTagger::tagInfluence - name: "+src.getScreenName()+" type: "+src.getType()+" location: "+src.getLocation());
 			if (src.getType().equalsIgnoreCase("twitter"))
 			{
 				src.setGeoInfo(retrieveGeoCode(src.getLocation()));	

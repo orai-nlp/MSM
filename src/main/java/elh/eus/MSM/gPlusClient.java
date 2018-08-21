@@ -145,7 +145,7 @@ public class gPlusClient {
 									params.getProperty("dbpass"),
 									params.getProperty("dbhost"),
 									params.getProperty("dbname"));
-							Source author = new Source(status.getUser().getId(), status.getUser().getScreenName(), "Twitter","",-1, false);
+							Source author = new Source(status.getUser().getId(), status.getUser().getScreenName(), "Twitter","",-1, false,"unknown");
 							int authorStored = 0;
 							if (!author.existsInDB(conn))
 							{
@@ -169,7 +169,7 @@ public class gPlusClient {
 								}
 								else
 								{
-									Source author2 = new Source(status.getUser().getId(), status.getUser().getScreenName(), "Twitter","",-1, false);
+									Source author2 = new Source(status.getUser().getId(), status.getUser().getScreenName(), "Twitter","",-1, false,"unknown");
 									authorStored = 0;
 									if (!author2.existsInDB(conn))
 									{
