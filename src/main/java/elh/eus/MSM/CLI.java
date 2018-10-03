@@ -889,9 +889,10 @@ public class CLI {
 		.setDefault("unknown")
 		.help("which sources to look for its influence for (only for database interaction):\n"
 				+ "\t - \"unknown\" : sources that have not been yet processed at all\n"
-				+ "\t - \"error\" : sources that have been processed but no influence could be retrieved\n"
+				+ "\t - \"error\" : sources that have been processed but no geolocation could be retrieved\n"
 				+ "\t - \"all\" : all sources.\n\t\tWARNING: this will override values in the database.\n"
-				+ "\t\tWARNING2:Depending on the number of sources in the database this could take a very long time.\n");
+				+ "\t\tWARNING1:Depending on the number of sources in the database this could take a very long time."
+				+ " Also be careful about your API key rate limits!\n");
 		userLocationGeocoderParser.addArgument("-a", "--api")
 		.choices("mapquest","mapquest-open","openstreetmaps", "googlemaps", "LocationIQ", "OpenCage","all")
 		.setDefault("all")
