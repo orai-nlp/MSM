@@ -22,3 +22,6 @@ hs_err_pid*
 /.settings/
 /.project
 /.classpath
+
+#experiment result files
+*.rslt

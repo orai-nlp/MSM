@@ -27,6 +27,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -42,6 +45,14 @@ import java.util.HashSet;
 import java.util.List;
 
 import javax.naming.NamingException;
+
+import org.apache.http.client.config.CookieSpecs;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.TrustAllStrategy;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.ssl.SSLContextBuilder;
 
 import twitter4j.JSONArray;
 import twitter4j.JSONException;
@@ -400,6 +411,27 @@ public final class MSMUtils {
 		return date;
 	}
 	
-	
+	/**
+	 *  Creates an http client connection to fetch urls.
+	 * @return
+	 * @throws KeyManagementException
+	 * @throws NoSuchAlgorithmException
+	 * @throws KeyStoreException
+	 */
+	public static CloseableHttpClient httpClient () throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+		//HttpClient client = HttpClientBuilder.create().setRedirectStrategy(new LaxRedirectStrategy()).build();
+		RequestConfig globalConfig = RequestConfig.custom()
+				.setCookieSpec(CookieSpecs.DEFAULT)
+				.build();
+		CloseableHttpClient client = HttpClients.custom()
+				.setDefaultRequestConfig(globalConfig)
+				.setUserAgent("Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:63.0) Gecko/20100101 Firefox/63.0")
+				.setSSLContext(new SSLContextBuilder().loadTrustMaterial(null, TrustAllStrategy.INSTANCE).build())
+			    .setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE)
+				.build();
+		//client.setRedirectStrategy(new LaxRedirectStrategy());
+		return client;
+		
+	}
 	
 }

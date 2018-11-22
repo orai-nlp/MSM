@@ -20,6 +20,7 @@ This file is part of MSM.
 package elh.eus.MSM;
 
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -348,25 +349,13 @@ public class FeedReader {
 			}
 			else
 			{
-				//HttpClient client = HttpClientBuilder.create().setRedirectStrategy(new LaxRedirectStrategy()).build();
-				RequestConfig globalConfig = RequestConfig.custom()
-						.setCookieSpec(CookieSpecs.DEFAULT)
-						.build();
-				CloseableHttpClient client = HttpClients.custom()
-						.setDefaultRequestConfig(globalConfig)
-						.setUserAgent("Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:63.0) Gecko/20100101 Firefox/63.0")
-						.setSSLContext(new SSLContextBuilder().loadTrustMaterial(null, TrustAllStrategy.INSTANCE).build())
-					    .setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE)
-						.build();
-				RequestConfig localConfig = RequestConfig.copy(globalConfig)
+				CloseableHttpClient client = MSMUtils.httpClient();
+				RequestConfig localConfig = RequestConfig.custom()
 						.setCookieSpec(CookieSpecs.STANDARD)
-						.build();
-				// (CloseableHttpClient client = HttpClients.createDefault()..createMinimal()) 
-				//client.setRedirectStrategy(new LaxRedirectStrategy());
-			
+						.build();				
 				HttpGet get = new HttpGet(f.getFeedURL().trim());
-				get.setConfig(localConfig);				
-				org.apache.http.HttpResponse response = client.execute(get);				
+				get.setConfig(localConfig);
+				org.apache.http.HttpResponse response = client.execute(get);
 				//try (CloseableHttpResponse response = client.execute(method);
 				stream = response.getEntity().getContent();
 			}
@@ -497,6 +486,9 @@ public class FeedReader {
 			} catch (URISyntaxException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
+			} catch (KeyManagementException | NoSuchAlgorithmException| KeyStoreException ssle) {
+				System.err.println("FeadReader::getRssFeed ->  HTTP client error (ssl related) when reading html a link (" +link+") :\n "+ssle.getMessage());
+				ssle.printStackTrace();
 			}
 
 		}
@@ -561,7 +553,7 @@ public class FeedReader {
 			if (defaultValidator.isValid(f.getFeedURL())) 
 			{
 				//this is legacy code, normaly the feed is stored somewhere in our HD.
-				HttpClient client = HttpClientBuilder.create().setRedirectStrategy(new LaxRedirectStrategy()).build();
+				HttpClient client = MSMUtils.httpClient();
 				HttpUriRequest method = new HttpGet(f.getFeedURL());
 				org.apache.http.HttpResponse response = client.execute(method);
 				//try (CloseableHttpResponse response = client.execute(method);
@@ -590,6 +582,9 @@ public class FeedReader {
 			System.err.println(
 					"FeadReader::getFeed ->  HTTP ERROR with " + f.getFeedURL() + " : " + cpe.getMessage());
 			cpe.printStackTrace();
+		} catch (KeyManagementException | NoSuchAlgorithmException| KeyStoreException ssle) {
+			System.err.println("FeadReader::getRssFeed ->  HTTP client error (ssl related) when reading html a link (" +link+") :\n "+ssle.getMessage());
+			ssle.printStackTrace();
 		}
 
 		int newEnts =0;
@@ -930,18 +925,24 @@ public class FeedReader {
 	 * @return Input source
 	 * @throws IOException
 	 * @throws URISyntaxException 
+	 * @throws KeyStoreException 
+	 * @throws NoSuchAlgorithmException 
+	 * @throws KeyManagementException 
 	 */
-	private InputSource fetchHTML(URL linkSrc) throws IOException, URISyntaxException {
+	private InputSource fetchHTML(URL linkSrc) throws IOException, URISyntaxException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
 		
 		final Pattern PAT_CHARSET = Pattern
 				.compile("charset=([^; ]+)$");
 
-		HttpClient client = HttpClientBuilder.create().setRedirectStrategy(new LaxRedirectStrategy()).build();
-		// (CloseableHttpClient client = HttpClients.createDefault()..createMinimal()) 
-		//client.setRedirectStrategy(new LaxRedirectStrategy());
-		HttpUriRequest method = new HttpGet(linkSrc.toURI());
-		org.apache.http.HttpResponse response = client.execute(method);
-		//try (CloseableHttpResponse response = client.execute(method);
+		//HttpClientBuilder.create().setRedirectStrategy(new LaxRedirectStrategy()).build();
+		CloseableHttpClient client = MSMUtils.httpClient();
+		RequestConfig localConfig = RequestConfig.custom()
+				.setCookieSpec(CookieSpecs.STANDARD)
+				.build();				
+		
+        URI linkUri = new URI(linkSrc.getProtocol(), linkSrc.getUserInfo(), linkSrc.getHost(), linkSrc.getPort(), linkSrc.getPath(), linkSrc.getQuery(), linkSrc.getRef()); 		
+        HttpUriRequest get = new HttpGet(linkUri);        		
+		CloseableHttpResponse response = client.execute(get);
 		InputStream stream = response.getEntity().getContent();	
 		
 		//final URLConnection conn = linkSrc.openConnection();
