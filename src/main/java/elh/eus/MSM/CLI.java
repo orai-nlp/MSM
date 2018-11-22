@@ -555,6 +555,9 @@ public class CLI {
 		} 		
 	}
 	
+	/**
+	 *  Language detection CLI
+	 */
 	public final void langDetect()
 	{
 		String strings = parsedArguments.getString("strings");
@@ -709,6 +712,9 @@ public class CLI {
 	
 	
 	
+	/**
+	 *  Parameter parsing function for Twitter Streaming API client
+	 */
 	public final void loadTwitterCrawlerParameters()
 	{
 		tweetCrawlParser.addArgument("-c", "--config")
@@ -745,6 +751,9 @@ public class CLI {
 				+ "NOTE: if the value 'db' is give instead of a file path MSM will try to generate the census from the database.\n");
 	}
 	
+	/**
+	 *  Parameter parsing function for Syndication Feed reader
+	 */
 	public final void loadFeedReaderParameters()
 	{
 		feedReaderParser.addArgument("-c", "--config")
@@ -786,6 +795,9 @@ public class CLI {
 				+ "\t userId<tab>sourceName[<tab>Additional Fields]\n");
 	}
 	
+	/**
+	 *  Parameter parsing function for Influence tagger
+	 */
 	public final void loadInfluenceTaggerParameters()
 	{
 		influenceTaggerParser.addArgument("-s", "--sources")
@@ -826,7 +838,9 @@ public class CLI {
 	}
 	
 	
-	
+	/**
+	 *  Parameter parsing function for Twitter user profile retrieval client
+	 */
 	public final void loadTwitterUserInfoParameters()
 	{
 		twitterUserParser.addArgument("-c", "--config")
@@ -861,6 +875,9 @@ public class CLI {
 				+ "Returning only follower and friends count is much faster because of the higher rate limit of the API.\n");
 	}
 	
+	/**
+	 *  Parameter parsing function for geocoding APIs client
+	 */
 	public final void loadUserLocationGeocoderParameters()
 	{
 		userLocationGeocoderParser.addArgument("-s", "--sources")
@@ -907,7 +924,9 @@ public class CLI {
 				+ "This parameter is important depending on the number of APIs you have available and your usage rate limits.\n");			
 	}
 	
-	
+	/**
+	 *  Parameter parsing function for language detector
+	 */
 	private void loadLangDetectParameters()
 	{
 		langDetectParser.addArgument("-a", "--algorithm")

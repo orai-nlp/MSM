@@ -26,6 +26,9 @@ import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Paths;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -69,10 +72,13 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.TrustAllStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.client.LaxRedirectStrategy;
+import org.apache.http.ssl.SSLContextBuilder;
 import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.JDOMException;
@@ -348,6 +354,9 @@ public class FeedReader {
 						.build();
 				CloseableHttpClient client = HttpClients.custom()
 						.setDefaultRequestConfig(globalConfig)
+						.setUserAgent("Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:63.0) Gecko/20100101 Firefox/63.0")
+						.setSSLContext(new SSLContextBuilder().loadTrustMaterial(null, TrustAllStrategy.INSTANCE).build())
+					    .setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE)
 						.build();
 				RequestConfig localConfig = RequestConfig.copy(globalConfig)
 						.setCookieSpec(CookieSpecs.STANDARD)
@@ -356,13 +365,14 @@ public class FeedReader {
 				//client.setRedirectStrategy(new LaxRedirectStrategy());
 			
 				HttpGet get = new HttpGet(f.getFeedURL().trim());
-				get.setConfig(localConfig);
-				org.apache.http.HttpResponse response = client.execute(get);
+				get.setConfig(localConfig);				
+				org.apache.http.HttpResponse response = client.execute(get);				
 				//try (CloseableHttpResponse response = client.execute(method);
 				stream = response.getEntity().getContent();
 			}
 			SyndFeedInput input = new SyndFeedInput();
 			input.setPreserveWireFeed(true);
+			input.setAllowDoctypes(true);
 			// try to read a feed.
 			try {
 				feed = input.build(new XmlReader(stream));
@@ -385,6 +395,9 @@ public class FeedReader {
 			System.err.println(
 					"FeadReader::getFeed ->  HTTP ERROR with " + f.getFeedURL() + " :\n " + cpe.getMessage());
 			cpe.printStackTrace();
+		} catch (KeyManagementException | NoSuchAlgorithmException| KeyStoreException ssle) {
+			System.err.println("FeadReader::getRssFeed ->  HTTP client error (ssl related) " + f.getFeedURL() + " :\n " + ssle.getMessage());
+			ssle.printStackTrace();
 		}
 
 		//SyndFeedInput input = new SyndFeedInput();
