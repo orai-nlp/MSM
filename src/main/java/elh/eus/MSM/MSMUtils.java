@@ -26,6 +26,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
@@ -48,6 +50,9 @@ import javax.naming.NamingException;
 
 import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.TrustAllStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -266,11 +271,25 @@ public final class MSMUtils {
 	 * @return
 	 * @throws IOException
 	 * @throws JSONException
+	 * @throws KeyStoreException 
+	 * @throws NoSuchAlgorithmException 
+	 * @throws KeyManagementException 
+	 * @throws URISyntaxException 
 	 */
-	public static JSONObject readJsonFromUrl(URL url) throws IOException, JSONException
+	public static JSONObject readJsonFromUrl(URL url) throws IOException, JSONException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException, URISyntaxException
 	{				
 		System.err.println(url.toString());
-		BufferedReader rd = new BufferedReader(new InputStreamReader(url.openStream()));
+		//HttpClientBuilder.create().setRedirectStrategy(new LaxRedirectStrategy()).build();
+		CloseableHttpClient client = httpClient();
+		RequestConfig localConfig = RequestConfig.custom()
+				.setCookieSpec(CookieSpecs.STANDARD)
+				.build();				
+				
+		URI linkUri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef()); 		
+		HttpUriRequest get = new HttpGet(linkUri);        		
+		CloseableHttpResponse response = client.execute(get);
+		InputStream stream = response.getEntity().getContent();	
+		BufferedReader rd = new BufferedReader(new InputStreamReader(stream));
 		StringBuilder sb = new StringBuilder();
 		int cp;
 		while ((cp = rd.read()) != -1) 

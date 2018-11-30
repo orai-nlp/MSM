@@ -25,7 +25,11 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -111,8 +115,7 @@ public class InfluenceTagger {
 			System.err.println("MSM::InfluenceTagger - JSON error when trying to get the Klout index for source "+userId);
 			//je.printStackTrace();
 		}
-		catch (IOException ioe)
-		{
+		catch (IOException | KeyManagementException | NoSuchAlgorithmException | KeyStoreException | URISyntaxException httpe) {
 			System.err.println("MSM::InfluenceTagger - Reading error when trying to read the JSON object of the Klout index for source "+userId);
 			//ioe.printStackTrace();
 		}
@@ -123,8 +126,8 @@ public class InfluenceTagger {
 	}
 		
 	
-	/** websites - DomainStatsIO API : http://api.domainstats.io/
-     * Key Rate Limits : - 5 Calls per second | 500 Calls per hour
+	/** websites - DomainStats.com domain_call API : http://api.domainstats.com/
+     * Key Rate Limits : - 5 Calls per minute | 50 Calls per week
 	 * 
      * 
      */
@@ -133,7 +136,7 @@ public class InfluenceTagger {
 		String result = "";
 
 		// by defaults sources come with the protocol (ftp|http|https) attached, 
-		//domainstatsio requires that we remove the protocol.
+		//domainstats.com requires that we remove the protocol.
 		URL myURL;
 		String host=id;
 		
@@ -146,20 +149,23 @@ public class InfluenceTagger {
 		}
 		
 		
-		String url = "http://api.domainstats.io/"+host+"?secret_token="+DomainStatsIOKey;
+		String url = "https://api.domainstats.com/"+host+"?secret_token="+DomainStatsIOKey;
 
 		System.out.println("Sending request to : " + url);
 
 		try {
 			// get domainStats io response         
 			JSONObject json=MSMUtils.readJsonFromUrl(new URL(url));
+			System.out.println("Object read from: " + url);
 
 			// if the json object contains the user id ask for its score (Klout has the user tracked).
 			if (json.has("data"))
 			{
 				//Domain info is stored in the "data" object 
 				JSONObject datajson = json.getJSONObject("data");
-				
+
+				System.out.println("found 'data' in json: " + url);
+
 				
 				result = datajson.getString("ahrefs_domain_rank");
 				System.out.println(result);
@@ -169,9 +175,10 @@ public class InfluenceTagger {
 			je.printStackTrace();
 			System.out.println("MSM::InfluenceTagger - JSON error when trying to get influence (AHrefs)"
 					+ "for domain "+id);			
-		} catch (IOException ioe) {			
+		} catch (IOException | KeyManagementException | NoSuchAlgorithmException | KeyStoreException | URISyntaxException httpe) {			
 			System.out.println("MSM::InfluenceTagger - IO error when trying to get influence (AHrefs)"
-					+ "for domain "+id);			
+					+ "for domain "+id);
+			httpe.printStackTrace();
 		}
 
 		if ("".equals(result)) {

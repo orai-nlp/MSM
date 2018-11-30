@@ -6,8 +6,12 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -274,10 +278,10 @@ public class geoCode {
 			System.err.println("MSM::geoCode - Malformed request url when trying to retrieve geocode for location "+APIaddress+qstr);
 			mue.printStackTrace();
 		}
-		catch (IOException ioe)
+		catch (IOException | KeyManagementException | NoSuchAlgorithmException | KeyStoreException | URISyntaxException httpe)
 		{
 			System.err.println("MSM::geoCode - Reading error when trying to read the JSON object of the geocode for location "+APIaddress+qstr);
-			ioe.printStackTrace();
+			httpe.printStackTrace();
 		}
 		
 		
