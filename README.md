@@ -15,9 +15,9 @@ The contents of the module are the following:
 INSTALLATION
 ============
 
-Installing the elh-absa requires the following steps:
+Installing MSM requires the following steps:
 
-If you already have installed in your machine JDK7 and MAVEN 3, please go to step 3
+If you already have installed in your machine JDK8 and MAVEN 3, please go to step 3
 directly. Otherwise, follow these steps:
 
 1. Install JDK 1.8
@@ -26,7 +26,7 @@ directly. Otherwise, follow these steps:
 If you do not install JDK 1.8 in a default location, you will probably need to configure the PATH in .bashrc or .bash_profile:
 
 ````shell
-export JAVA_HOME=/yourpath/local/java17
+export JAVA_HOME=/yourpath/local/java18
 export PATH=${JAVA_HOME}/bin:${PATH}
 ````
 
@@ -80,7 +80,7 @@ You should see reference to the MAVEN version you have just installed plus the J
 --------------------------
 
 ````shell
-hg clone https://bitbucket.org/elh-eus/elh-crawler
+git clone https://github.com/Elhuyar/MSM
 ````
 
 3. Installing using maven
@@ -94,10 +94,10 @@ mvn clean package
 This step will create a directory called target/ which contains various directories and files.
 Most importantly, there you will find the module executable:
 
-elh-MSM-1.3.7.jar
+elh-MSM-1.3.8.jar
 
 This executable contains every dependency the module needs, so it is completely portable as long
-as you have a JVM 1.7 installed.
+as you have a JVM 1.8 installed.
 
 To install the module in the local maven repository, usually located in ~/.m2/, execute:
 
@@ -124,28 +124,135 @@ Command line examples
 
    - You can get general help by calling:
 ````shell
-java -jar MSM-1.3.7.jar -help
+java -jar MSM-1.3.8.jar -help
 ```` 
 
    - **twitter**: Twitter Public stream crawling. Call Example:
 ````shell
-java -jar MSM-1.3.7.jar twitter -c config.cfg -s stout 2>> MSM-twitter.log
+java -jar MSM-1.3.8.jar twitter -c config.cfg -s stout 2>> MSM-twitter.log
+````
+
+Parameters:
+````shell
+java -jar target/MSM-1.3.8.jar twitter -h
+usage: MSM-1.3.8.jar twitter [-h] -c CONFIG [-p {terms,users,geo,all}] [-tl] [-s {stout,db,solr}] [-cn CENSUS]
+
+named arguments:
+  -h, --help             show this help message and exit
+  -c CONFIG, --config CONFIG
+                         Configuration file that contains the necessary parameters to connect to the twitter public stream for crawling.
+                         
+  -p {terms,users,geo,all}, --params {terms,users,geo,all}
+                         Search parameters to use when connecting to the Twitter Streaming API. Parameter values areeither stored in the database or specified in the configuration file.
+                         	 - "terms" : terms to track.
+                         	 - "users" : users to follow.
+                         	 - "geo" : bounding boxes defining geographic areas
+                         	 - "all" : check for all of the previous parameters
+                         
+  -tl, --twitterLangid   Whether the crawler shall trust twitter to filter languages or not. Default is no.
+                         NOTE 1: languages are defined in the config file.
+                         NOTE 2: before activating this option make sure twitter identifies all languages you are  working with, especially in case of less-resourced languages.NOTE 3: even if this option is
+                         active MSM will perform its own language identification, and leverage it with Twitter info.
+                         
+  -s {stout,db,solr}, --store {stout,db,solr}
+                         Whether tweets shall be stored in a database, an Apache solr Index or printed to stdout (default).
+                         	 - "stout" : standard output
+                         	 - "db" : database
+                         	 - "solr" : solr (not implemented yet)
+                         
+  -cn CENSUS, --census CENSUS
+                         Census is used to store tweets by users in a certain geographic area. A path to a file  must  be given as an argument. The file contains a list of Twitter users. The users and their
+                         tweets will be marked in the database as 'local'. The file must contain one user per line in the following format:
+                         	 userId<tab>screenName[<tab>Additional Fields]
+                         NOTE: if the value 'db' is give instead of a file path MSM will try to generate the census from the database.
+                         
+Run java -jar target/MSM-1.3.8.jar (twitter|feed|influence|twtUser|langid|geocode) -help for detail
 ````
 
    - **feed**: Syndication feed crawling (RSS, Atom, ...). Feed types supported by ROME tools (http://rometools.github.io/rome/)  
 ````shell
-java -jar MSM-1.3.7.jar feed -c config.cfg -u http://feeds2.feedburner.com/example
-````
-         
-   - **influence**: looks for the influence of a given list of sources. Klout index for twitter users and PageRank for websites.
-````shell
-java -jar MSM-1.3.7.jar influence -c config.cfg -db 2>> MSM-Influence.log
+java -jar MSM-1.3.8.jar feed -c config.cfg -u http://feeds2.feedburner.com/example
 ````
 
+Parameters:
+````shell
+java -jar target/MSM-1.3.8.jar feed -h
+usage: MSM-1.3.8.jar feed [-h] [-c CONFIG] [-t {press,multimedia}] [-ff FFMPEG] [-u URL] [-s {stout,db,solr}] [-cn CENSUS]
+
+named arguments:
+  -h, --help             show this help message and exit
+  -c CONFIG, --config CONFIG
+                         Configuration file that contains the necessary parameters to connect to the feed stream for crawling.Only needed if no url is given through the --url parameter.
+                         
+  -t {press,multimedia}, --type {press,multimedia}
+                         The type of feed we are dealing with.
+                         	 - "press" : written digital press feeds. Standard rss feed parsers are used
+                         	 - "multimedia" : feed coming from multimedia source (tv/radio) a custom parser is activated in this case.
+                         
+  -ff FFMPEG, --ffmpeg FFMPEG
+                         The path to the ffmpeg executable (the directory containing ffmpeg and ffprobe binaries).  Only  needed if for multimedia source feeds. Default value is "/usr/bin". Change the value
+                         to match your installation path
+                         
+  -u URL, --url URL      URL(s) of the feed(s) we want to crawl. Feeds must be separated with ',' chars.
+                         e.g. : java -jar MSM-1.0.jar feed -u 'url1,url2,...'
+  -s {stout,db,solr}, --store {stout,db,solr}
+                         Whether mentions shall be stored in a database, an Apache solr Index or printed to stdout (default).
+                         	 - "stout" : standard output
+                         	 - "db" : database
+                         	 - "solr" : solr (not implemented yet)
+                         
+  -cn CENSUS, --census CENSUS
+                         Census is used to store mentions from sources in a certain geographic area. A path to a file  must  be given as an argument. The file contains a list of source ids (as stored in the
+                         database). The sources and their mentions will be marked in the database as 'local'. The file must contain one user per line in the following format:
+                         	 userId<tab>sourceName[<tab>Additional Fields]
+                         
+Run java -jar target/MSM-1.3.8.jar (twitter|feed|influence|twtUser|langid|geocode) -help for details          
+````
+   - **influence**: looks for the influence of a given list of sources. Klout index for twitter users and PageRank for websites.
+````shell
+java -jar MSM-1.3.8.jar influence -c config.cfg -db 2>> MSM-Influence.log
+````
+
+Parameters:
+````shell
+java -jar target/MSM-1.3.8.jar influence -h
+usage: MSM-1.3.8.jar influence [-h] [-s SOURCES] -c CONFIG [-db] [-t {twitter,feed,all}] [-w {null,error,all}] [-l LIMIT]
+
+named arguments:
+  -h, --help             show this help message and exit
+  -s SOURCES, --sources SOURCES
+                         web domain (pageRank) or twitter screen name (KloutIndex) to look for its influence  for.Many  sources  may  be introduced separated by ',' char.If you want to retrieve sources from
+                         the database left this option empty or use the 'db' value
+                         
+  -c CONFIG, --config CONFIG
+                         Configuration file that contains the necessary parameters to connect to Influence APIs and Database you want to interact with the database
+                         
+  -db, --database        Whether influences shall be stored in a database or printed to stdout (default). Database parameters must be given in the configuration file.
+                         
+  -t {twitter,feed,all}, --type {twitter,feed,all}
+                         type of the sources to look for its influence for:	 - "twitter" : sources are twitter user screen names
+                         	 - "domain" : sources are web domains
+                         	 - "all" : sources are mixed (default) system will detect the source type for each source
+                         
+  -w {null,error,all}, --which {null,error,all}
+                         which sources to look for its influence for (only for database interaction):
+                         	 - "null" : sources that have not been yet processed at all
+                         	 - "error" : sources that have been processed but no influence could be retrieved
+                         	 - "all" : all sources.
+                         		WARNING: this will override values in the database.
+                         		WARNING2:Depending on the number of sources in the database this could take a very long time.
+                         
+  -l LIMIT, --limit LIMIT
+                         limit the number of sources processed in the execution (only for database interaction): default is 500
+                         --limit = 0 means no limit is established, and thus the command will atempt to process all sources found in the db (not processed yet).
+                         This parameter is important not to exceed the twitter api rate limits. Increase it at your own risk.
+                         
+Run java -jar target/MSM-1.3.8.jar (twitter|feed|influence|twtUser|langid|geocode) -help for details
+````
    - **twtUser**: asks Twitter for the user profiles of a given list of Twitter users and return their follower and friend information.
 ````shell
-java -jar MSM-1.3.7.jar twtUser -h
- usage: MSM-1.3.7.jar twtUser [-h] -c CONFIG [-s {stout,db,solr}] [-l LIMIT] [-o]
+java -jar MSM-1.3.8.jar twtUser -h
+ usage: MSM-1.3.8.jar twtUser [-h] -c CONFIG [-s {stout,db,solr}] [-l LIMIT] [-o]
 
 named arguments:
   -h, --help             show this help message and exit
@@ -169,8 +276,8 @@ named arguments:
 
    - **langid**: Language detection for sentences. Used mainly to evaluate langid and optimaize.
 ````shell
-java -jar MSM-1.3.7.jar langid -h
-usage: MSM-1.3.7.jar langid [-h] [-a {langid,optimaize}] -s STRINGS [-l LANGS] [-tl] [-o] [-t {twitter,longtext}] [-tr] [-c CONFIDENCETHRESHOLD] [-lc]
+java -jar MSM-1.3.8.jar langid -h
+usage: MSM-1.3.8.jar langid [-h] [-a {langid,optimaize}] -s STRINGS [-l LANGS] [-tl] [-o] [-t {twitter,longtext}] [-tr] [-c CONFIDENCETHRESHOLD] [-lc]
 
 named arguments:
   -h, --help             show this help message and exit
@@ -213,8 +320,8 @@ named arguments:
 
    - **geocode**: Geocoding wrapper for several geocoding APIs (access keys needed for some of them). Given a string it returns its geolocation coordinates.
 ````shell
-java -jar MSM-1.3.7.jar geocode -h
-usage: MSM-1.3.7.jar geocode [-h] [-s SOURCES] -c CONFIG [-db] [-t {twitter,feed,all}] [-w {unknown,error,all}] [-a {mapquest,mapquest-open,openstreetmaps,googlemaps,LocationIQ,OpenCage,all}] [-l LIMIT]
+java -jar MSM-1.3.8.jar geocode -h
+usage: MSM-1.3.8.jar geocode [-h] [-s SOURCES] -c CONFIG [-db] [-t {twitter,feed,all}] [-w {unknown,error,all}] [-a {mapquest,mapquest-open,openstreetmaps,googlemaps,LocationIQ,OpenCage,all}] [-l LIMIT]
 
 named arguments:
   -h, --help             show this help message and exit
@@ -262,7 +369,7 @@ You can also generate the javadoc of the module by executing:
 mvn javadoc:jar
 ````
 
-Which will create a jar file core/target/elh-MSM-1.3.7-javadoc.jar
+Which will create a jar file core/target/elh-MSM-1.3.8-javadoc.jar
 
 
 Contact information
@@ -271,5 +378,5 @@ Contact information
 ````shell
 Iñaki San Vicente and Xabier Saralegi
 Elhuyar Foundation
-{i.sanvicente,x.saralegi}@elhuyar.com
+{i.sanvicente,x.saralegi}@elhuyar.eus
 ````
