@@ -100,13 +100,7 @@ public class CLI {
 	 * The parser that manages the twitter crawler sub-command.
 	 */
 	private Subparser tweetCrawlParser;
-	
-	/**
-	 * The parser that manages the twitter crawler sub-command.
-	 */
-	private Subparser gplusCrawlParser;
-
-	
+		
 	/**
 	 * The parser that manages the feed reader sub-command.
 	 */	
@@ -141,8 +135,6 @@ public class CLI {
 	public CLI() {
 		tweetCrawlParser = subParsers.addParser("twitter").help("Twitter Stream crawling CLI");
 		loadTwitterCrawlerParameters();
-		gplusCrawlParser = subParsers.addParser("gplus").help("gplus crawling CLI");
-		loadGplusCrawlerParameters();
 		feedReaderParser = subParsers.addParser("feed").help("Feed reaader CLI");
 		loadFeedReaderParameters();
 		influenceTaggerParser = subParsers.addParser("influence").help("Influence tagger CLI");
@@ -156,52 +148,6 @@ public class CLI {
 
 	}
 	
-	
-	private void loadGplusCrawlerParameters() {
-		// TODO Auto-generated method stub
-		gplusCrawlParser.addArgument("-c", "--config")
-		.required(true)
-		.help("Configuration file that contains the necessary parameters to connect to the twitter public "
-				+ "stream for crawling.\n");
-		gplusCrawlParser.addArgument("-p", "--params")		
-		.choices("terms", "users", "geo", "all")
-		.setDefault("all")
-		.help("Search parameters to use when connecting to the Twitter Streaming API. Parameter values are"
-				+ "either stored in the database or specified in the configuration file.\n"
-				+ "\t - \"terms\" : terms to track.\n"
-				+ "\t - \"users\" : users to follow.\n"
-				+ "\t - \"geo\" : bounding boxes defining geographic areas\n"
-				+ "\t - \"all\" : check for all of the previous parameters\n");
-		gplusCrawlParser.addArgument("-s", "--store")		
-		.choices("stout", "db", "solr")
-		.setDefault("stout")
-		.help("Whether tweets shall be stored in a database, an Apache solr Index or printed to stdout (default).\n"
-				+ "\t - \"stout\" : standard output\n"
-				+ "\t - \"db\" : standard output\n"
-				+ "\t - \"solr\" : standard output\n");
-	}
-
-
-	/**
-	 * 
-	 * Google plus crawler is not yet implemented.
-	 * 
-	 * 	TODO implement google plus crawler.
-	 * 
-	 */
-	private void gPlusCrawler() {
-
-		String cfg = parsedArguments.getString("config");
-		String store = parsedArguments.getString("store");
-		String params = parsedArguments.getString("params");
-		
-		try {
-			gPlusClient gplusClient = new gPlusClient(cfg, store,params);
-		} catch (Exception e) {			
-			e.printStackTrace();
-		} 		
-
-	}
 
 
 	/**
@@ -232,9 +178,6 @@ public class CLI {
 			System.err.println("CLI options: " + parsedArguments);
 			if (args[0].equals("twitter")) {
 				twitterCrawler();
-			} 
-			else if (args[0].equals("gplus")) {
-				gPlusCrawler();
 			} 
 			else if (args[0].equals("feed")) {
 				feedReader();
