@@ -191,6 +191,9 @@ public class FeedReader {
 	 * @param kwrds2
 	 */
 	private void constructKeywordsPatterns() {
+		
+		boolean anchors = false;
+
 		if (this.kwrds == null || this.kwrds.isEmpty())
 		{
 			System.err.println ("elh-MSM::FeedReader - No keywords loaded");
@@ -231,11 +234,17 @@ public class FeedReader {
 			if (k.isAnchor())
 			{
 				sb_anchors.append(k.getText().replace('_',' ').toLowerCase()).append("|"); 
+				anchors=true;
 			}
 		} 
-		String anchPatt = sb_anchors.toString();
-		anchPatt=anchPatt.substring(0, anchPatt.length()-1)+")";
-		anchorPattern = Pattern.compile(anchPatt);
+
+		// if anchor keywords found construct the anchor pattern
+		if (anchors)
+		{
+			String anchPatt = sb_anchors.toString();		
+			anchPatt=anchPatt.substring(0, anchPatt.length()-1)+")";
+			anchorPattern = Pattern.compile(anchPatt);
+		}
 	}
 
 	
@@ -669,11 +678,19 @@ public class FeedReader {
 
 		Set<Keyword> result = new HashSet<Keyword>();
 		
-		String wholeText = StringUtils.stripAccents(doc.getContent()).toLowerCase(); 
-		boolean anchorFound = anchorPattern.matcher(wholeText).find();
+		String wholeText = StringUtils.stripAccents(doc.getContent()).toLowerCase();
+		boolean anchorFound = false;
+		if (anchorPattern == null)
+		{
+			anchorFound=false;
+		}
+		else
+		{
+			anchorFound = anchorPattern.matcher(wholeText).find();
+		}
+
 		//System.err.println("MSM::FeedReader::parseArticleForKeywords - anchorPattern: "+anchorPattern.toString()
 		//		+"\n -- found? "+anchorFound+" lang: "+lang+" indep/dep:"+independentkwrds.size()+"/"+dependentkwrds.size());
-
 
 		// objects needed to call the tokenizer
 		Properties tokProp = new Properties();		
@@ -721,7 +738,7 @@ public class FeedReader {
 				}
 				
 				//System.err.println("MSM::FeedReader::parseArticleForKeywords - independent key:"
-				//	+k.getText()+" l="+k.getLang()+" pattern:"+kwrdPatterns.get(k.getId()).toString());
+				//	+k.getText()+" l="+k.getLang()+" pattern:"+kwrdPatterns.get(k.getId()).toString()+" document lang: "+lang);
 				if(k.getLang().equalsIgnoreCase(lang) && kwrdFound)
 				{	
 					//System.err.println("MSM::FeedReader::parseArticleForKeywords - independent key found!!!: "+k.getText()+" id: "+k.getId());

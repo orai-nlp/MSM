@@ -291,11 +291,9 @@ public class CLI {
 					String kwrds = params.getProperty("searchTerms", "none");
 					if (!kwrds.equalsIgnoreCase("none"))
 					{
-						String[] kwrdSplit = kwrds.split("\\s*,\\s*");
-						for (String kwrd : kwrdSplit)
-						{
-							kwrdList.add(new Keyword(kwrd,"all"));
-						}
+						List<String> terms = Arrays.asList(params.getProperty("searchTerms").split(","));	
+						kwrdList = Keyword.createFromList(terms,Arrays.asList(params.getProperty("langs", "all").split(",")));
+						System.err.println("MSM::TwitterStreamClient - retrieved "+kwrdList+" keywords from config file");
 					}
 					// if no keyword is found in config file try to load them from the database as a last resort.
 					else{

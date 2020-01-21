@@ -22,6 +22,7 @@ package elh.eus.MSM;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Set;
 
 import com.google.api.services.youtube.model.Video;
@@ -601,7 +602,12 @@ public class Mention {
 	 */
 	public void print()
 	{
-		System.out.println("\ntext: "+text+"\nlang: "+lang+"\nkeywords: "+keywords.toString());
+		Set<String> kwords = new HashSet<String>();
+		for (Keyword k: keywords) {
+			kwords.add(k.getText());
+		}
+		
+		System.out.println("\ntext: "+text+"\nlang: "+lang+"\nkeywords: "+kwords.toString());
 	}
 	
 	public int mention2solr(){

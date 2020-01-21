@@ -259,7 +259,9 @@ public class Keyword {
 		{
 			for (String l: langs)
 			{
-				result.add(new Keyword(key,l,false,false,true,key));				 
+				Keyword k = new Keyword(key,l,false,false,true,key);
+				k.setId(result.size()+1);
+				result.add(k);				 
 			}
 		}
 		return result;
