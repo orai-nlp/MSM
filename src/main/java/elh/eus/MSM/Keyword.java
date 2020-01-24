@@ -255,8 +255,12 @@ public class Keyword {
 	public static Set<Keyword> createFromList(List<String> keyList, List<String> langs) 
 	{
 		Set<Keyword> result = new HashSet<Keyword>(); 
+		if (keyList.isEmpty()) {
+			return result;
+		}
 		for (String key : keyList)
 		{
+			//System.err.println("creating kword list: "+ key);
 			for (String l: langs)
 			{
 				Keyword k = new Keyword(key,l,false,false,true,key);

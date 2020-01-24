@@ -105,16 +105,15 @@ To install the module in the local maven repository, usually located in ~/.m2/, 
 mvn clean install
 ````
 
-7. USING MSM
+USING MSM
 =========================
 
 
-MSM Funcionalities
-==========================
-MSM provides 3 main funcionalities:
+MSM provides 6 main funcionalities:
    - **twitter**: Twitter Public stream crawling.
    - **feed**: Syndication feed crawling (RSS, Atom, ...). Feed types supported by ROME tools (http://rometools.github.io/rome/)  
-   - **influence**: looks for the influence of a given list of sources. Klout index for twitter users and PageRank for websites.
+   - **influence**: looks for the influence of a given list of sources. Klout index for twitter users and PageRank for websites. As of May 2018 Klout index is no longer available. 
+   
    - **twtUser**: asks Twitter for the user profiles of a given list of Twitter users and return their follower and friend information.
    - **langid**: Language detection for sentences. Used mainly to evaluate langid and optimaize.
    - **geocode**: Geocoding wrapper for several geocoding APIs (access keys needed for some of them). Given a string it returns its geolocation coordinates.

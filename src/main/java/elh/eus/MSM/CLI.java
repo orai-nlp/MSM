@@ -291,9 +291,16 @@ public class CLI {
 					String kwrds = params.getProperty("searchTerms", "none");
 					if (!kwrds.equalsIgnoreCase("none"))
 					{
-						List<String> terms = Arrays.asList(params.getProperty("searchTerms").split(","));	
-						kwrdList = Keyword.createFromList(terms,Arrays.asList(params.getProperty("langs", "all").split(",")));
-						System.err.println("MSM::TwitterStreamClient - retrieved "+kwrdList+" keywords from config file");
+						if (!kwrds.equalsIgnoreCase(""))
+						{
+							List<String> terms = Arrays.asList(params.getProperty("searchTerms").split(","));	
+							kwrdList = Keyword.createFromList(terms,Arrays.asList(params.getProperty("langs", "all").split(",")));
+							
+							System.err.println("MSM::FeedReader - retrieved "+kwrdList.size()+" keywords from config file");
+						}
+						else{
+							System.err.println("MSM::FeedReader - no keywords given , full articles will be returned");
+						}
 					}
 					// if no keyword is found in config file try to load them from the database as a last resort.
 					else{
