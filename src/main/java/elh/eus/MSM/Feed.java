@@ -20,6 +20,8 @@ This file is part of MSM.
 
 package elh.eus.MSM;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -39,6 +41,9 @@ public class Feed {
 	private String lastFetchDate;
 	private String langs;
 	private double influence;
+	private String usr;
+	private String pass;
+	private String srcDomain;
 	
 
 
@@ -94,6 +99,30 @@ public class Feed {
 	}
 	
 	
+	public String getUsr() {
+		return usr;
+	}
+
+	public void setUsr(String usr) {
+		this.usr = usr;
+	}
+
+	public String getPass() {
+		return pass;
+	}
+
+	public void setPass(String pass) {
+		this.pass = pass;
+	}
+
+	public String getSrcDomain() {
+		return srcDomain;
+	}
+
+	public void setSrcDomain(String srcDomain) {
+		this.srcDomain = srcDomain;
+	}
+
 	/**
 	 * @param src
 	 */
@@ -105,6 +134,14 @@ public class Feed {
 		{
 			setFeedURL(src);
 			setLastFetchDate("1950-01-01 00:00:00 +0000");
+			try {
+				URI ttt = new URI(src);
+				String domain = ttt.getHost();
+				setSrcDomain(domain);
+			} catch (URISyntaxException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		else
 		{
@@ -122,13 +159,14 @@ public class Feed {
 	 * @param domain
 	 * @param inf
 	 */
-	public Feed(int id, long srcId,String furl, String lfDate, String langs, double inf){
+	public Feed(int id, long srcId,String furl, String lfDate, String langs, double inf, String domain){
 		setId(id);
 		setSrcId(srcId);
 		setFeedURL(furl);
 		setLastFetchDate(lfDate);
 		setLangs(langs);
 		setInfluence(inf);
+		setSrcDomain(domain);
 	}
 	
 	/**
@@ -165,8 +203,9 @@ public class Feed {
 			String url = rs.getString("f.url");
 			String lastFetch = rs.getString("f.last_fetch");
 			String langs = rs.getString("f.lang");
+			String domain = rs.getString("s.domain");
 
-			Feed src = new Feed(fid,sid,url,lastFetch,langs, rs.getDouble("s.influence"));				
+			Feed src = new Feed(fid,sid,url,lastFetch,langs, rs.getDouble("s.influence"),domain);				
 			result.add(src);	
 		}
 		rs.close();			

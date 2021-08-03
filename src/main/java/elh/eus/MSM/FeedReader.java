@@ -25,6 +25,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Paths;
 import java.security.KeyManagementException;
@@ -44,6 +45,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.Scanner;
@@ -66,6 +68,8 @@ import org.xml.sax.XMLReader;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.UrlValidator;
 import org.apache.http.Header;
+import org.apache.http.auth.AuthenticationException;
+import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.CookieSpecs;
@@ -79,6 +83,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.client.LaxRedirectStrategy;
+import org.apache.http.impl.auth.BasicScheme; 
 import org.apache.http.ssl.SSLContextBuilder;
 import org.jdom2.Document;
 import org.jdom2.Element;
@@ -136,6 +141,7 @@ public class FeedReader {
 					new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z")));
 
 
+	private  HashMap<String, HashMap<String, String>> credentials = new HashMap<String, HashMap<String,String>>();
 	public Set<Feed> getFeeds(){
 		return this.feeds;
 	}
@@ -299,6 +305,14 @@ public class FeedReader {
 			}
 		}
 
+		//authentication credentials for media if provided in the config file
+		try {
+			loadCredentials(params.getProperty("feedAuth", ""));
+		} catch (NullPointerException ne) {
+			System.err.println("MSM::FeedReader - Error when reading credentials for feed, no credentials loaded. "
+					+ "If a source requires authentication related articles may not be downloaded correctly.");
+		}
+		
 	}//end constructor
 
 
@@ -339,7 +353,7 @@ public class FeedReader {
 	 */
 	private void getRssFeed (Feed f, String store){
 
-		System.err.println("FeadReader::getFeed -> parse feed "+f.getFeedURL()+" lastFetched: "+f.getLastFetchDate());
+		System.err.println("FeadReader::getRssFeed -> parse feed "+f.getFeedURL()+" lastFetched: "+f.getLastFetchDate());
 		String link = "";
 
 		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");				
@@ -377,21 +391,21 @@ public class FeedReader {
 				// String ftype =feed.getFeedType();
 			} catch (NoSuchElementException nsee ){
 				System.err.println(
-						"FeadReader::getFeed ->  Feed ERROR with " + f.getFeedURL() + " seems the feed returned empty :\n ");
+						"FeadReader::getRssFeed ->  Feed ERROR with " + f.getFeedURL() + " seems the feed returned empty :\n ");
 				nsee.printStackTrace();
 			} catch (FeedException | IOException fe) {
 				System.err.println(
-						"FeadReader::getFeed ->  Feed ERROR with " + f.getFeedURL() + " :\n ");
+						"FeadReader::getRssFeed ->  Feed ERROR with " + f.getFeedURL() + " :\n ");
 				fe.printStackTrace();
 			} catch (Exception e) {
 				System.err.println(
-						"FeadReader::getFeed ->  Feed ERROR with when reading stream. " + f.getFeedURL() + " :\n ");
+						"FeadReader::getRssFeed ->  Feed ERROR with when reading stream. " + f.getFeedURL() + " :\n ");
 				e.printStackTrace();
 			}
 			
 		} catch (IOException cpe) {			
 			System.err.println(
-					"FeadReader::getFeed ->  HTTP ERROR with " + f.getFeedURL() + " :\n " + cpe.getMessage());
+					"FeadReader::getRssFeed ->  HTTP ERROR with " + f.getFeedURL() + " :\n " + cpe.getMessage());
 			cpe.printStackTrace();
 		} catch (KeyManagementException | NoSuchAlgorithmException| KeyStoreException ssle) {
 			System.err.println("FeadReader::getRssFeed ->  HTTP client error (ssl related) " + f.getFeedURL() + " :\n " + ssle.getMessage());
@@ -413,7 +427,7 @@ public class FeedReader {
 			if (store.equalsIgnoreCase("db"))
 			{	
 				if (MSMUtils.mentionsInDB(DBconn, link) > 0){
-						System.err.println("FeadReader::getFeed -> entry already parsed "+link);
+						System.err.println("FeadReader::getRssFeed -> entry already parsed "+link);
 						continue;
 				}
 			}
@@ -449,7 +463,7 @@ public class FeedReader {
 				if ((!nullDate && pubDate.after(lastFetchDate_date)) || (nullDate && lastFetchDate_date.before(pubDate)) )
 				{
 					newEnts++;
-					System.err.println("FeadReader::getFeed -> new entry "+date+" vs."+f.getLastFetchDate());
+					System.err.println("FeadReader::getRssFeed -> new entry "+date+" vs."+f.getLastFetchDate());
 					//com.robbypond version.
 					//final BoilerpipeExtractor extractor = CommonExtractors.ARTICLE_EXTRACTOR;
 					//final HtmlArticleExtractor htmlExtr = HtmlArticleExtractor.INSTANCE;
@@ -458,7 +472,7 @@ public class FeedReader {
 					//normal kohlschuetter extractor call
 					// parse the document into boilerpipe's internal data structure
 					//final InputSource is = HTMLFetcher.fetch(linkSrc).toInputSource();
-					final InputSource is = fetchHTML(linkSrc);
+					final InputSource is = fetchHTML(linkSrc, f.getSrcDomain());
 					TextDocument doc = new BoilerpipeSAXInput(is).getTextDocument();
 					// perform the extraction/classification process on "doc"
 					ArticleExtractor.INSTANCE.process(doc);
@@ -488,20 +502,22 @@ public class FeedReader {
 
 			} catch (IOException ioe) {	        
 				ioe.printStackTrace();
-				System.err.println("FeadReader::getFeed ->  ERROR when reading html a link ("+link+") - "+ioe.getMessage());
+				System.err.println("FeadReader::getRssFeed ->  ERROR when reading html a link ("+link+") - "+ioe.getMessage());
 			} catch (BoilerpipeProcessingException | SAXException be){ //| URISyntaxException be) {			
 				be.printStackTrace();
-				System.err.println("FeadReader::getFeed ->  Boilerplate removal ERROR with"+f.getFeedURL()+" : "+be.getMessage());
+				System.err.println("FeadReader::getRssFeed ->  Boilerplate removal ERROR with"+f.getFeedURL()+" : "+be.getMessage());
 			} catch (URISyntaxException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (KeyManagementException | NoSuchAlgorithmException| KeyStoreException ssle) {
-				System.err.println("FeadReader::getRssFeed ->  HTTP client error (ssl related) when reading html a link (" +link+") :\n "+ssle.getMessage());
+				System.err.println("FeadReader::getRssFeed ->  HTTP client error (ssl related) when reading a feed entry (" +link+") :\n "+ssle.getMessage());
 				ssle.printStackTrace();
+			} catch (AuthenticationException ae) {
+				System.err.println("FeadReader::getRssFeed ->  HTTP client authentication error whe reading a feed entry (" +link+") :\n "+ae.getMessage());
+				ae.printStackTrace();
 			}
-
 		}
-		System.err.println("FeadReader::getFeed -> found "+newEnts+" new entries ");
+		System.err.println("FeadReader::getRssFeed -> found "+newEnts+" new entries ");
 
 		try {
 			//update last fetch date in the DB.
@@ -514,7 +530,7 @@ public class FeedReader {
 				st.executeUpdate(updateComm);
 			}
 		}catch (SQLException sqle) {
-			System.out.println("FeadReader::getFeed ->  ERROR when updating fetch time "+dateFormat.format(currentDate)+" : "+sqle.getMessage());
+			System.out.println("FeadReader::getRssFeed ->  ERROR when updating fetch time "+dateFormat.format(currentDate)+" : "+sqle.getMessage());
 			//e.printStackTrace();
 		}		
 	}
@@ -918,6 +934,23 @@ public class FeedReader {
 		System.err.println("MSM::FeedReader - Accepted languages: "+acceptedLangs);
 	}
 
+	
+	/**
+	 * Load credentials from config string
+	 * @param property
+	 */
+	private void loadCredentials(String property) {
+		List<String> allCredentials=Arrays.asList(property.split(","));
+		
+		for (String cred : allCredentials) {
+			String[] split = cred.split("::");
+			HashMap<String,String> usrpass = new HashMap<String,String>();
+			usrpass.put(split[1],split[2]);
+			credentials.put(split[0],usrpass); 
+		}
+		System.err.println("MSM::FeedReader - Credentials added for the following domains: "+credentials.keySet().toString());
+	}
+	
 	/**
 	 * Close connetion to DB.
 	 */
@@ -945,8 +978,9 @@ public class FeedReader {
 	 * @throws KeyStoreException 
 	 * @throws NoSuchAlgorithmException 
 	 * @throws KeyManagementException 
+	 * @throws AuthenticationException 
 	 */
-	private InputSource fetchHTML(URL linkSrc) throws IOException, URISyntaxException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+	private InputSource fetchHTML(URL linkSrc, String domain) throws IOException, URISyntaxException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException, AuthenticationException {
 		
 		final Pattern PAT_CHARSET = Pattern
 				.compile("charset=([^; ]+)$");
@@ -958,17 +992,15 @@ public class FeedReader {
 				.build();				
 		
         URI linkUri = new URI(linkSrc.getProtocol(), linkSrc.getUserInfo(), linkSrc.getHost(), linkSrc.getPort(), linkSrc.getPath(), linkSrc.getQuery(), linkSrc.getRef()); 		
-        HttpUriRequest get = new HttpGet(linkUri);        		
+        HttpUriRequest get = new HttpGet(linkUri);    
+        if (credentials.containsKey(domain)) {
+        	Map.Entry<String,String> entry = credentials.get(domain).entrySet().iterator().next();
+        	get.addHeader(new BasicScheme(StandardCharsets.UTF_8).authenticate(new UsernamePasswordCredentials(entry.getKey(),entry.getValue()), get, null));        	
+        }
 		CloseableHttpResponse response = client.execute(get);
 		InputStream stream = response.getEntity().getContent();	
 		
 		//final URLConnection conn = linkSrc.openConnection();
-		
-		// kodean gehituta lerroak
-		//String userAg = Fabricator.userAgent().browser();
-		//System.err.println("User-Agent-a: "+userAg);
-		//conn.addRequestProperty("User-Agent", userAg);
-		//conn.addRequestProperty("Accept","*/*");
 		
 		
 		final String ct = response.getEntity().getContentType().getValue();//conn.getContentType();
