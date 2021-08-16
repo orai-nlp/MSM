@@ -960,6 +960,8 @@ public class FeedReader {
 	private void loadCredentials(String property) {
 		List<String> allCredentials=Arrays.asList(property.split(","));
 		
+		System.err.println("MSM::FeedReader - Found Credentials: "+allCredentials.size());
+		
 		for (String cred : allCredentials) {
 			String[] split = cred.split("::");
 			HashMap<String,String> usrpass = new HashMap<String,String>();
