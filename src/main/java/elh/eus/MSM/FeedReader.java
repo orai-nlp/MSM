@@ -964,9 +964,11 @@ public class FeedReader {
 		
 		for (String cred : allCredentials) {
 			String[] split = cred.split("::");
-			HashMap<String,String> usrpass = new HashMap<String,String>();
-			usrpass.put(split[1],split[2]);
-			credentials.put(split[0],usrpass); 
+			if (split.length == 3) {
+				HashMap<String,String> usrpass = new HashMap<String,String>();
+				usrpass.put(split[1],split[2]);
+				credentials.put(split[0],usrpass);
+			}
 		}
 		System.err.println("MSM::FeedReader - Credentials added for the following domains: "+credentials.keySet().toString());
 	}
