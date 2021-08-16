@@ -508,8 +508,8 @@ public class FeedReader {
 						}
 						else
 						{
-							processFullArticle(doc,lang, pubDate, link, f.getSrcId(), store);
-							//parseArticleForKeywords(doc,lang, pubDate, link, f.getSrcId(), store);
+							//processFullArticle(doc,lang, pubDate, link, f.getSrcId(), store);
+							parseArticleForKeywords(doc,lang, pubDate, link, f.getSrcId(), store);
 						}
 					}
 				}
