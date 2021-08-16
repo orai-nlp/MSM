@@ -367,6 +367,7 @@ public class FeedReader {
 		try{
 			InputStream stream;
 			String url = f.getFeedURL().trim();
+			
 			if (url.startsWith("file://")){
 				stream = new FileInputStream(url.replaceFirst("file://", ""));
 			}
@@ -424,6 +425,20 @@ public class FeedReader {
 			//System.err.println("FeadReader::getFeed -> analysing entries");
 			link = entry.getLink();		
 
+			int domCount=0;
+			Matcher match = MSMUtils.duplicatedDomainInUrl.matcher(link);
+			int matchStart = 0;
+			while (match.find())
+			{
+				domCount=domCount+1;
+				matchStart= match.start();
+			}
+			// check and correct malformed urls  of type https://x.y.comhttps:/x.y.com/page
+			if (domCount > 1) {
+				link = link.substring(matchStart);
+				System.err.println("FeadReader::getRssFeed ->  WARN url with incorrect domain. Clean url: "+link);
+			}
+			
 			if (store.equalsIgnoreCase("db"))
 			{	
 				if (MSMUtils.mentionsInDB(DBconn, link) > 0){
@@ -464,6 +479,7 @@ public class FeedReader {
 				{
 					newEnts++;
 					System.err.println("FeadReader::getRssFeed -> new entry "+date+" vs."+f.getLastFetchDate());
+					System.err.println(link);
 					//com.robbypond version.
 					//final BoilerpipeExtractor extractor = CommonExtractors.ARTICLE_EXTRACTOR;
 					//final HtmlArticleExtractor htmlExtr = HtmlArticleExtractor.INSTANCE;
@@ -472,6 +488,7 @@ public class FeedReader {
 					//normal kohlschuetter extractor call
 					// parse the document into boilerpipe's internal data structure
 					//final InputSource is = HTMLFetcher.fetch(linkSrc).toInputSource();
+					
 					final InputSource is = fetchHTML(linkSrc, f.getSrcDomain());
 					TextDocument doc = new BoilerpipeSAXInput(is).getTextDocument();
 					// perform the extraction/classification process on "doc"
@@ -491,7 +508,8 @@ public class FeedReader {
 						}
 						else
 						{
-							parseArticleForKeywords(doc,lang, pubDate, link, f.getSrcId(), store);
+							processFullArticle(doc,lang, pubDate, link, f.getSrcId(), store);
+							//parseArticleForKeywords(doc,lang, pubDate, link, f.getSrcId(), store);
 						}
 					}
 				}

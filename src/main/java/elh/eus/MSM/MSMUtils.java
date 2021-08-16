@@ -29,6 +29,7 @@ import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -45,9 +46,13 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import javax.naming.NamingException;
 
+import org.apache.http.Header;
+import org.apache.http.auth.AuthenticationException;
+import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -55,6 +60,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.TrustAllStrategy;
+import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.ssl.SSLContextBuilder;
@@ -74,6 +80,9 @@ public final class MSMUtils {
 					new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"),
 					new SimpleDateFormat("yyyy-MM-dd HH:mm"),
 					new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z")));
+	
+	public static final Pattern duplicatedDomainInUrl = Pattern.compile("http[s]?://");
+
 	
 	/**
 	* Check input file integrity.
@@ -452,5 +461,26 @@ public final class MSMUtils {
 		return client;
 		
 	}
+	
+	
+	public static Header SSO_login (String domain, String url, String username, String pass)
+	{	
+		Header result = null;
+		URI authUrl;
+		try {
+			authUrl = new URI(url);
+			HttpUriRequest get = new HttpGet(authUrl);    
+	        result= new BasicScheme(StandardCharsets.UTF_8).authenticate(new UsernamePasswordCredentials(username,pass), get, null);
+			
+		} catch (URISyntaxException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (AuthenticationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return  result;
+	}
+	
 	
 }
