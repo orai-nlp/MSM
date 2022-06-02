@@ -69,8 +69,8 @@ import twitter4j.JSONArray;
 import twitter4j.JSONException;
 import twitter4j.JSONObject;
 
-import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
-
+//import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
+import com.mysql.cj.jdbc.MysqlDataSource;
 
 public final class MSMUtils {
 
