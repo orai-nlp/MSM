@@ -413,6 +413,7 @@ public class FeedReader {
 		try{
 			InputStream stream;
 			String url = f.getFeedURL().trim();
+			
 			if (url.startsWith("file://")){
 				stream = new FileInputStream(url.replaceFirst("file://", ""));
 			}
@@ -519,6 +520,20 @@ public class FeedReader {
 			//System.err.println("FeadReader::getFeed -> analysing entries");
 			link = entry.getLink();		
 
+			int domCount=0;
+			Matcher match = MSMUtils.duplicatedDomainInUrl.matcher(link);
+			int matchStart = 0;
+			while (match.find())
+			{
+				domCount=domCount+1;
+				matchStart= match.start();
+			}
+			// check and correct malformed urls  of type https://x.y.comhttps:/x.y.com/page
+			if (domCount > 1) {
+				link = link.substring(matchStart);
+				System.err.println("FeadReader::getRssFeed ->  WARN url with incorrect domain. Clean url: "+link);
+			}
+			
 			if (store.equalsIgnoreCase("db"))
 			{	
 				if (MSMUtils.mentionsInDB(DBconn, link, tableprefix) > 0){
@@ -559,6 +574,7 @@ public class FeedReader {
 				{
 					newEnts++;
 					System.err.println("FeadReader::getRssFeed -> new entry "+date+" vs."+f.getLastFetchDate());
+					System.err.println(link);
 					//com.robbypond version.
 					//final BoilerpipeExtractor extractor = CommonExtractors.ARTICLE_EXTRACTOR;
 					//final HtmlArticleExtractor htmlExtr = HtmlArticleExtractor.INSTANCE;
@@ -593,6 +609,7 @@ public class FeedReader {
 						}
 						else
 						{
+							//processFullArticle(doc,lang, pubDate, link, f.getSrcId(), store);
 							parseArticleForKeywords(doc,lang, pubDate, link, f.getSrcId(), store);
 						}
 					}
@@ -1044,6 +1061,8 @@ public class FeedReader {
 	 */
 	private void loadCredentials(String property) {
 		List<String> allCredentials=Arrays.asList(property.split(";"));
+		
+		System.err.println("MSM::FeedReader - Found Credentials: "+allCredentials.size());
 		
 		for (String cred : allCredentials) {
 			String[] split = cred.split("::");

@@ -47,7 +47,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.naming.NamingException;
@@ -68,6 +70,7 @@ import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.TrustAllStrategy;
 import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.BasicCookieStore;
+
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
@@ -91,6 +94,9 @@ public final class MSMUtils {
 					new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"),
 					new SimpleDateFormat("yyyy-MM-dd HH:mm"),
 					new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z")));
+	
+	public static final Pattern duplicatedDomainInUrl = Pattern.compile("http[s]?://");
+
 	
 	/**
 	* Check input file integrity.
@@ -470,81 +476,6 @@ public final class MSMUtils {
 		
 	}
 	
-	public static CookieStore loginIntoAccount (String domain, String url, String username, String pass, CloseableHttpClient client, HttpClientContext context) throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException
-	{	
-		Header[] result = null;
-		List<HttpCookie> cookies = new ArrayList<HttpCookie>();
-		CookieStore cookies2 = new BasicCookieStore();
-		URI authUrl;
-		try {
-			authUrl = new URI(url);
-			HttpPost post = new HttpPost(authUrl);  
-			post.addHeader("content-type", "application/x-www-form-urlencoded");
-			Header authScheme= new BasicScheme(StandardCharsets.UTF_8).authenticate(new UsernamePasswordCredentials(username,pass), post, null);
 
-			// add request parameter, form parameters
-	        List<NameValuePair> urlParameters = new ArrayList<>();
-	        urlParameters.add(new BasicNameValuePair("user[email]", username));
-	        urlParameters.add(new BasicNameValuePair("user[password]", pass));
-	        urlParameters.add(new BasicNameValuePair("authenticity_token", authScheme.getValue()));
-	        post.setEntity(new UrlEncodedFormEntity(urlParameters));
-	        
-			String requestHeaders = "";
-			for (Header h: post.getAllHeaders()) {
-	        	requestHeaders = requestHeaders+"\n"+h.getName()+":"+h.getValue();
-	        }
-			//System.err.println("Authscheme: "+authScheme.toString()+"\nRequest: "+post.toString()+"\n headers: "+requestHeaders);
-			CloseableHttpResponse resp = client.execute(post,context);
 
-			cookies2 = context.getCookieStore();
-			Header[] respHeaders = resp.getAllHeaders();	        
-	        String headersStr="";
-	        for (Header h: respHeaders) {
-	        	headersStr = headersStr+"\n"+h.getName()+":"+h.getValue();
-	        }
-
-	        String responseContent = new BufferedReader(
-	        	      new InputStreamReader(resp.getEntity().getContent(), StandardCharsets.UTF_8))
-	        	        .lines()
-	        	        .collect(Collectors.joining("\n"));
-	        System.err.println("MSMUtils::loginIntoAccount \n --> full login response headers:"+Arrays.toString(respHeaders)+
-	        		"\n --> full response body: "+responseContent);
-	       	
-			//System.err.println("SSO login result ("+post.toString()+"): \n response headers: "+headersStr+"\n reponse: "+resp.toString());
-			result=resp.getHeaders("Set-Cookie");
-			
-			for (Header h: result) {
-				List<HttpCookie> kk = HttpCookie.parse(h.toString());
-				for (HttpCookie c : kk) {
-					System.err.println("Result httpCookie: "+c.getName()+" - value:"+c.getValue()+" - domain:"+c.getDomain()+" - path:"+c.getPath()
-					+" - expires:"+c.getMaxAge());	
-				}
-				cookies.addAll(kk);
-				//System.err.println("Result cookie: "+Arrays.toString(h.getElements()));				
-			}
-	        String listString = cookies.stream().map(Object::toString)
-                    .collect(Collectors.joining("\n "));
-	        System.err.println("SSO login result from cookies ("+post.toString()+"): \n "+listString);
-				
-			//System.err.println("SSO login is returning: "+Arrays.toString(result));
-
-			
-		} catch (URISyntaxException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ClientProtocolException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (AuthenticationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return  cookies2;
-	}
-	
-	
-	
 }
