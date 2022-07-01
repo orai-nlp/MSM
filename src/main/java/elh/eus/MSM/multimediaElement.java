@@ -256,7 +256,7 @@ public final class multimediaElement {
 	 * @throws JDOMException
 	 * @throws IOException
 	 */
-	public void parseForKeywords(Set<Keyword> kwrds, HashMap<Integer,Pattern> kwrdPatterns, Set<Keyword> indepKwrds, Set<Keyword> depKwords, Pattern anchors, float anchorWindow, String store, Connection dbconn, float splitDuration) throws JDOMException, IOException{
+	public void parseForKeywords(Set<Keyword> kwrds, HashMap<Integer,Pattern> kwrdPatterns, Set<Keyword> indepKwrds, Set<Keyword> depKwords, Pattern anchors, float anchorWindow, String store, Connection dbconn, float splitDuration, String tableprefix) throws JDOMException, IOException{
 		
 		// this variable defines the step (in second) to move the split window forward.
 		float step = splitDuration/2;
@@ -416,7 +416,7 @@ public final class multimediaElement {
 					m.setKeywords(result);
 					if (store.equalsIgnoreCase("db"))
 					{
-						m.mention2db(dbconn);
+						m.mention2db(dbconn, tableprefix);
 						System.err.println("MSM::FeedReader::parseArticleForKeywords - mention2db: "+splitText);
 					}
 					else

@@ -247,7 +247,7 @@ public class TwitterStreamClient {
 							params.getProperty("dbpass"), 
 							params.getProperty("dbhost"), 
 							params.getProperty("dbname")); 
-					keywords= Keyword.retrieveFromDB(conn,"Twitter",params.getProperty("langs", "all"));			
+					keywords= Keyword.retrieveFromDB(conn,"Twitter",params.getProperty("langs", "all"), params.getProperty("dbtableprefix", "cognoscere"));			
 					Set<String> kwrdSet = new HashSet<String>();
 					for (Keyword k : keywords)
 					{
@@ -357,7 +357,7 @@ public class TwitterStreamClient {
 						params.getProperty("dbpass"), 
 						params.getProperty("dbhost"), 
 						params.getProperty("dbname"));
-				census = Source.retrieveLocalAreaFromDB(conn, "twitter");				
+				census = Source.retrieveLocalAreaFromDB(conn, "twitter", params.getProperty("dbtableprefix", "cognoscere"));				
 			}catch (Exception e) {
 				System.err.println("MSM::TwitterStreamClient - could not retrieve census from DB, "
 						+ "the crawler will continue without census");			
@@ -686,9 +686,9 @@ public class TwitterStreamClient {
 						params.getProperty("dbpass"),
 						params.getProperty("dbhost"),
 						params.getProperty("dbname"));
-				
+				String dbprefix= params.getProperty("dbtableprefix", "cognoscere");
 				//if mention is in db 
-				if (m.existsInDB(conn)>0)
+				if (m.existsInDB(conn, dbprefix)>0)
 				{
 					System.err.println("MSM::TwitterStreamClient -  mention already in DB! "+m.getNativeId());
 					break;
@@ -698,15 +698,15 @@ public class TwitterStreamClient {
 				Source author = new Source(u,census.contains(u.getId()));
 				int authorStored = 0;
 				int authorUpdated = 0;
-				if (!author.existsInDB(conn))
+				if (!author.existsInDB(conn, dbprefix))
 				{
-					authorUpdated = author.source2db(conn);
+					authorUpdated = author.source2db(conn, dbprefix);
 				}
 				else
 				{
-					authorUpdated = author.updateLocation2db(conn);
+					authorUpdated = author.updateLocation2db(conn, dbprefix);
 				}
-				success = m.mention2db(conn);
+				success = m.mention2db(conn, dbprefix);
 				System.err.println("MSM::TwitterStreamClient -  mention stored into the DB! "+success+" author: "+authorStored+" author update: "+authorUpdated);
 
 				//orig status is used to stored original statuses from retweets and quotes
@@ -737,10 +737,10 @@ public class TwitterStreamClient {
 						local=true;
 					}
 					Mention m2 = new Mention(origStatus,lang,local);
-					long mId = m2.existsInDB(conn);
+					long mId = m2.existsInDB(conn, dbprefix);
 					if (mId>=0)
 					{
-						m2.updateRetweetFavourites2db(conn, mId);									
+						m2.updateRetweetFavourites2db(conn, mId, dbprefix);									
 					}				
 					// there are no keywords to look for so all the tweets are to be stored.
 					else if (!kwordBasedSearch)
@@ -749,15 +749,15 @@ public class TwitterStreamClient {
 						Source author2 = new Source(u2,local);
 						authorStored = 0;
 						authorUpdated = 0;
-						if (!author2.existsInDB(conn))
+						if (!author2.existsInDB(conn, dbprefix))
 						{
-							authorStored = author2.source2db(conn);
+							authorStored = author2.source2db(conn, dbprefix);
 						}
 						else
 						{
-							authorUpdated = author.updateLocation2db(conn);
+							authorUpdated = author.updateLocation2db(conn, dbprefix);
 						}
-						success = m2.mention2db(conn);									
+						success = m2.mention2db(conn, dbprefix);									
 					}
 					// keyword-based search only accept original rt or quoted text if it also contains keywords 
 					else 
@@ -771,15 +771,15 @@ public class TwitterStreamClient {
 							Source author2 = new Source(u2,local);
 							authorStored = 0;
 							authorUpdated = 0;
-							if (!author2.existsInDB(conn))
+							if (!author2.existsInDB(conn, dbprefix))
 							{
-								authorStored = author2.source2db(conn);
+								authorStored = author2.source2db(conn, dbprefix);
 							}
 							else
 							{
-								authorUpdated = author.updateLocation2db(conn);
+								authorUpdated = author.updateLocation2db(conn, dbprefix);
 							}
-							success = m2.mention2db(conn);
+							success = m2.mention2db(conn, dbprefix);
 						}							
 					}	
 					System.err.println("MSM::TwitterStreamClient - rt|quoted tweet mention stored into the DB!"+success+" author: "+authorStored+" author update: "+authorUpdated);        			        				

@@ -300,13 +300,13 @@ public class geoCode {
 	 * @throws InterruptedException 
 	 * @throws SQLException 
 	 */
-	public int tagGeoCode(Set<Source> srcList, boolean db) throws InterruptedException, SQLException
+	public int tagGeoCode(Set<Source> srcList, boolean db, String tableprefix) throws InterruptedException, SQLException
 	{
 		
 		int count = 0;
 		PreparedStatement infUpdate = null;
 		if (db) { // store geocode in the DB
-			infUpdate = getDbconn().prepareStatement("UPDATE behagunea_app_source SET geoinfo=? where source_id=? and type=?");			
+			infUpdate = getDbconn().prepareStatement("UPDATE "+tableprefix+"_app_source SET geoinfo=? where source_id=? and type=?");			
 		}
 		else{ // print geocode to stdout
 			System.out.println("Src_screenName\tLocation\tgeolocation");
@@ -365,9 +365,9 @@ public class geoCode {
 
 	
 	
-	public int geocodes2db(Set<Source> srcList, Connection conn) throws SQLException 
+	public int geocodes2db(Set<Source> srcList, Connection conn, String tableprefix) throws SQLException 
 	{
-		PreparedStatement infUpdate = conn.prepareStatement("UPDATE behagunea_app_source SET geoinfo=? where source_id=? and type=?");
+		PreparedStatement infUpdate = conn.prepareStatement("UPDATE "+tableprefix+"_app_source SET geoinfo=? where source_id=? and type=?");
 
 		int count = 0;
 		for (Source src : srcList)

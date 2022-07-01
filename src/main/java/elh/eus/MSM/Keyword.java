@@ -180,7 +180,7 @@ public class Keyword {
 	 * @throws NamingException
 	 * @throws SQLException
 	 */
-	public static Set<Keyword> retrieveFromDB(Connection conn, String type, String lang) throws NamingException, SQLException {
+	public static Set<Keyword> retrieveFromDB(Connection conn, String type, String lang, String tableprefix) throws NamingException, SQLException {
 
 		Set<Keyword> result = new HashSet<Keyword>(); 
 		Statement stmt = conn.createStatement();
@@ -197,7 +197,7 @@ public class Keyword {
 			langCondition=sb.substring(0, sb.length()-1)+")";
 		}
 		
-		String query = "SELECT * FROM behagunea_app_keyword where type='"+type+"'"+langCondition;
+		String query = "SELECT * FROM "+tableprefix+"_app_keyword where type='"+type+"'"+langCondition;
 		//System.err.println("MSM::Keyword::retrieveFromDB - query:"+query);
 		ResultSet rs = stmt.executeQuery(query);
 		

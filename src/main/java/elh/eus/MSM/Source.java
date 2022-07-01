@@ -211,12 +211,12 @@ public class Source {
 	 * @throws NamingException
 	 * @throws SQLException
 	 */
-	public static Set<Source> retrieveFromDB(Connection conn, String type, String opt,Integer limit) throws NamingException, SQLException {
+	public static Set<Source> retrieveFromDB(Connection conn, String type, String opt,Integer limit, String tableprefix) throws NamingException, SQLException {
 
 		Set<Source> result = new HashSet<Source>(); 
 		Statement stmt = conn.createStatement();
 		StringBuilder sb = new StringBuilder();
-		sb.append("SELECT * FROM behagunea_app_source");
+		sb.append("SELECT * FROM "+tableprefix+"_app_source");
 		switch (opt)
 		{
 		case "null": sb.append(" where influence is NULL or influence='NULL' or influence=''");break;
@@ -279,12 +279,12 @@ public class Source {
 	 * @throws NamingException
 	 * @throws SQLException
 	 */
-	public static Set<Source> retrieveForGeoCodingFromDB(Connection conn, String type, String opt,Integer limit) throws NamingException, SQLException {
+	public static Set<Source> retrieveForGeoCodingFromDB(Connection conn, String type, String opt,Integer limit, String tableprefix) throws NamingException, SQLException {
 
 		Set<Source> result = new HashSet<Source>(); 
 		Statement stmt = conn.createStatement();
 		StringBuilder sb = new StringBuilder();
-		sb.append("SELECT * FROM behagunea_app_source where location !='unknown' ");
+		sb.append("SELECT * FROM "+tableprefix+"_app_source where location !='unknown' ");
 		switch (opt)
 		{
 		case "unknown": sb.append(" and (geoinfo='' or geoinfo='unknown')");break;
@@ -350,12 +350,12 @@ public class Source {
 	 * @throws NamingException
 	 * @throws SQLException
 	 */
-	public static Set<Long> retrieveLocalAreaFromDB(Connection conn, String type) throws NamingException, SQLException {
+	public static Set<Long> retrieveLocalAreaFromDB(Connection conn, String type, String tableprefix) throws NamingException, SQLException {
 
 		Set<Long> result = new HashSet<Long>(); 
 		Statement stmt = conn.createStatement();
 		StringBuilder sb = new StringBuilder();
-		sb.append("SELECT source_id FROM behagunea_app_source where is_local_area=1");
+		sb.append("SELECT source_id FROM "+tableprefix+"_app_source where is_local_area=1");
 		
 		String andWhere = " and ";
 		
@@ -386,12 +386,12 @@ public class Source {
 	}
 	
 	
-	public boolean existsInDB (Connection conn)
+	public boolean existsInDB (Connection conn, String tableprefix)
 	{
 		int result = 0;
 		try {
 			Statement stmt = conn.createStatement();
-			ResultSet rs = stmt.executeQuery("SELECT count(*) FROM behagunea_app_source where source_id="+getId());
+			ResultSet rs = stmt.executeQuery("SELECT count(*) FROM "+tableprefix+"_app_source where source_id="+getId());
 			if(rs.next()){
 	            result = rs.getInt(1);
 	        }
@@ -408,14 +408,14 @@ public class Source {
 	 * @param conn
 	 * @return
 	 */
-	public int source2db(Connection conn) {	
+	public int source2db(Connection conn, String tableprefix) {	
 
 		PreparedStatement stmtM = null;
 		
 		int success = 0;
 		//PreparedStatement stmtS = null;		
 		try {	
-			String sourceIns = "insert ignore into behagunea_app_source (source_id, type, source_name, user_id, followers,friends,location,geoinfo,is_local_area) values (?,?,?,?,?,?,?,?,?)";
+			String sourceIns = "insert ignore into "+tableprefix+"_app_source (source_id, type, source_name, user_id, followers,friends,location,geoinfo,is_local_area) values (?,?,?,?,?,?,?,?,?)";
 			stmtM = conn.prepareStatement(sourceIns, Statement.RETURN_GENERATED_KEYS);
 			stmtM.setLong(1, getId());
 			stmtM.setString(2, "Twitter");
@@ -442,19 +442,19 @@ public class Source {
 	 * @param conn
 	 * @return
 	 */
-	public int updateLocation2db(Connection conn) {	
+	public int updateLocation2db(Connection conn, String tableprefix) {	
 
 		int success = 2;
 		try {
 			Statement stmt = conn.createStatement();
-			ResultSet rs = stmt.executeQuery("SELECT location FROM behagunea_app_source where source_id="+getId());
+			ResultSet rs = stmt.executeQuery("SELECT location FROM "+tableprefix+"_app_source where source_id="+getId());
 			String result="";
 			if(rs.next()){
 	            result = rs.getString(1);
 	        }
 			
 			if (result.equalsIgnoreCase("unknown")){
-				String updateComm = "UPDATE behagunea_app_source "
+				String updateComm = "UPDATE "+tableprefix+"_app_source "
 						+ "SET location=\""+getLocation()+"\" WHERE source_id="+getId();
 				// execute update
 				stmt.executeUpdate(updateComm);

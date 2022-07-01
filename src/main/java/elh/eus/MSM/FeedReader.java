@@ -38,6 +38,7 @@ import java.sql.Statement;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -50,8 +51,10 @@ import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -71,18 +74,24 @@ import org.apache.http.Header;
 import org.apache.http.auth.AuthenticationException;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.CookieStore;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.TrustAllStrategy;
+import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.client.LaxRedirectStrategy;
+import org.apache.http.impl.cookie.BasicClientCookie;
+import org.apache.http.protocol.BasicHttpContext;
+import org.apache.http.protocol.HttpContext;
 import org.apache.http.impl.auth.BasicScheme; 
 import org.apache.http.ssl.SSLContextBuilder;
 import org.jdom2.Document;
@@ -109,7 +118,14 @@ import de.l3s.boilerpipe.sax.HTMLDocument;
 import de.l3s.boilerpipe.sax.HTMLFetcher;
 import eus.ixa.ixa.pipe.seg.RuleBasedSegmenter;
 
-import fabricator.*;
+import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
 
 
 /**
@@ -140,8 +156,34 @@ public class FeedReader {
 					new SimpleDateFormat("yyyy-MM-dd"),
 					new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z")));
 
+	private CloseableHttpClient httpsession;
+	private CookieStore cookieStore;
+	
+	private WebDriver seleniumDriver;
+	
+	private class Credential {
+		private String domain;
+		private String ssourl;
+		private String ssouser;
+		private String ssopass;
+		private String userField;
+		private String passField;
+		private String cookieNotice;
+		
+		public Credential(String domain, String ssourl, String ssouser, String ssopass, String userField, String passField, String cookieNotice) {
+			this.domain = domain;
+			this.ssourl = ssourl;
+			this.ssouser = ssouser;
+			this.ssopass = ssopass;
+			this.userField = userField;
+			this.passField = passField;
+			this.cookieNotice=cookieNotice;
+		}
+		
+		
+	}
 
-	private  HashMap<String, HashMap<String, String>> credentials = new HashMap<String, HashMap<String,String>>();
+	private  HashMap<String, Credential> credentials = new HashMap<String, Credential>();
 	public Set<Feed> getFeeds(){
 		return this.feeds;
 	}
@@ -150,6 +192,9 @@ public class FeedReader {
 		this.feeds=flist;
 	}
 	
+	public void addCredential(String domain, String ssourl, String ssouser, String ssopass, String userField, String passField, String cookieNotice) {
+		this.credentials.put(domain, new Credential(domain,ssourl,ssouser,ssopass,userField,passField,cookieNotice));
+	}
 	
 	/**
 	 * Minimum constructor. Only a string of feeds is given and result is printed to stout
@@ -164,7 +209,7 @@ public class FeedReader {
 		//keyword loading: keywords to identify relevant mentions in articles.
 		try {
 			DBconn = MSMUtils.DbConnection(params.getProperty("dbuser"),params.getProperty("dbpass"),params.getProperty("dbhost"),params.getProperty("dbname"));
-			kwrds = Keyword.retrieveFromDB(DBconn, "press", params.getProperty("langs", "all"));
+			kwrds = Keyword.retrieveFromDB(DBconn, "press", params.getProperty("langs", "all"),params.getProperty("dbtableprefix", "cognoscere"));
 			System.err.println("MSM::FeedReader(config,store) - retrieved "+kwrds.size()+" keywords");
 
 			closeDBConnection();
@@ -275,7 +320,7 @@ public class FeedReader {
 
 		//Language identification
 		loadAcceptedLangs(params.getProperty("langs", "all"));
-
+		
 		//keyword loading: keywords to identify relevant mentions in articles.
 		kwrds = kwrdList;
 		setFeeds(feedList);
@@ -353,9 +398,10 @@ public class FeedReader {
 	 */
 	private void getRssFeed (Feed f, String store){
 
+		String tableprefix=params.getProperty("dbtableprefix", "cognoscere");
 		System.err.println("FeadReader::getRssFeed -> parse feed "+f.getFeedURL()+" lastFetched: "+f.getLastFetchDate());
 		String link = "";
-
+		
 		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");				
 		Date currentDate = new Date();
 
@@ -372,15 +418,16 @@ public class FeedReader {
 			}
 			else
 			{
-				CloseableHttpClient client = MSMUtils.httpClient();
+				httpsession = MSMUtils.httpClient();
 				RequestConfig localConfig = RequestConfig.custom()
 						.setCookieSpec(CookieSpecs.STANDARD)
 						.build();				
 				HttpGet get = new HttpGet(f.getFeedURL().trim());
 				get.setConfig(localConfig);
-				org.apache.http.HttpResponse response = client.execute(get);
+				org.apache.http.HttpResponse response = httpsession.execute(get);
 				//try (CloseableHttpResponse response = client.execute(method);
 				stream = response.getEntity().getContent();
+				//httpsession.close();
 			}
 			SyndFeedInput input = new SyndFeedInput();
 			input.setPreserveWireFeed(true);
@@ -412,10 +459,58 @@ public class FeedReader {
 			ssle.printStackTrace();
 		}
 
-		//SyndFeedInput input = new SyndFeedInput();
-		//input.setPreserveWireFeed(true);
-		//SyndFeed feed = new SyndFeedImpl();
-		
+		/* From now on get ready to retrieve feed entries. Two options:
+		 * 1. Feed requires subscription: this is handled by selenium 
+		 * 2. No subscription required: this is handled with httpclient
+		 * */
+		Boolean subscription=false;
+		String feedDomain = f.getSrcDomain();
+		if (credentials.containsKey(feedDomain)) {
+			Credential cred = credentials.get(feedDomain);
+			subscription=true;
+			System.setProperty("webdriver.chrome.driver","/home/inaki/eclipseWspace/MSM/chromedriver");	
+			//System.setProperty("webdriver.chrome.bin", "/usr/bin/google-chrome-beta");			
+			ChromeOptions seleniumOptions = new ChromeOptions();
+			seleniumOptions.setBinary("/usr/bin/google-chrome-beta");
+			
+			seleniumDriver=new ChromeDriver(seleniumOptions);
+			
+			seleniumDriver.get(cred.ssourl);
+			
+			WebDriverWait wait = new WebDriverWait(seleniumDriver, Duration.ofSeconds(10));
+			// if there is a cookie accepting notice wait until is ready and click to accept
+			if (! cred.cookieNotice.equalsIgnoreCase("none")) {				
+				wait.until(ExpectedConditions.elementToBeClickable(By.xpath(cred.cookieNotice))).click();
+			}
+
+			//wait until the form is ready
+			wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//*[@id=\""+cred.userField+"\"]"))).click();
+			
+			//user
+			seleniumDriver.findElement(By.id(cred.userField)).sendKeys(cred.ssouser);
+			//pass
+			seleniumDriver.findElement(By.id(cred.passField)).sendKeys(cred.ssopass + Keys.ENTER);
+						
+		    //seleniumDriver.findElement(By.className("gigya-input-submit")).click();
+		    seleniumDriver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
+		    
+		    //WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID,"onPlusProfile")))
+		    
+			
+		}
+		else {
+			// open a new httpclient session.
+			try {
+				httpsession = MSMUtils.httpClient();
+				cookieStore = new BasicCookieStore();
+				HttpClientContext localContext = new HttpClientContext();
+				localContext.setAttribute(HttpClientContext.COOKIE_STORE, cookieStore);
+			} catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException e1) {
+				// TODO Auto-generated catch block
+				System.err.println("FeadReader::getRssFeed ->  Could not initiate httpclient");
+				e1.printStackTrace();
+			}
+		}
 		
 		int newEnts =0;
 		//System.err.println("FeadReader::getFeed -> feed type: "+feed type);
@@ -426,7 +521,7 @@ public class FeedReader {
 
 			if (store.equalsIgnoreCase("db"))
 			{	
-				if (MSMUtils.mentionsInDB(DBconn, link) > 0){
+				if (MSMUtils.mentionsInDB(DBconn, link, tableprefix) > 0){
 						System.err.println("FeadReader::getRssFeed -> entry already parsed "+link);
 						continue;
 				}
@@ -472,7 +567,14 @@ public class FeedReader {
 					//normal kohlschuetter extractor call
 					// parse the document into boilerpipe's internal data structure
 					//final InputSource is = HTMLFetcher.fetch(linkSrc).toInputSource();
-					final InputSource is = fetchHTML(linkSrc, f.getSrcDomain());
+					final InputSource is;
+					if (subscription) {
+						seleniumDriver.get(link);
+						is = new HTMLDocument(seleniumDriver.getPageSource()).toInputSource();
+					}
+					else {
+						is = fetchHTML(linkSrc,cookieStore);
+					}
 					TextDocument doc = new BoilerpipeSAXInput(is).getTextDocument();
 					// perform the extraction/classification process on "doc"
 					ArticleExtractor.INSTANCE.process(doc);
@@ -523,7 +625,7 @@ public class FeedReader {
 			//update last fetch date in the DB.
 			if (store.equalsIgnoreCase("db"))
 			{
-				String updateComm = "UPDATE behagunea_app_feed "
+				String updateComm = "UPDATE "+tableprefix+"_app_feed "
 						+ "SET last_fetch='"+dateFormat.format(currentDate)+"' WHERE id='"+f.getId()+"'";
 				Statement st = DBconn.createStatement();			       
 				// execute the query, and get a java resultset
@@ -544,7 +646,8 @@ public class FeedReader {
 	 * 
 	 */
 	private void getMultimediaFeed (Feed f, String store, String ffmpeg, float splitWindow){
-
+		String tableprefix=params.getProperty("dbtableprefix", "cognoscere");
+		
 		System.err.println("FeadReader::getFeed -> parse feed "+f.getFeedURL()+" lastFetched: "+f.getLastFetchDate());
 		System.err.println("FeadReader::getFeed -> window length: "+splitWindow);
 
@@ -624,7 +727,7 @@ public class FeedReader {
 
 			if (store.equalsIgnoreCase("db"))
 			{	
-				if (MSMUtils.mentionsInDB(DBconn, link) > 0){
+				if (MSMUtils.mentionsInDB(DBconn, link, tableprefix) > 0){
 						System.err.println("FeadReader::getFeed -> entry already parsed "+link);
 						continue;
 				}
@@ -646,7 +749,7 @@ public class FeedReader {
 				{
 					try {
 					    System.err.println("FeadReader::getMultimediaFeed - parsing multimedia feed for keywords");
-					    entry.parseForKeywords(kwrds, kwrdPatterns, independentkwrds, dependentkwrds, anchorPattern, 60,store,DBconn,splitWindow);
+					    entry.parseForKeywords(kwrds, kwrdPatterns, independentkwrds, dependentkwrds, anchorPattern, 60,store,DBconn,splitWindow,params.getProperty("dbtableprefix", "cognoscere"));
 					} catch (IOException e) {
 						System.err.println("FeadReader::getMultimediaFeed -> XML parsing error when parsing "
 											+entry.getTranscriptionURL()+" transcription file for entry "+entry.getShowURL());
@@ -665,7 +768,7 @@ public class FeedReader {
 			//update last fetch date in the DB.
 			if (store.equalsIgnoreCase("db"))
 			{
-				String updateComm = "UPDATE behagunea_app_feed "
+				String updateComm = "UPDATE "+tableprefix+"_app_feed "
 						+ "SET last_fetch='"+dateFormat.format(currentDate)+"' WHERE id='"+f.getId()+"'";
 				Statement st = DBconn.createStatement();			       
 				// execute the query, and get a java resultset
@@ -803,7 +906,7 @@ public class FeedReader {
 				m.setKeywords(result);
 				if (store.equalsIgnoreCase("db"))
 				{
-					m.mention2db(DBconn);
+					m.mention2db(DBconn,params.getProperty("dbtableprefix", "cognoscere"));
 					System.err.println("MSM::FeedReader::parseArticleForKeywords - mention2db: "+par);
 				}
 				else
@@ -940,13 +1043,16 @@ public class FeedReader {
 	 * @param property
 	 */
 	private void loadCredentials(String property) {
-		List<String> allCredentials=Arrays.asList(property.split(","));
+		List<String> allCredentials=Arrays.asList(property.split(";"));
 		
 		for (String cred : allCredentials) {
 			String[] split = cred.split("::");
-			HashMap<String,String> usrpass = new HashMap<String,String>();
-			usrpass.put(split[1],split[2]);
-			credentials.put(split[0],usrpass); 
+			if (split.length < 7) {
+				System.err.println("MSM::FeedReader - Invalid credential, credential string format must be as follows: domain::ssourl::ssouser:ssopass::userfield::passfield::cookienotice ->"+split.length+" "+split[0]);				
+			}
+			else {
+				addCredential(split[0], split[1], split[2], split[3],split[4],split[5],split[6]);
+			}
 		}
 		System.err.println("MSM::FeedReader - Credentials added for the following domains: "+credentials.keySet().toString());
 	}
@@ -980,24 +1086,37 @@ public class FeedReader {
 	 * @throws KeyManagementException 
 	 * @throws AuthenticationException 
 	 */
-	private InputSource fetchHTML(URL linkSrc, String domain) throws IOException, URISyntaxException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException, AuthenticationException {
+	private InputSource fetchHTML(URL linkSrc, CookieStore cst) throws IOException, URISyntaxException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException, AuthenticationException {
 		
 		final Pattern PAT_CHARSET = Pattern
 				.compile("charset=([^; ]+)$");
 
 		//HttpClientBuilder.create().setRedirectStrategy(new LaxRedirectStrategy()).build();
-		CloseableHttpClient client = MSMUtils.httpClient();
-		RequestConfig localConfig = RequestConfig.custom()
-				.setCookieSpec(CookieSpecs.STANDARD)
-				.build();				
+		//CloseableHttpClient client = MSMUtils.httpClient();
+		
+	    HttpClientContext localContext = new HttpClientContext();
+	    localContext.setAttribute(HttpClientContext.COOKIE_STORE, cst);
+	    
+		//RequestConfig localConfig = RequestConfig.custom()
+		//		.setCookieSpec(CookieSpecs.STANDARD)
+		//		.build();				
 		
         URI linkUri = new URI(linkSrc.getProtocol(), linkSrc.getUserInfo(), linkSrc.getHost(), linkSrc.getPort(), linkSrc.getPath(), linkSrc.getQuery(), linkSrc.getRef()); 		
-        HttpUriRequest get = new HttpGet(linkUri);    
-        if (credentials.containsKey(domain)) {
-        	Map.Entry<String,String> entry = credentials.get(domain).entrySet().iterator().next();
-        	get.addHeader(new BasicScheme(StandardCharsets.UTF_8).authenticate(new UsernamePasswordCredentials(entry.getKey(),entry.getValue()), get, null));        	
-        }
-		CloseableHttpResponse response = client.execute(get);
+        HttpUriRequest get = new HttpGet(linkUri);           
+        
+        // authentication tokens:
+        /*if (headers != null){
+        	for (Header h : headers) {
+        			
+        		 //BasicClientCookie cookie = new BasicClientCookie(h.getElements());
+        	}
+        }*/
+        
+		System.err.println("FeedReader::fetchHTML: localcontext: "+ localContext.getCookieStore().getCookies().stream().map(Object::toString)
+                .collect(Collectors.joining("\n ")));
+
+        
+		CloseableHttpResponse response = httpsession.execute(get,localContext);
 		InputStream stream = response.getEntity().getContent();	
 		
 		//final URLConnection conn = linkSrc.openConnection();

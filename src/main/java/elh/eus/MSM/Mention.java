@@ -307,9 +307,9 @@ public class Mention {
 	
 	/**
 	 * 
-	 *  This is the void that actually creates the mentions starting from a tweet
+	 *  This is the void that actually creates the mentions starting from a youtube video
 	 * 
-	 * @param statusTwitter4j
+	 * @param video
 	 * @param lang
 	 * @param isLocal
 	 */
@@ -429,7 +429,7 @@ public class Mention {
 	 * should be handled correctly.
 	 *  
 	 */
-	public int mention2db(Connection conn) {	
+	public int mention2db(Connection conn, String tableprefix) {	
 
 		PreparedStatement stmtM = null;
 		PreparedStatement stmtKM = null;
@@ -438,7 +438,7 @@ public class Mention {
 		try {				
 			//retrieve id of the last mention in db
 			Statement stmt = conn.createStatement();			
-			ResultSet rs1 = stmt.executeQuery("SELECT max(mention_id) AS maxid FROM behagunea_app_mention");						
+			ResultSet rs1 = stmt.executeQuery("SELECT max(mention_id) AS maxid FROM "+tableprefix+"_app_mention");						
 			int id = 0;
 			while (rs1.next()){
 				id = rs1.getInt("maxid");
@@ -450,7 +450,7 @@ public class Mention {
 			System.err.println("mention2db: current id "+getMention_id());
 			
 			// prepare the sql statements to insert the mention in the DB and insert.
-	        String mentionIns = "insert into behagunea_app_mention (mention_id, date, source_id, url, text, lang, polarity, favourites, retweets, geoinfo, native_id, retweet_id, quote_id, is_local_area, offset, media_url,feed_id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+	        String mentionIns = "insert into "+tableprefix+"_app_mention (mention_id, date, source_id, url, text, lang, polarity, favourites, retweets, geoinfo, native_id, retweet_id, quote_id, is_local_area, offset, media_url,feed_id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 	        stmtM = conn.prepareStatement(mentionIns, Statement.RETURN_GENERATED_KEYS);
 	        stmtM.setInt(1, getMention_id());
 	        System.err.println("daaaaaaataaaaa: "+getDate());
@@ -493,7 +493,7 @@ public class Mention {
 			stmtM.close();
 						
 			//connect mention to keywords
-			String keywordMentionIns = "insert ignore into behagunea_app_keyword_mention (keyword_id, mention_id) values (?,?)";			
+			String keywordMentionIns = "insert ignore into "+tableprefix+"_app_keyword_mention (keyword_id, mention_id) values (?,?)";			
 			stmtKM = conn.prepareStatement(keywordMentionIns, Statement.RETURN_GENERATED_KEYS);	        
 			
 			if (getKeywords()!=null && !getKeywords().isEmpty())
@@ -522,13 +522,13 @@ public class Mention {
 	 * @param conn
 	 * @return
 	 */
-	public int addKwrd2db(Connection conn, int kwrdId) {	
+	public int addKwrd2db(Connection conn, int kwrdId, String tableprefix) {	
 
 		PreparedStatement stmtKM = null;
 		//PreparedStatement stmtS = null;		
 		try {			
 			// prepare the sql statements to insert the mention in the DB and insert.						
-			String keywordMentionIns = "insert ignore into behagunea_app_keyword_mention (mention_id, keyword_id) values (?,?)";			
+			String keywordMentionIns = "insert ignore into "+tableprefix+"_app_keyword_mention (mention_id, keyword_id) values (?,?)";			
 			stmtKM = conn.prepareStatement(keywordMentionIns, Statement.RETURN_GENERATED_KEYS);	  
 			
 			//connect mention to keywords
@@ -553,12 +553,12 @@ public class Mention {
 	 * @param conn
 	 * @return
 	 */
-	public long existsInDB (Connection conn)
+	public long existsInDB (Connection conn, String tableprefix)
 	{
 		long result = -1;
 		try {
 			Statement stmt = conn.createStatement();
-			ResultSet rs = stmt.executeQuery("SELECT mention_id FROM behagunea_app_mention where native_id="+getNativeId());
+			ResultSet rs = stmt.executeQuery("SELECT mention_id FROM "+tableprefix+"_app_mention where native_id="+getNativeId());
 			if(rs.next()){
 	            result = rs.getLong(1);
 	        }
@@ -577,12 +577,12 @@ public class Mention {
 	 * @param conn
 	 * @return
 	 */
-	public int updateRetweetFavourites2db (Connection conn, long mId)
+	public int updateRetweetFavourites2db (Connection conn, long mId, String tableprefix)
 	{
 		int success = 1;
 		try {
 			Statement stmt = conn.createStatement();
-			String updateComm = "UPDATE behagunea_app_mention "
+			String updateComm = "UPDATE "+tableprefix+"_app_mention "
 					+ "SET retweets="+getRetweets()+", favourites="+getFavourites()+" WHERE mention_id="+mId;
 			// execute update
 			stmt.executeUpdate(updateComm);

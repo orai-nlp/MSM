@@ -100,7 +100,7 @@ public class TwtUserInfo {
 						params.getProperty("dbpass"), 
 						params.getProperty("dbhost"), 
 						params.getProperty("dbname")); 
-				Set<Source> srcList = Source.retrieveFromDB(conn,"twitter","all",limit);
+				Set<Source> srcList = Source.retrieveFromDB(conn,"twitter","all",limit, params.getProperty("dbtableprefix", "cognoscere"));
 				for (Source src : srcList)
 				{
 					usrIds.add(src.getId());

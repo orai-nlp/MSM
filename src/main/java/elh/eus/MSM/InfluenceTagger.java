@@ -225,9 +225,9 @@ public class InfluenceTagger {
 		return srcList;
 	}
 	
-	public int influence2db(Set<Source> srcList, Connection conn) throws SQLException 
+	public int influence2db(Set<Source> srcList, Connection conn, String tableprefix) throws SQLException 
 	{
-		PreparedStatement infUpdate = conn.prepareStatement("UPDATE behagunea_app_source SET influence=? where source_id=? and type=?");
+		PreparedStatement infUpdate = conn.prepareStatement("UPDATE "+tableprefix+"_app_source SET influence=? where source_id=? and type=?");
 
 		int count = 0;
 		for (Source src : srcList)

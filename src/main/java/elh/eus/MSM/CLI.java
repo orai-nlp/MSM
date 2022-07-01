@@ -228,7 +228,9 @@ public class CLI {
 		String census = parsedArguments.getString("census");
 		String type = parsedArguments.getString("type");
 		String ffmpeg = parsedArguments.getString("ffmpeg");
-
+		String ssourl = parsedArguments.getString("ssourl");
+		String ssouser = parsedArguments.getString("ssouser");
+		String ssopass = parsedArguments.getString("ssopass");
 
 		Properties params = new Properties();
 		try {
@@ -241,6 +243,7 @@ public class CLI {
 			System.exit(1);
 		} 				
 		
+		String tableprefix = params.getProperty("dbtableprefix", "cognoscere");
 		
 		Set<Keyword> kwrdList = new HashSet<Keyword>();
 		Set<Feed> feedList = new HashSet<Feed>();
@@ -253,9 +256,9 @@ public class CLI {
 													params.getProperty("dbpass"),
 													params.getProperty("dbhost"),
 													params.getProperty("dbname"));
-				feedList = Feed.retrieveFromDB(conn, type);
+				feedList = Feed.retrieveFromDB(conn, type, tableprefix);
 				//retrieve keywords from DB. For the moment both multimedia and press sources use keywords of "press" type
-				kwrdList = Keyword.retrieveFromDB(conn, "press", params.getProperty("langs", "all"));
+				kwrdList = Keyword.retrieveFromDB(conn, "press", params.getProperty("langs", "all"),tableprefix);
 				conn.close();
 			}
 			else //load feeds from command line
@@ -263,7 +266,7 @@ public class CLI {
 				String[] srcSplit = url.split("\\s*,\\s*");
 				for (String feed : srcSplit)
 				{
-					feedList.add(new Feed(feed));
+					feedList.add(new Feed(feed));					
 				}				
 			}
 			//last resort try to load feed from config file
@@ -310,7 +313,7 @@ public class CLI {
 								params.getProperty("dbname"));
 						
 						//retrieve keywords from DB. For the moment both multimedia and press sources use keywords of "press" type
-						kwrdList = Keyword.retrieveFromDB(conn, "press", params.getProperty("langs", "all"));
+						kwrdList = Keyword.retrieveFromDB(conn, "press", params.getProperty("langs", "all"),params.getProperty("dbtableprefix", "cognoscere"));
 						conn.close();
 					}
 				}
@@ -366,7 +369,7 @@ public class CLI {
 													params.getProperty("dbpass"),
 													params.getProperty("dbhost"),
 													params.getProperty("dbname"));
-				sourceList = Source.retrieveFromDB(conn,type,opt,limit);
+				sourceList = Source.retrieveFromDB(conn,type,opt,limit, params.getProperty("dbtableprefix", "cognoscere"));
 				//System.err.println("MSM::Influcence CLI (db): sources found to look for their influence: "+sourceList.size());				
 				infTagger.tagInfluence(sourceList);
 				conn.close();
@@ -393,7 +396,7 @@ public class CLI {
 						params.getProperty("dbpass"),
 						params.getProperty("dbhost"),
 						params.getProperty("dbname"));
-				int count = infTagger.influence2db(sourceList, conn);
+				int count = infTagger.influence2db(sourceList, conn, params.getProperty("dbtableprefix", "cognoscere"));
 				System.out.println("influence for "+count+" sources stored in the database");
 				conn.close();
 			} catch (NamingException | SQLException e) {
@@ -437,7 +440,8 @@ public class CLI {
 			System.exit(1);
 		} 				
 		
-		
+		String tableprefix = params.getProperty("dbtableprefix", "cognoscere");
+
 		Set<Source> sourceList = new HashSet<Source>();
 		geoCode geoTagger = new geoCode(cfg, db);
 		if (!API.equalsIgnoreCase("all")){
@@ -451,7 +455,7 @@ public class CLI {
 													params.getProperty("dbpass"),
 													params.getProperty("dbhost"),
 													params.getProperty("dbname"));
-				sourceList = Source.retrieveForGeoCodingFromDB(conn,type,opt,limit);
+				sourceList = Source.retrieveForGeoCodingFromDB(conn,type,opt,limit, tableprefix);
 				System.err.println("MSM::tagGeoCode CLI (db): sources found to look for their location: "+sourceList.size());								
 				conn.close();
 			}
@@ -470,7 +474,7 @@ public class CLI {
 				System.err.println("MSM::Influcence CLI (commandline): sources found to look for their influence: "+sourceList.size());							
 			}
 			
-			int count = geoTagger.tagGeoCode(sourceList,db);
+			int count = geoTagger.tagGeoCode(sourceList,db,tableprefix);
 			
 			System.err.println("MSM::tagGeoCode CLI -> sources found vs. geolocations stored: "+sourceList.size()+" - "+count);
 			
@@ -729,6 +733,14 @@ public class CLI {
 		.setDefault("db")
 		.help("URL(s) of the feed(s) we want to crawl. Feeds must be separated with ',' chars.\n"
 				+ "e.g. : java -jar MSM-1.0.jar feed -u 'url1,url2,...'");
+		feedReaderParser.addArgument("-sl", "--ssourl")
+		.required(false)
+		.help("URL(s) of the sso login. Must go together with -u argument\n"
+				+ "e.g. : '");
+		feedReaderParser.addArgument("-su", "--ssouser")
+		.help("Username of the sso login. Must go together with -u argument");
+		feedReaderParser.addArgument("-sp", "--ssopass")
+		.help("Passwords of the sso login. Must go together with -u argument");
 		feedReaderParser.addArgument("-s", "--store")		
 		.choices("stout", "db", "solr")
 		.setDefault("stout")

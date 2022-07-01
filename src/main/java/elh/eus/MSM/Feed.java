@@ -178,20 +178,16 @@ public class Feed {
 	 * @throws NamingException
 	 * @throws SQLException
 	 */
-	public static Set<Feed> retrieveFromDB(Connection conn, String type) throws SQLException {
+	public static Set<Feed> retrieveFromDB(Connection conn, String type, String tableprefix) throws SQLException {
 
 		Set<Feed> result = new HashSet<Feed>(); 
 		Statement stmt = conn.createStatement();
 
 		// our SQL SELECT query. 
-		String query= "SELECT * FROM behagunea_app_source AS s INNER JOIN"          // s.source_name, s.source_id, f.description, f.id, f.lang, uf.active, f.last_fetch "
-				+ "(behagunea_app_feed AS f INNER JOIN behagunea_app_user_feed AS uf ON f.id=uf.feed_id)"
+		String query= "SELECT * FROM "+tableprefix+"_app_source AS s INNER JOIN"          // s.source_name, s.source_id, f.description, f.id, f.lang, uf.active, f.last_fetch "
+				+ "("+tableprefix+"_app_feed AS f INNER JOIN "+tableprefix+"_app_user_feed AS uf ON f.id=uf.feed_id)"
 				+ " ON  s.source_id=f.source_id WHERE s.type='"+type+"' AND uf.active=1";
-
-		/*String query = "SELECT * FROM "
-				+ "behagunea_app_source JOIN behagunea_app_feed "
-				+ "ON behagunea_app_source.source_id=behagunea_app_feed.source_id "
-				+ "WHERE behagunea_app_source.type='"+type+"'";*/
+		
 		// execute the query, and get a java resultset
 		ResultSet rs = stmt.executeQuery(query);
 
