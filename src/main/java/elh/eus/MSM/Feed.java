@@ -34,7 +34,7 @@ import javax.naming.NamingException;
 import org.apache.commons.validator.routines.UrlValidator;
 
 public class Feed {
-
+	
 	private int id;	
 	private long srcId;
 	private String feedURL;
@@ -44,7 +44,7 @@ public class Feed {
 	private String usr;
 	private String pass;
 	private String srcDomain;
-	
+	private FeedCredential loginCredentials;
 
 
 	public int getId() {
@@ -123,6 +123,15 @@ public class Feed {
 		this.srcDomain = srcDomain;
 	}
 
+
+	public FeedCredential getLoginCredentials() {
+		return loginCredentials;
+	}
+
+	public void setLoginCredentials(FeedCredential loginCredentials) {
+		this.loginCredentials = loginCredentials;
+	}
+	
 	/**
 	 * @param src
 	 */
@@ -200,8 +209,17 @@ public class Feed {
 			String lastFetch = rs.getString("f.last_fetch");
 			String langs = rs.getString("f.lang");
 			String domain = rs.getString("s.domain");
-
-			Feed src = new Feed(fid,sid,url,lastFetch,langs, rs.getDouble("s.influence"),domain);				
+			
+			Feed src = new Feed(fid,sid,url,lastFetch,langs, rs.getDouble("s.influence"),domain);
+		
+			if (rs.getString("f.login_url") != null)
+			{
+				FeedCredential cred = new FeedCredential(rs.getString("f.url"), rs.getString("f.login_url"), rs.getString("f.login_username"),
+					rs.getString("f.login_passwd"), rs.getString("f.login_usr_field"),rs.getString("f.login_passwd_field"),
+					rs.getString("f.login_cookie_button"));
+			
+				src.setLoginCredentials(cred);
+			}
 			result.add(src);	
 		}
 		rs.close();			
@@ -209,5 +227,6 @@ public class Feed {
 
 		return result;
 	}
+
 	
 }

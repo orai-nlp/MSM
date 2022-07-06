@@ -161,29 +161,9 @@ public class FeedReader {
 	
 	private WebDriver seleniumDriver;
 	
-	private class Credential {
-		private String domain;
-		private String ssourl;
-		private String ssouser;
-		private String ssopass;
-		private String userField;
-		private String passField;
-		private String cookieNotice;
-		
-		public Credential(String domain, String ssourl, String ssouser, String ssopass, String userField, String passField, String cookieNotice) {
-			this.domain = domain;
-			this.ssourl = ssourl;
-			this.ssouser = ssouser;
-			this.ssopass = ssopass;
-			this.userField = userField;
-			this.passField = passField;
-			this.cookieNotice=cookieNotice;
-		}
-		
-		
-	}
+	
 
-	private  HashMap<String, Credential> credentials = new HashMap<String, Credential>();
+	private  HashMap<String, FeedCredential> credentials = new HashMap<String, FeedCredential>();
 	public Set<Feed> getFeeds(){
 		return this.feeds;
 	}
@@ -193,7 +173,7 @@ public class FeedReader {
 	}
 	
 	public void addCredential(String domain, String ssourl, String ssouser, String ssopass, String userField, String passField, String cookieNotice) {
-		this.credentials.put(domain, new Credential(domain,ssourl,ssouser,ssopass,userField,passField,cookieNotice));
+		this.credentials.put(domain, new FeedCredential(domain,ssourl,ssouser,ssopass,userField,passField,cookieNotice));
 	}
 	
 	/**
@@ -467,7 +447,7 @@ public class FeedReader {
 		Boolean subscription=false;
 		String feedDomain = f.getSrcDomain();
 		if (credentials.containsKey(feedDomain)) {
-			Credential cred = credentials.get(feedDomain);
+			FeedCredential cred = credentials.get(feedDomain);
 			subscription=true;
 			System.setProperty("webdriver.chrome.driver","/home/inaki/eclipseWspace/MSM/chromedriver");	
 			//System.setProperty("webdriver.chrome.bin", "/usr/bin/google-chrome-beta");			
@@ -476,21 +456,21 @@ public class FeedReader {
 			
 			seleniumDriver=new ChromeDriver(seleniumOptions);
 			
-			seleniumDriver.get(cred.ssourl);
+			seleniumDriver.get(cred.getSsourl());
 			
 			WebDriverWait wait = new WebDriverWait(seleniumDriver, Duration.ofSeconds(10));
 			// if there is a cookie accepting notice wait until is ready and click to accept
-			if (! cred.cookieNotice.equalsIgnoreCase("none")) {				
-				wait.until(ExpectedConditions.elementToBeClickable(By.xpath(cred.cookieNotice))).click();
+			if (! cred.getCookieNotice().equalsIgnoreCase("none")) {				
+				wait.until(ExpectedConditions.elementToBeClickable(By.xpath(cred.getCookieNotice()))).click();
 			}
 
 			//wait until the form is ready
-			wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//*[@id=\""+cred.userField+"\"]"))).click();
+			wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//*[@id=\""+cred.getUserField()+"\"]"))).click();
 			
 			//user
-			seleniumDriver.findElement(By.id(cred.userField)).sendKeys(cred.ssouser);
+			seleniumDriver.findElement(By.id(cred.getUserField())).sendKeys(cred.getSsouser());
 			//pass
-			seleniumDriver.findElement(By.id(cred.passField)).sendKeys(cred.ssopass + Keys.ENTER);
+			seleniumDriver.findElement(By.id(cred.getPassField())).sendKeys(cred.getSsopass() + Keys.ENTER);
 						
 		    //seleniumDriver.findElement(By.className("gigya-input-submit")).click();
 		    seleniumDriver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
