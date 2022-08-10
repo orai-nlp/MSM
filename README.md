@@ -83,7 +83,7 @@ You should see reference to the MAVEN version you have just installed plus the J
 git clone https://github.com/Elhuyar/MSM
 ````
 
-3. Installing using maven
+3. Install using maven
 ---------------------------
 
 ````shell
@@ -104,6 +104,13 @@ To install the module in the local maven repository, usually located in ~/.m2/, 
 ````shell
 mvn clean install
 ````
+
+
+DEPENDENCIES
+=============
+
+Since version 1.3.9, MSM supports connecting to subscription based digital press media, by means of selenium. User must handle those subscriptions and have valid credentials. Selenium drivers and browsers can be found at: https://www.selenium.dev/
+
 
 USING MSM
 =========================
