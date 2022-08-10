@@ -110,6 +110,10 @@ DEPENDENCIES
 =============
 
 Since version 1.3.9, MSM supports connecting to subscription based digital press media, by means of selenium. User must handle those subscriptions and have valid credentials. Selenium drivers and browsers can be found at: https://www.selenium.dev/
+current versions used are:
+ - chromedriver: inux64-104.0.5112.20
+ - browser: Version 105.0.5195.19 (Official Build) beta (64-bit)
+ - selenium-java library: 4.3.0
 
 
 USING MSM
