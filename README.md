@@ -94,7 +94,7 @@ mvn clean package
 This step will create a directory called target/ which contains various directories and files.
 Most importantly, there you will find the module executable:
 
-elh-MSM-1.3.8.jar
+elh-MSM-1.3.9.jar
 
 This executable contains every dependency the module needs, so it is completely portable as long
 as you have a JVM 1.8 installed.
@@ -130,18 +130,18 @@ Command line examples
 
    - You can get general help by calling:
 ````shell
-java -jar MSM-1.3.8.jar -help
+java -jar MSM-1.3.9.jar -help
 ```` 
 
    - **twitter**: Twitter Public stream crawling. Call Example:
 ````shell
-java -jar MSM-1.3.8.jar twitter -c config.cfg -s stout 2>> MSM-twitter.log
+java -jar MSM-1.3.9.jar twitter -c config.cfg -s stout 2>> MSM-twitter.log
 ````
 
 Parameters:
 ````shell
-java -jar target/MSM-1.3.8.jar twitter -h
-usage: MSM-1.3.8.jar twitter [-h] -c CONFIG [-p {terms,users,geo,all}] [-tl] [-s {stout,db,solr}] [-cn CENSUS]
+java -jar target/MSM-1.3.9.jar twitter -h
+usage: MSM-1.3.9.jar twitter [-h] -c CONFIG [-p {terms,users,geo,all}] [-tl] [-s {stout,db,solr}] [-cn CENSUS]
 
 named arguments:
   -h, --help             show this help message and exit
@@ -172,18 +172,18 @@ named arguments:
                          	 userId<tab>screenName[<tab>Additional Fields]
                          NOTE: if the value 'db' is give instead of a file path MSM will try to generate the census from the database.
                          
-Run java -jar target/MSM-1.3.8.jar (twitter|feed|influence|twtUser|langid|geocode) -help for detail
+Run java -jar target/MSM-1.3.9.jar (twitter|feed|influence|twtUser|langid|geocode) -help for detail
 ````
 
    - **feed**: Syndication feed crawling (RSS, Atom, ...). Feed types supported by ROME tools (http://rometools.github.io/rome/)  
 ````shell
-java -jar MSM-1.3.8.jar feed -c config.cfg -u http://feeds2.feedburner.com/example
+java -jar MSM-1.3.9.jar feed -c config.cfg -u http://feeds2.feedburner.com/example
 ````
 
 Parameters:
 ````shell
-java -jar target/MSM-1.3.8.jar feed -h
-usage: MSM-1.3.8.jar feed [-h] [-c CONFIG] [-t {press,multimedia}] [-ff FFMPEG] [-u URL] [-s {stout,db,solr}] [-cn CENSUS]
+java -jar target/MSM-1.3.9.jar feed -h
+usage: MSM-1.3.9.jar feed [-h] [-c CONFIG] [-t {press,multimedia}] [-ff FFMPEG] [-u URL] [-s {stout,db,solr}] [-cn CENSUS]
 
 named arguments:
   -h, --help             show this help message and exit
@@ -212,17 +212,17 @@ named arguments:
                          database). The sources and their mentions will be marked in the database as 'local'. The file must contain one user per line in the following format:
                          	 userId<tab>sourceName[<tab>Additional Fields]
                          
-Run java -jar target/MSM-1.3.8.jar (twitter|feed|influence|twtUser|langid|geocode) -help for details          
+Run java -jar target/MSM-1.3.9.jar (twitter|feed|influence|twtUser|langid|geocode) -help for details          
 ````
    - **influence**: looks for the influence of a given list of sources. Klout index for twitter users and PageRank for websites.
 ````shell
-java -jar MSM-1.3.8.jar influence -c config.cfg -db 2>> MSM-Influence.log
+java -jar MSM-1.3.9.jar influence -c config.cfg -db 2>> MSM-Influence.log
 ````
 
 Parameters:
 ````shell
-java -jar target/MSM-1.3.8.jar influence -h
-usage: MSM-1.3.8.jar influence [-h] [-s SOURCES] -c CONFIG [-db] [-t {twitter,feed,all}] [-w {null,error,all}] [-l LIMIT]
+java -jar target/MSM-1.3.9.jar influence -h
+usage: MSM-1.3.9.jar influence [-h] [-s SOURCES] -c CONFIG [-db] [-t {twitter,feed,all}] [-w {null,error,all}] [-l LIMIT]
 
 named arguments:
   -h, --help             show this help message and exit
@@ -253,12 +253,12 @@ named arguments:
                          --limit = 0 means no limit is established, and thus the command will atempt to process all sources found in the db (not processed yet).
                          This parameter is important not to exceed the twitter api rate limits. Increase it at your own risk.
                          
-Run java -jar target/MSM-1.3.8.jar (twitter|feed|influence|twtUser|langid|geocode) -help for details
+Run java -jar target/MSM-1.3.9.jar (twitter|feed|influence|twtUser|langid|geocode) -help for details
 ````
    - **twtUser**: asks Twitter for the user profiles of a given list of Twitter users and return their follower and friend information.
 ````shell
-java -jar MSM-1.3.8.jar twtUser -h
- usage: MSM-1.3.8.jar twtUser [-h] -c CONFIG [-s {stout,db,solr}] [-l LIMIT] [-o]
+java -jar MSM-1.3.9.jar twtUser -h
+ usage: MSM-1.3.9.jar twtUser [-h] -c CONFIG [-s {stout,db,solr}] [-l LIMIT] [-o]
 
 named arguments:
   -h, --help             show this help message and exit
@@ -282,8 +282,8 @@ named arguments:
 
    - **langid**: Language detection for sentences. Used mainly to evaluate langid and optimaize.
 ````shell
-java -jar MSM-1.3.8.jar langid -h
-usage: MSM-1.3.8.jar langid [-h] [-a {langid,optimaize}] -s STRINGS [-l LANGS] [-tl] [-o] [-t {twitter,longtext}] [-tr] [-c CONFIDENCETHRESHOLD] [-lc]
+java -jar MSM-1.3.9.jar langid -h
+usage: MSM-1.3.9.jar langid [-h] [-a {langid,optimaize}] -s STRINGS [-l LANGS] [-tl] [-o] [-t {twitter,longtext}] [-tr] [-c CONFIDENCETHRESHOLD] [-lc]
 
 named arguments:
   -h, --help             show this help message and exit
@@ -326,8 +326,8 @@ named arguments:
 
    - **geocode**: Geocoding wrapper for several geocoding APIs (access keys needed for some of them). Given a string it returns its geolocation coordinates.
 ````shell
-java -jar MSM-1.3.8.jar geocode -h
-usage: MSM-1.3.8.jar geocode [-h] [-s SOURCES] -c CONFIG [-db] [-t {twitter,feed,all}] [-w {unknown,error,all}] [-a {mapquest,mapquest-open,openstreetmaps,googlemaps,LocationIQ,OpenCage,all}] [-l LIMIT]
+java -jar MSM-1.3.9.jar geocode -h
+usage: MSM-1.3.9.jar geocode [-h] [-s SOURCES] -c CONFIG [-db] [-t {twitter,feed,all}] [-w {unknown,error,all}] [-a {mapquest,mapquest-open,openstreetmaps,googlemaps,LocationIQ,OpenCage,all}] [-l LIMIT]
 
 named arguments:
   -h, --help             show this help message and exit
@@ -375,7 +375,7 @@ You can also generate the javadoc of the module by executing:
 mvn javadoc:jar
 ````
 
-Which will create a jar file core/target/elh-MSM-1.3.8-javadoc.jar
+Which will create a jar file core/target/elh-MSM-1.3.9-javadoc.jar
 
 
 Contact information
