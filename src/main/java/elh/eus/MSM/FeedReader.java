@@ -449,7 +449,7 @@ public class FeedReader {
 		if (credentials.containsKey(feedDomain)) {
 			FeedCredential cred = credentials.get(feedDomain);
 			subscription=true;
-			System.setProperty("webdriver.chrome.driver","/home/inaki/eclipseWspace/MSM/chromedriver");	
+			System.setProperty("webdriver.chrome.driver",params.getProperty("chromedriverPath", "chromedriver"));	
 			//System.setProperty("webdriver.chrome.bin", "/usr/bin/google-chrome-beta");			
 			ChromeOptions seleniumOptions = new ChromeOptions();
 			seleniumOptions.setBinary("/usr/bin/google-chrome-beta");
