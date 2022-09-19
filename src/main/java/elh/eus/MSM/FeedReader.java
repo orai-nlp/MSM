@@ -330,9 +330,14 @@ public class FeedReader {
 			}
 		}
 
-		//authentication credentials for media if provided in the config file
+		//load authentication credentials for media
 		try {
-			loadCredentials(params.getProperty("feedAuth", ""));
+			if (store.equalsIgnoreCase("db")) {
+				loadCredentials("db");
+			}
+			else {
+				loadCredentials(params.getProperty("feedAuth", ""));
+			}
 		} catch (NullPointerException ne) {
 			System.err.println("MSM::FeedReader - Error when reading credentials for feed, no credentials loaded. "
 					+ "If a source requires authentication related articles may not be downloaded correctly.");
@@ -1040,20 +1045,63 @@ public class FeedReader {
 	 * @param property
 	 */
 	private void loadCredentials(String property) {
-		List<String> allCredentials=Arrays.asList(property.split(";"));
-		
-		System.err.println("MSM::FeedReader - Found Credentials: "+allCredentials.size());
-		
-		for (String cred : allCredentials) {
-			String[] split = cred.split("::");
-			if (split.length < 7) {
-				System.err.println("MSM::FeedReader - Invalid credential, credential string format must be as follows: domain::ssourl::ssouser:ssopass::userfield::passfield::cookienotice ->"+split.length+" "+split[0]);				
-			}
-			else {
-				addCredential(split[0], split[1], split[2], split[3],split[4],split[5],split[6]);
+		if (property.equalsIgnoreCase("db")){ // credential are stored in the database.
+			try {
+				String query = "SELECT * FROM "
+					+ params.getProperty("dbtableprefix", "cognoscere") +"_app_feed "
+					+ "WHERE login_url!='NULL'";
+
+				Statement st = DBconn.createStatement();			       
+				// execute the query, and get a java resultset
+				ResultSet rs = st.executeQuery(query);
+					
+				while (rs.next()){
+					Integer id = rs.getInt("id");
+					String login_url = rs.getString("login_url");
+					String login_user = rs.getString("login_username");
+					String login_pass = rs.getString("login_passwd");
+					String login_user_field = rs.getString("login_user_field");
+					String login_pass_field = rs.getString("login_passwd_field");
+					String login_cookie_button = rs.getString("login_cookie_button");
+
+					String query2 = "SELECT domain FROM "
+						+ params.getProperty("dbtableprefix", "cognoscere") +"_app_source "
+						+ "WHERE source_id="+id;
+					Statement st2 = DBconn.createStatement();
+					ResultSet rs2 = st2.executeQuery(query);
+					String fdomain="";
+					while (rs.next()) {
+						fdomain=rs.getString("domain");
+						break;
+					}
+					if (! fdomain.equalsIgnoreCase("")) {
+						// domain, String ssourl, String ssouser, String ssopass, String userField, String passField, String cookieNotice
+						addCredential(fdomain, login_url, login_user, login_pass, login_user_field,login_pass_field,login_cookie_button);
+					}
+					st2.close();
+				}
+				st.close();				
+			} catch(SQLException sqle) {
+				System.err.println("MSMUtils::loadCredentials ->  MYSQL ERROR when trying to load credentials from DB ");
 			}
 		}
-		System.err.println("MSM::FeedReader - Credentials added for the following domains: "+credentials.keySet().toString());
+		else  // try if property is a string containing the actual credentials (coming from config file)
+		{			
+			List<String> allCredentials=Arrays.asList(property.split(";"));
+		
+			System.err.println("MSM::FeedReader - Found Credentials: "+allCredentials.size());
+		
+			for (String cred : allCredentials) {
+				String[] split = cred.split("::");
+				if (split.length < 7) {
+					System.err.println("MSM::FeedReader - Invalid credential, credential string format must be as follows: domain::ssourl::ssouser:ssopass::userfield::passfield::cookienotice ->"+split.length+" "+split[0]);				
+				}
+				else {
+					addCredential(split[0], split[1], split[2], split[3],split[4],split[5],split[6]);
+				}
+			}
+			System.err.println("MSM::FeedReader - Credentials added for the following domains: "+credentials.keySet().toString());
+		}
 	}
 	
 	/**
