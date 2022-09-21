@@ -120,6 +120,7 @@ import eus.ixa.ixa.pipe.seg.RuleBasedSegmenter;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -468,7 +469,7 @@ public class FeedReader {
 			if (! cred.getCookieNotice().equalsIgnoreCase("none")) {
 			    try {
 				wait.until(ExpectedConditions.elementToBeClickable(By.xpath(cred.getCookieNotice()))).click();
-			    } catch (timeoutException te){
+			    } catch (TimeoutException te){
 				System.err.println("FeadReader::getRssFeed ->  selenium waited to long for the cookie button, proceeding without it");
 			    }
 			}
