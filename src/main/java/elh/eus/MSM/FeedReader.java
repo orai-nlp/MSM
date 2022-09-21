@@ -465,8 +465,12 @@ public class FeedReader {
 			
 			WebDriverWait wait = new WebDriverWait(seleniumDriver, Duration.ofSeconds(10));
 			// if there is a cookie accepting notice wait until is ready and click to accept
-			if (! cred.getCookieNotice().equalsIgnoreCase("none")) {				
+			if (! cred.getCookieNotice().equalsIgnoreCase("none")) {
+			    try {
 				wait.until(ExpectedConditions.elementToBeClickable(By.xpath(cred.getCookieNotice()))).click();
+			    } catch (timeoutException te){
+				System.err.println("FeadReader::getRssFeed ->  selenium waited to long for the cookie button, proceeding without it");
+			    }
 			}
 
 			//wait until the form is ready
@@ -1056,23 +1060,23 @@ public class FeedReader {
 				ResultSet rs = st.executeQuery(query);
 					
 				while (rs.next()){
-					Integer id = rs.getInt("id");
+					Integer source_id = rs.getInt("source_id");
 					String login_url = rs.getString("login_url");
 					String login_user = rs.getString("login_username");
 					String login_pass = rs.getString("login_passwd");
-					String login_user_field = rs.getString("login_user_field");
+					String login_user_field = rs.getString("login_usr_field");
 					String login_pass_field = rs.getString("login_passwd_field");
 					String login_cookie_button = rs.getString("login_cookie_button");
 
 					String query2 = "SELECT domain FROM "
 						+ params.getProperty("dbtableprefix", "cognoscere") +"_app_source "
-						+ "WHERE source_id="+id;
+						+ "WHERE source_id="+source_id;
 					Statement st2 = DBconn.createStatement();
-					ResultSet rs2 = st2.executeQuery(query);
+					ResultSet rs2 = st2.executeQuery(query2);
 					String fdomain="";
-					while (rs.next()) {
-						fdomain=rs.getString("domain");
-						break;
+					while (rs2.next()) {
+					    fdomain=rs2.getString("domain");
+					    break;
 					}
 					if (! fdomain.equalsIgnoreCase("")) {
 						// domain, String ssourl, String ssouser, String ssopass, String userField, String passField, String cookieNotice
@@ -1083,6 +1087,7 @@ public class FeedReader {
 				st.close();				
 			} catch(SQLException sqle) {
 				System.err.println("MSMUtils::loadCredentials ->  MYSQL ERROR when trying to load credentials from DB ");
+				sqle.printStackTrace();
 			}
 		}
 		else  // try if property is a string containing the actual credentials (coming from config file)
@@ -1100,8 +1105,8 @@ public class FeedReader {
 					addCredential(split[0], split[1], split[2], split[3],split[4],split[5],split[6]);
 				}
 			}
-			System.err.println("MSM::FeedReader - Credentials added for the following domains: "+credentials.keySet().toString());
 		}
+		System.err.println("MSM::FeedReader - Credentials added for the following domains: "+credentials.keySet().toString());
 	}
 	
 	/**
