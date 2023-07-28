@@ -121,6 +121,7 @@ import eus.ixa.ixa.pipe.seg.RuleBasedSegmenter;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.TimeoutException;
+import org.openqa.selenium.ElementNotInteractableException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -455,35 +456,10 @@ public class FeedReader {
 		if (credentials.containsKey(feedDomain)) {
 			FeedCredential cred = credentials.get(feedDomain);
 			subscription=true;
-			System.setProperty("webdriver.chrome.driver",params.getProperty("chromedriverPath", "chromedriver"));	
-			//System.setProperty("webdriver.chrome.bin", "/usr/bin/google-chrome-beta");			
-			ChromeOptions seleniumOptions = new ChromeOptions();
-			seleniumOptions.setBinary("/usr/bin/google-chrome-beta");
-			
-			seleniumDriver=new ChromeDriver(seleniumOptions);
-			
-			seleniumDriver.get(cred.getSsourl());
-			
-			WebDriverWait wait = new WebDriverWait(seleniumDriver, Duration.ofSeconds(10));
-			// if there is a cookie accepting notice wait until is ready and click to accept
-			if (! cred.getCookieNotice().equalsIgnoreCase("none")) {
-			    try {
-				wait.until(ExpectedConditions.elementToBeClickable(By.xpath(cred.getCookieNotice()))).click();
-			    } catch (TimeoutException te){
-				System.err.println("FeadReader::getRssFeed ->  selenium waited to long for the cookie button, proceeding without it");
-			    }
-			}
-
-			//wait until the form is ready
-			wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//*[@id=\""+cred.getUserField()+"\"]"))).click();
-			
-			//user
-			seleniumDriver.findElement(By.id(cred.getUserField())).sendKeys(cred.getSsouser());
-			//pass
-			seleniumDriver.findElement(By.id(cred.getPassField())).sendKeys(cred.getSsopass() + Keys.ENTER);
+			boolean seleniumReady=startSelenium(cred);
 						
 		    //seleniumDriver.findElement(By.className("gigya-input-submit")).click();
-		    seleniumDriver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
+		    seleniumDriver.manage().timeouts().implicitlyWait(Duration.ofSeconds(20));
 		    
 		    //WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID,"onPlusProfile")))
 		    
@@ -575,6 +551,7 @@ public class FeedReader {
 					//final InputSource is = HTMLFetcher.fetch(linkSrc).toInputSource();
 					final InputSource is;
 					if (subscription) {
+					    
 						seleniumDriver.get(link);
 						is = new HTMLDocument(seleniumDriver.getPageSource()).toInputSource();
 					}
@@ -624,9 +601,16 @@ public class FeedReader {
 			} catch (AuthenticationException ae) {
 				System.err.println("FeadReader::getRssFeed ->  HTTP client authentication error whe reading a feed entry (" +link+") :\n "+ae.getMessage());
 				ae.printStackTrace();
+			} catch (TimeoutException te3){
+			    System.err.println("FeadReader::getRssFeed ->  selenium timeout when trying to get link: "+link+" \n "+te3.getMessage());
 			}
+
 		}
 		System.err.println("FeadReader::getRssFeed -> found "+newEnts+" new entries ");
+		// terminates driver session and closes all windows
+		if (subscription){ 
+		    seleniumDriver.quit();
+		}
 
 		try {
 			//update last fetch date in the DB.
@@ -1222,6 +1206,72 @@ public class FeedReader {
 		return new HTMLDocument(utf8, cs).toInputSource();
 			
 	}
+
 	
+    /**/
+    boolean startSelenium(FeedCredential cred)
+    {
+	System.setProperty("webdriver.chrome.driver",params.getProperty("chromedriverPath", "chromedriver"));	
+	//System.setProperty("webdriver.chrome.bin", "/usr/bin/google-chrome-beta");
+	ChromeOptions seleniumOptions = new ChromeOptions();
+	String[] seleniumOpts=params.getProperty("seleniumOptions","");
+	if (! seleniumOpts.equalsIgnoreCase("")){
+	    for (String o : seleniumOpts.split(";")){
+		seleniumOptions.addArguments(o);
+	    }
+	}
+	seleniumOptions.setBinary("/usr/bin/google-chrome-beta");
 	
+	seleniumDriver=new ChromeDriver(seleniumOptions);
+			
+	try {
+	    seleniumDriver.get(cred.getSsourl());
+	}catch (WebDriverException se){
+	    try {
+		seleniumDriver.close();
+		seleniumDriver=new ChromeDriver(seleniumOptions);
+		seleniumDriver.get(cred.getSsourl());
+	    }catch (WebDriverException se){
+		System.err.println("FeadReader::getRssFeed ->  selenium could not open login page proceeding without it");
+		return 0;
+	    }
+		
+	}		
+	WebDriverWait wait = new WebDriverWait(seleniumDriver, Duration.ofSeconds(30));
+	// if there is a cookie accepting notice wait until is ready and click to accept
+	if (! cred.getCookieNotice().equalsIgnoreCase("none")) {
+	    try {
+		wait.until(ExpectedConditions.elementToBeClickable(By.xpath(cred.getCookieNotice()))).click();
+	    } catch (TimeoutException te){
+		System.err.println("FeadReader::getRssFeed ->  selenium waited long enough for the cookie button, proceeding without it");
+	    }
+	}
+
+	try{
+	    //wait until the form is ready
+	    wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//*[@id=\""+cred.getUserField()+"\"]"))).click();
+	} catch (TimeoutException te){
+	    try {
+		//wait until the form is ready
+		wait.until(ExpectedConditions.elementToBeClickable(By.id(cred.getUserField()))).click();
+	    } catch (TimeoutException te2){
+		System.err.println("FeadReader::getRssFeed ->  selenium waited long enough for the login form to be ready, proceeding without it");
+	    }
+	}
+	try{
+	    //user
+	    seleniumDriver.findElement(By.id(cred.getUserField())).sendKeys(cred.getSsouser());
+	    //pass
+	    seleniumDriver.findElement(By.id(cred.getPassField())).sendKeys(cred.getSsopass() + Keys.ENTER);
+	}catch (ElementNotInteractableException nie){
+	    System.err.println("FeadReader::getRssFeed ->  selenium found an element not clickable, proceeding without login");
+	    return 0;
+	}
+
+	return 1;
+    }
+    
+
+
+
 }
