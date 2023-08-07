@@ -23,6 +23,8 @@
 		<project.custom.java.version>1.8</project.custom.java.version>
 		<maven.compiler.source>${project.custom.java.version}</maven.compiler.source>
 		<maven.compiler.target>${project.custom.java.version}</maven.compiler.target>
+		<!-- Define the version of OPEN HTML TO PDF in the properties section of your POM. -->  	       
+  		<openhtml.version>1.0.10</openhtml.version>
 	</properties>
 	<prerequisites>
 		<maven>3.0</maven>
@@ -176,6 +178,59 @@
   			<artifactId>guava</artifactId>
   			<version>31.1-jre</version>  			
 		</dependency>
+		
+	  	<dependency>
+  			<!-- ALWAYS required, usually included transitively. -->
+  			<groupId>com.openhtmltopdf</groupId>
+  			<artifactId>openhtmltopdf-core</artifactId>
+  			<version>${openhtml.version}</version>
+  		</dependency>
+  	
+	  	<dependency>
+  			<!-- Required for PDF output. -->
+  			<groupId>com.openhtmltopdf</groupId>
+  			<artifactId>openhtmltopdf-pdfbox</artifactId>
+  			<version>${openhtml.version}</version>	
+	  	</dependency>
+  	
+ 	 	<dependency>
+  			<!-- Required for image output only. -->  	
+  			<groupId>com.openhtmltopdf</groupId>
+  			<artifactId>openhtmltopdf-java2d</artifactId>
+  			<version>${openhtml.version}</version>
+  		</dependency>
+  	
+	  	<dependency>
+  			<!-- Optional, leave out if you do not need right-to-left or bi-directional text support. -->
+  			<groupId>com.openhtmltopdf</groupId>
+  			<artifactId>openhtmltopdf-rtl-support</artifactId>
+  			<version>${openhtml.version}</version>
+  		</dependency>
+  	 
+  		<dependency>
+  		    <!-- Optional, leave out if you do not need logging via slf4j. -->
+  			<groupId>com.openhtmltopdf</groupId>
+  			<artifactId>openhtmltopdf-slf4j</artifactId>
+  			<version>${openhtml.version}</version>
+  		</dependency>
+  	
+  	<dependency>
+  	    <!-- Optional, leave out if you do not need SVG support. -->
+  		<groupId>com.openhtmltopdf</groupId>
+  		<artifactId>openhtmltopdf-svg-support</artifactId>
+  		<version>${openhtml.version}</version>
+  	</dependency>
+
+  	<dependency>
+  	    <!-- Optional, leave out if you do not need MathML support. -->
+  	    <!-- Introduced in RC-13. -->
+  		<groupId>com.openhtmltopdf</groupId>
+  		<artifactId>openhtmltopdf-mathml-support</artifactId>
+  		<version>${openhtml.version}</version>
+  	</dependency>
+		
+		
+		
 	</dependencies>
 
 

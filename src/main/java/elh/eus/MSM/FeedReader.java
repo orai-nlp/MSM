@@ -60,8 +60,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 import javax.naming.NamingException;
 
@@ -123,12 +125,13 @@ import org.openqa.selenium.Keys;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.ElementNotInteractableException;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
-
+import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 
 /**
  * RSS/Atom feed reader.
@@ -148,6 +151,7 @@ public class FeedReader {
 	private Set<Keyword> independentkwrds = new HashSet<Keyword>();
 	private Set<Keyword> dependentkwrds = new HashSet<Keyword>();
 	private Set<Long> census = new HashSet<Long>();
+	private String fileStorePath = "";
 	
 	private static Pattern anchorPattern; //pattern for anchor kwrds. they are usually general terms.
 	private HashMap<Integer,Pattern> kwrdPatterns = new HashMap<Integer,Pattern>(); //patterns for keywords.
@@ -344,6 +348,8 @@ public class FeedReader {
 			System.err.println("MSM::FeedReader - Error when reading credentials for feed, no credentials loaded. "
 					+ "If a source requires authentication related articles may not be downloaded correctly.");
 		}
+		
+		fileStorePath=params.getProperty("fileStorePath", "/tmp/");
 		
 	}//end constructor
 
@@ -577,7 +583,16 @@ public class FeedReader {
 						else
 						{
 							//processFullArticle(doc,lang, pubDate, link, f.getSrcId(), store);
-							parseArticleForKeywords(doc,lang, pubDate, link, f.getSrcId(), store);
+							boolean mentionsFound=parseArticleForKeywords(doc,lang, pubDate, link, f.getSrcId(), store);
+							//albisteak aipamenik bazuen gorde albistearen pdf-a
+							if (mentionsFound) {
+								OutputStream os = new FileOutputStream(fileStorePath+link);
+								PdfRendererBuilder builder = new PdfRendererBuilder();
+					            builder.useFastMode();
+					            builder.withHtmlContent(is.toString(),link); //)withUri(is);
+					            builder.toStream(os);
+					            builder.run();
+							}
 						}
 					}
 				}
@@ -784,10 +799,10 @@ public class FeedReader {
 	 * @param link
 	 * @param srcId
 	 */
-	private void parseArticleForKeywords(TextDocument doc, String lang, Date date, String link, long srcId, String store) {
+	private boolean parseArticleForKeywords(TextDocument doc, String lang, Date date, String link, long srcId, String store) {
 
 		Set<Keyword> result = new HashSet<Keyword>();
-		
+		boolean mentionsFound=false;
 		String wholeText = StringUtils.stripAccents(doc.getContent()).toLowerCase();
 		boolean anchorFound = false;
 		if (anchorPattern == null)
@@ -893,6 +908,7 @@ public class FeedReader {
 
 			if (result != null && !result.isEmpty())
 			{
+				mentionsFound=true;
 				Mention m = new Mention(lang,par,date,link,srcId,true);
 				m.setKeywords(result);
 				if (store.equalsIgnoreCase("db"))
@@ -907,6 +923,7 @@ public class FeedReader {
 				}
 			}			
 		} //for each paragraph				
+		return mentionsFound;
 	}
 
 	/**
@@ -1211,13 +1228,13 @@ public class FeedReader {
     /**/
     boolean startSelenium(FeedCredential cred)
     {
-	System.setProperty("webdriver.chrome.driver",params.getProperty("chromedriverPath", "chromedriver"));	
-	//System.setProperty("webdriver.chrome.bin", "/usr/bin/google-chrome-beta");
-	ChromeOptions seleniumOptions = new ChromeOptions();
-	String[] seleniumOpts=params.getProperty("seleniumOptions","");
-	if (! seleniumOpts.equalsIgnoreCase("")){
-	    for (String o : seleniumOpts.split(";")){
-		seleniumOptions.addArguments(o);
+    	System.setProperty("webdriver.chrome.driver",params.getProperty("chromedriverPath", "chromedriver"));	
+    	//System.setProperty("webdriver.chrome.bin", "/usr/bin/google-chrome-beta");
+    	ChromeOptions seleniumOptions = new ChromeOptions();
+    	String seleniumOpts=params.getProperty("seleniumOptions","");
+    	if (! seleniumOpts.equalsIgnoreCase("")){
+    		for (String o : seleniumOpts.split(";")){
+    			seleniumOptions.addArguments(o);
 	    }
 	}
 	seleniumOptions.setBinary("/usr/bin/google-chrome-beta");
@@ -1231,9 +1248,9 @@ public class FeedReader {
 		seleniumDriver.close();
 		seleniumDriver=new ChromeDriver(seleniumOptions);
 		seleniumDriver.get(cred.getSsourl());
-	    }catch (WebDriverException se){
-		System.err.println("FeadReader::getRssFeed ->  selenium could not open login page proceeding without it");
-		return 0;
+	    }catch (WebDriverException se2){
+	    	System.err.println("FeadReader::getRssFeed ->  selenium could not open login page proceeding without it");
+	    	return false;
 	    }
 		
 	}		
@@ -1265,10 +1282,10 @@ public class FeedReader {
 	    seleniumDriver.findElement(By.id(cred.getPassField())).sendKeys(cred.getSsopass() + Keys.ENTER);
 	}catch (ElementNotInteractableException nie){
 	    System.err.println("FeadReader::getRssFeed ->  selenium found an element not clickable, proceeding without login");
-	    return 0;
+	    return false;
 	}
 
-	return 1;
+	return true;
     }
     
 
