@@ -23,14 +23,14 @@ package elh.eus.MSM;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.HttpCookie;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -48,36 +48,22 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
-import java.util.Map;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import javax.naming.NamingException;
 
-import org.apache.http.auth.AuthenticationException;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.CookieStore;
 import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.TrustAllStrategy;
-import org.apache.http.impl.auth.BasicScheme;
-import org.apache.http.impl.client.BasicCookieStore;
 
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.protocol.HttpContext;
 import org.apache.http.ssl.SSLContextBuilder;
-import org.apache.http.Header;
-import org.apache.http.NameValuePair;
+import org.xml.sax.InputSource;
 
 import twitter4j.JSONArray;
 import twitter4j.JSONException;
@@ -85,6 +71,7 @@ import twitter4j.JSONObject;
 
 //import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
 import com.mysql.cj.jdbc.MysqlDataSource;
+import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 
 public final class MSMUtils {
 
@@ -476,6 +463,27 @@ public final class MSMUtils {
 		
 	}
 	
-
+	/**
+	 * save html content to pdf by means of openhtmltopdf library.
+	 * 
+	 * @param in
+	 * @param storePath
+	 * @param filename
+	 * @return true if succesfull, false otherwise
+	 */
+	public static boolean saveHtml2pdf(InputSource in, String storePath, String filename) 
+	{
+		try {
+			OutputStream os = new FileOutputStream(storePath+filename);
+			PdfRendererBuilder builder = new PdfRendererBuilder();
+			builder.useFastMode();
+			builder.withHtmlContent(in.toString(),filename); //)withUri(is);
+			builder.toStream(os);
+			builder.run();
+			return true;
+		}catch (IOException ioe) {
+			return false;
+		}
+	}
 
 }

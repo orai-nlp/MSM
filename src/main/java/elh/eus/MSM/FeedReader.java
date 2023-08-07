@@ -131,7 +131,6 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
-import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 
 /**
  * RSS/Atom feed reader.
@@ -578,7 +577,7 @@ public class FeedReader {
 						if (kwrds.isEmpty())
 						{
 							System.err.println("MSM::FeadReader::getFeed ->no keywords provided full articles will be returned");
-							processFullArticle(doc,lang, pubDate, link, f.getSrcId(), store);
+							boolean success=MSMUtils.saveHtml2pdf(is, fileStorePath,link);																		
 						}
 						else
 						{
@@ -586,12 +585,7 @@ public class FeedReader {
 							boolean mentionsFound=parseArticleForKeywords(doc,lang, pubDate, link, f.getSrcId(), store);
 							//albisteak aipamenik bazuen gorde albistearen pdf-a
 							if (mentionsFound) {
-								OutputStream os = new FileOutputStream(fileStorePath+link);
-								PdfRendererBuilder builder = new PdfRendererBuilder();
-					            builder.useFastMode();
-					            builder.withHtmlContent(is.toString(),link); //)withUri(is);
-					            builder.toStream(os);
-					            builder.run();
+								boolean success=MSMUtils.saveHtml2pdf(is, fileStorePath,link);																		
 							}
 						}
 					}
@@ -1225,70 +1219,74 @@ public class FeedReader {
 	}
 
 	
-    /**/
-    boolean startSelenium(FeedCredential cred)
-    {
-    	System.setProperty("webdriver.chrome.driver",params.getProperty("chromedriverPath", "chromedriver"));	
-    	//System.setProperty("webdriver.chrome.bin", "/usr/bin/google-chrome-beta");
-    	ChromeOptions seleniumOptions = new ChromeOptions();
-    	String seleniumOpts=params.getProperty("seleniumOptions","");
-    	if (! seleniumOpts.equalsIgnoreCase("")){
-    		for (String o : seleniumOpts.split(";")){
-    			seleniumOptions.addArguments(o);
-	    }
-	}
-	seleniumOptions.setBinary("/usr/bin/google-chrome-beta");
-	
-	seleniumDriver=new ChromeDriver(seleniumOptions);
-			
-	try {
-	    seleniumDriver.get(cred.getSsourl());
-	}catch (WebDriverException se){
-	    try {
-		seleniumDriver.close();
+	/**
+	 * start Selenium session with sso login crendential 
+	 * @param cred : sso login credentials
+	 * 
+	 * @return
+	 */
+	boolean startSelenium(FeedCredential cred)
+	{
+		System.setProperty("webdriver.chrome.driver",params.getProperty("chromedriverPath", "chromedriver"));	
+		//System.setProperty("webdriver.chrome.bin", "/usr/bin/google-chrome-beta");
+		ChromeOptions seleniumOptions = new ChromeOptions();
+		String seleniumOpts=params.getProperty("seleniumOptions","");
+		if (! seleniumOpts.equalsIgnoreCase("")){
+			for (String o : seleniumOpts.split(";")){
+				seleniumOptions.addArguments(o);
+			}
+		}
+		seleniumOptions.setBinary("/usr/bin/google-chrome-beta");
+
 		seleniumDriver=new ChromeDriver(seleniumOptions);
-		seleniumDriver.get(cred.getSsourl());
-	    }catch (WebDriverException se2){
-	    	System.err.println("FeadReader::getRssFeed ->  selenium could not open login page proceeding without it");
-	    	return false;
-	    }
-		
-	}		
-	WebDriverWait wait = new WebDriverWait(seleniumDriver, Duration.ofSeconds(30));
-	// if there is a cookie accepting notice wait until is ready and click to accept
-	if (! cred.getCookieNotice().equalsIgnoreCase("none")) {
-	    try {
-		wait.until(ExpectedConditions.elementToBeClickable(By.xpath(cred.getCookieNotice()))).click();
-	    } catch (TimeoutException te){
-		System.err.println("FeadReader::getRssFeed ->  selenium waited long enough for the cookie button, proceeding without it");
-	    }
-	}
 
-	try{
-	    //wait until the form is ready
-	    wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//*[@id=\""+cred.getUserField()+"\"]"))).click();
-	} catch (TimeoutException te){
-	    try {
-		//wait until the form is ready
-		wait.until(ExpectedConditions.elementToBeClickable(By.id(cred.getUserField()))).click();
-	    } catch (TimeoutException te2){
-		System.err.println("FeadReader::getRssFeed ->  selenium waited long enough for the login form to be ready, proceeding without it");
-	    }
-	}
-	try{
-	    //user
-	    seleniumDriver.findElement(By.id(cred.getUserField())).sendKeys(cred.getSsouser());
-	    //pass
-	    seleniumDriver.findElement(By.id(cred.getPassField())).sendKeys(cred.getSsopass() + Keys.ENTER);
-	}catch (ElementNotInteractableException nie){
-	    System.err.println("FeadReader::getRssFeed ->  selenium found an element not clickable, proceeding without login");
-	    return false;
-	}
+		try {
+			seleniumDriver.get(cred.getSsourl());
+		}catch (WebDriverException se){
+			try {
+				seleniumDriver.close();
+				seleniumDriver=new ChromeDriver(seleniumOptions);
+				seleniumDriver.get(cred.getSsourl());
+			}catch (WebDriverException se2){
+				System.err.println("FeadReader::getRssFeed ->  selenium could not open login page proceeding without it");
+				return false;
+			}
 
-	return true;
-    }
+		}		
+		WebDriverWait wait = new WebDriverWait(seleniumDriver, Duration.ofSeconds(30));
+		// if there is a cookie accepting notice wait until is ready and click to accept
+		if (! cred.getCookieNotice().equalsIgnoreCase("none")) {
+			try {
+				wait.until(ExpectedConditions.elementToBeClickable(By.xpath(cred.getCookieNotice()))).click();
+			} catch (TimeoutException te){
+				System.err.println("FeadReader::getRssFeed ->  selenium waited long enough for the cookie button, proceeding without it");
+			}
+		}
+
+		try{
+			//wait until the form is ready
+			wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//*[@id=\""+cred.getUserField()+"\"]"))).click();
+		} catch (TimeoutException te){
+			try {
+				//wait until the form is ready
+				wait.until(ExpectedConditions.elementToBeClickable(By.id(cred.getUserField()))).click();
+			} catch (TimeoutException te2){
+				System.err.println("FeadReader::getRssFeed ->  selenium waited long enough for the login form to be ready, proceeding without it");
+			}
+		}
+		try{
+			//user
+			seleniumDriver.findElement(By.id(cred.getUserField())).sendKeys(cred.getSsouser());
+			//pass
+			seleniumDriver.findElement(By.id(cred.getPassField())).sendKeys(cred.getSsopass() + Keys.ENTER);
+		}catch (ElementNotInteractableException nie){
+			System.err.println("FeadReader::getRssFeed ->  selenium found an element not clickable, proceeding without login");
+			return false;
+		}
+
+		return true;
+	}
     
-
 
 
 }
