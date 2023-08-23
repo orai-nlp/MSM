@@ -112,12 +112,15 @@ import com.rometools.rome.io.FeedException;
 import com.rometools.rome.io.SyndFeedInput;
 import com.rometools.rome.io.XmlReader;
 
+import de.l3s.boilerpipe.BoilerpipeExtractor;
 import de.l3s.boilerpipe.BoilerpipeProcessingException;
 import de.l3s.boilerpipe.document.TextDocument;
 import de.l3s.boilerpipe.extractors.ArticleExtractor;
 import de.l3s.boilerpipe.sax.BoilerpipeSAXInput;
 import de.l3s.boilerpipe.sax.HTMLDocument;
 import de.l3s.boilerpipe.sax.HTMLFetcher;
+import de.l3s.boilerpipe.sax.ImageExtractor;
+import de.l3s.boilerpipe.document.Image;
 import eus.ixa.ixa.pipe.seg.RuleBasedSegmenter;
 
 import org.openqa.selenium.By;
@@ -128,8 +131,13 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.chromium.ChromiumDriver;
+import org.openqa.selenium.print.PrintOptions;
+import org.openqa.selenium.print.PageSize;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+
+
 
 
 /**
@@ -164,10 +172,13 @@ public class FeedReader {
 	private CloseableHttpClient httpsession;
 	private CookieStore cookieStore;
 	
-	private WebDriver seleniumDriver;
+	private ChromeDriver seleniumDriver;
 	
-	
+	private static DocumentParserBPipePlus docParser = new DocumentParserBPipePlus();
 
+	//private final BoilerpipeExtractor bpExtractor=new ArticleExtractor();
+	//private final ImageExtractor bpImgExtractor=ImageExtractor.INSTANCE;
+	
 	private  HashMap<String, FeedCredential> credentials = new HashMap<String, FeedCredential>();
 	public Set<Feed> getFeeds(){
 		return this.feeds;
@@ -554,30 +565,46 @@ public class FeedReader {
 					//normal kohlschuetter extractor call
 					// parse the document into boilerpipe's internal data structure
 					//final InputSource is = HTMLFetcher.fetch(linkSrc).toInputSource();
-					final InputSource is;
+					String docXml = "";
 					if (subscription) {
 					    
 						seleniumDriver.get(link);
-						is = new HTMLDocument(seleniumDriver.getPageSource()).toInputSource();
+						docXml = seleniumDriver.getPageSource();
 					}
 					else {
-						is = fetchHTML(linkSrc,cookieStore);
+						docXml = fetchHTML(linkSrc,cookieStore);
 					}
-					TextDocument doc = new BoilerpipeSAXInput(is).getTextDocument();
+					final HTMLDocument is=new HTMLDocument(docXml);
+					
 					// perform the extraction/classification process on "doc"
+					TextDocument doc = new BoilerpipeSAXInput(is.toInputSource()).getTextDocument();
 					ArticleExtractor.INSTANCE.process(doc);
+					FeedArticle docExtract = docParser.parseText(is,entry,pubDate, f.getLangs());
+
 					//text = text.replaceAll("(?i)<p>", "").replaceAll("(?i)</p>", "\n\n").replaceAll("(?i)<br\\/?>","\n");
 
 					//detect language
-					String lang = LID.detectFeedLanguage(doc.getContent(), f.getLangs())[0];
-
+					//String lang = LID.detectFeedLanguage(doc.getContent(), f.getLangs())[0];
+					String lang=docExtract.getLang();
+					
 					//if language accepted parse article for mentions. If found store them to DB or print them
 					if (acceptedLangs.contains("all") || acceptedLangs.contains(lang))
 					{
+						PrintOptions printoptions= new PrintOptions();
+						printoptions.setOrientation(PrintOptions.Orientation.LANDSCAPE);
+						printoptions.setScale(0.9);
+				        printoptions.setPageSize(new PageSize(297,210));
+
 						if (kwrds.isEmpty())
 						{
 							System.err.println("MSM::FeadReader::getFeed ->no keywords provided full articles will be returned");
-							boolean success=MSMUtils.saveHtml2pdf(is, fileStorePath,link);																		
+							boolean success=MSMUtils.saveHtml2pdf(docExtract, fileStorePath,link);	
+							if (success) {
+								System.err.println("FeadReader::getFeed -> link stored as pdf! "+link);
+							}
+							else {
+								System.err.println("FeadReader::getFeed -> ERROR storing link as pdf! "+link);
+							}
 						}
 						else
 						{
@@ -585,7 +612,7 @@ public class FeedReader {
 							boolean mentionsFound=parseArticleForKeywords(doc,lang, pubDate, link, f.getSrcId(), store);
 							//albisteak aipamenik bazuen gorde albistearen pdf-a
 							if (mentionsFound) {
-								boolean success=MSMUtils.saveHtml2pdf(is, fileStorePath,link);																		
+								boolean success=MSMUtils.saveHtml2pdf(docExtract, fileStorePath,link);																		
 							}
 						}
 					}
@@ -1134,7 +1161,7 @@ public class FeedReader {
 	 * @throws KeyManagementException 
 	 * @throws AuthenticationException 
 	 */
-	private InputSource fetchHTML(URL linkSrc, CookieStore cst) throws IOException, URISyntaxException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException, AuthenticationException {
+	private String fetchHTML(URL linkSrc, CookieStore cst) throws IOException, URISyntaxException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException, AuthenticationException {
 		
 		final Pattern PAT_CHARSET = Pattern
 				.compile("charset=([^; ]+)$");
@@ -1214,7 +1241,8 @@ public class FeedReader {
 		// kodifikazio aldatu UTF-8 ra, batzuk conn.getContentType() : ISO-8859-1 itzultzen dute 
 		byte[] utf8 = new String(data, cs.displayName()).getBytes("UTF-8");
 		cs = Charset.forName("UTF-8");
-		return new HTMLDocument(utf8, cs).toInputSource();
+		String result = new String(utf8,cs);
+		return result;
 			
 	}
 
@@ -1237,7 +1265,7 @@ public class FeedReader {
 			}
 		}
 		seleniumOptions.setBinary("/usr/bin/google-chrome-beta");
-
+				
 		seleniumDriver=new ChromeDriver(seleniumOptions);
 
 		try {

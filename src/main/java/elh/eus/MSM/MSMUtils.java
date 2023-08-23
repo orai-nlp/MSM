@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.Reader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -43,11 +44,13 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import javax.naming.NamingException;
@@ -63,15 +66,19 @@ import org.apache.http.conn.ssl.TrustAllStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.ssl.SSLContextBuilder;
+import org.openqa.selenium.Pdf;
 import org.xml.sax.InputSource;
 
 import twitter4j.JSONArray;
 import twitter4j.JSONException;
 import twitter4j.JSONObject;
 
+import org.jsoup.parser.Parser;
+
 //import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
 import com.mysql.cj.jdbc.MysqlDataSource;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
+
 
 public final class MSMUtils {
 
@@ -84,7 +91,17 @@ public final class MSMUtils {
 	
 	public static final Pattern duplicatedDomainInUrl = Pattern.compile("http[s]?://");
 
-	
+	private static final Map<Pattern,String> unicodeConversions =  new HashMap<Pattern, String>() {
+		{
+			put(Pattern.compile("(\u201c|\u201d|\u0093|\u0094)"), "\"");
+			put(Pattern.compile("(\u2018|\u2019|\u0092)"), "\'");			
+			put(Pattern.compile("\u20ac"),"€");
+			put(Pattern.compile("\u2026"), "...");
+			put(Pattern.compile("\u0096"), "-");
+			put(Pattern.compile("(\u2008|\u2028|\u2009|\u200a\u008d)"), " ");
+		}
+	};
+		
 	/**
 	* Check input file integrity.
 	* @param name
@@ -471,19 +488,152 @@ public final class MSMUtils {
 	 * @param filename
 	 * @return true if succesfull, false otherwise
 	 */
-	public static boolean saveHtml2pdf(InputSource in, String storePath, String filename) 
+	public static boolean saveHtml2pdf(FeedArticle in, String storePath, String link) 
 	{
+		String filename=link;
 		try {
-			OutputStream os = new FileOutputStream(storePath+filename);
+			filename=duplicatedDomainInUrl.matcher(filename).replaceFirst("");
+			String filename_pdf=filename.replaceAll(".htm[l]?$", ".pdf");
+			String fullfilepath=storePath+filename_pdf;
+			File outfile = new File(fullfilepath);
+			outfile.getParentFile().mkdirs();
+			System.err.println("MSMUtils::saveHtml2pdf -> path to store file: "+fullfilepath);
+			//File outfilehtml=new File(storePath+filename);
+			//PrintWriter p = new PrintWriter(new FileOutputStream(outfilehtml));
+			for (String img : in.getImages()){
+				System.err.println("MSMUtils::saveHtml2pdf -> image for the article: "+img);			
+			}
+			String validxml="<html><head></head>"
+					+ "<body><h1><a href=\""+link+"\">"+in.getTitle()+"</a></h1><p>"+in.getAuthor()+"</p>"+
+					"<p>"+in.getText()+"</p></body></html>";
+			for (String img : in.getImages()){
+				validxml="<html><head><style>\n"
+						+ "        @page {\n"
+						+ "			  size: A4 landscape;\n"
+						+ "			}\n"
+						+ "			* {\n"
+						+ "            margin: 0;\n"
+						+ "            padding: 0;\n"
+						+ "        }\n"
+						+ "        .imgbox {\n"
+						+ "            display: grid;\n"
+						+ "            height: 100%;\n"
+						+ "        }\n"
+						+ "        .center-fit {\n"
+						+ "            max-width: 100%;\n"
+						+ "            max-height: 100vh;\n"
+						+ "            margin: auto;\n"
+						+ "        }\n"
+						+ "    </style></head><body><h1><a href=\""+link+"\">"+in.getTitle()+"</a></h1><p>"+in.getAuthor()+"</p>"+
+							"<div class=\"imgbox\"><img class=\"center-fit\" src=\""+img+"\"></img></div>"+
+							"<p>"+in.getText()+"</p></body></html>";
+				break;
+			}
+			/*
+			//clean and make html valid xml
+			org.jsoup.nodes.Document doc= Jsoup.parse(in,link);
+			doc.select("script").remove();
+			//org.jsoup.nodes.Elements selector = document.select("style");
+			//for (Element element : selector) {
+			//    String elem_html = element.html().replaceAll("<", "&lt;")..replaceAll("&", "&amp;");
+			//}
+		    doc.outputSettings().syntax(org.jsoup.nodes.Document.OutputSettings.Syntax.xml);  
+		    doc.outputSettings().escapeMode(org.jsoup.nodes.Entities.EscapeMode.xhtml);
+			String validxml=doc.toString();*/
+			//System.err.println("MSMUtils::saveHtml2pdf -> xml to store: "+validxml);			
+			//p.print(validxml);
+			//p.close();
+			OutputStream os = new FileOutputStream(outfile);
 			PdfRendererBuilder builder = new PdfRendererBuilder();
 			builder.useFastMode();
-			builder.withHtmlContent(in.toString(),filename); //)withUri(is);
+			builder.withHtmlContent(validxml,fullfilepath); //)withUri(is);
 			builder.toStream(os);
 			builder.run();
+			os.close();
 			return true;
-		}catch (IOException ioe) {
+		}catch (Exception e) {
+			System.err.println("MSMUtils::saveHtml2pdf -> io error when writing "+filename+
+					"\n"+e.getMessage()+
+					"\n"+e.getStackTrace().toString());
 			return false;
 		}
 	}
 
+	public static boolean saveHtml2pdfSelenium(Pdf pdf, String storePath, String filename) {
+		boolean success=false;
+		try {
+			filename=duplicatedDomainInUrl.matcher(filename).replaceFirst("");
+			String filename_pdf=filename.replaceAll(".htm[l]?$", ".pdf");
+			String fullfilepath=storePath+filename_pdf;
+			FileOutputStream fileOutputStream = new FileOutputStream(fullfilepath);
+		    byte[] byteArray = Base64.getDecoder().decode(pdf.getContent());
+		    fileOutputStream.write(byteArray);
+		    fileOutputStream.close();
+		} catch (IOException e) {
+		    e.printStackTrace();
+		}
+		return success;
+	}
+	
+	
+	public static String inputSource2String (InputSource is) {
+		String xml="";
+		try{
+			Reader r=is.getCharacterStream();
+			r.reset(); // Ensure to read the complete String
+			StringBuilder b=new StringBuilder();
+			int c;
+			while((c=r.read())>-1)
+				b.appendCodePoint(c);
+			r.reset(); // Reset for possible further actions
+			xml=b.toString();
+			
+		}catch (Exception e) {
+			System.err.println("MSMUtils::inputSource2Sting -> Error when reading inputSource"+
+					"\n"+e.toString()+
+					"\n"+e.getStackTrace().toString());
+			
+		}
+		return xml;
+	}
+	
+	/**
+	 * Unescape \\uxxxx like chars in a json string. String to convert must be a valid json string
+	 * 
+	 * @param s
+	 * @param emit_unicode
+	 * @return
+	 */
+	public static String JSONcleanEntitiesUnicode(String s)
+	{
+		String result = Parser.unescapeEntities(s, false).replaceAll("\\p{Pd}", "-");
+		for (Pattern reg: unicodeConversions.keySet()) {
+			String rep = unicodeConversions.get(reg);
+			result = reg.matcher(result).replaceAll(rep);//result.rereplaceAll(reg, rep);
+		}
+		return result;
+	}
+	
+	/**
+	 * This void creates Patterns for a list of regexes and stores them in a set structure.
+	 * @param patterns
+	 */
+	public static Set<Pattern> constructPatterns(String[] patterns) {
+	
+		Set<Pattern> result = new HashSet<Pattern>();
+		if (patterns.length < 1)
+		{
+			System.err.println ("feedReader-elh::Utils - No pattern given");
+			return result;
+			//System.exit(1);
+		}
+
+		for (String s : patterns)
+		{
+			//create and store pattern;
+			Pattern p=Pattern.compile(s);//.toLowerCase());
+			result.add(p);
+		} 
+		return result;
+	}
 }
