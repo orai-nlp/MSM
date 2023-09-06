@@ -590,11 +590,7 @@ public class FeedReader {
 					//if language accepted parse article for mentions. If found store them to DB or print them
 					if (acceptedLangs.contains("all") || acceptedLangs.contains(lang))
 					{
-						PrintOptions printoptions= new PrintOptions();
-						printoptions.setOrientation(PrintOptions.Orientation.LANDSCAPE);
-						printoptions.setScale(0.9);
-				        printoptions.setPageSize(new PageSize(297,210));
-
+						
 						if (kwrds.isEmpty())
 						{
 							System.err.println("MSM::FeadReader::getFeed ->no keywords provided full articles will be returned");
@@ -615,6 +611,9 @@ public class FeedReader {
 								boolean success=MSMUtils.saveHtml2pdf(docExtract, fileStorePath,link);																		
 							}
 						}
+					}
+					else {
+						System.err.println("FeadReader::getFeed -> lang not accepted! "+lang+" -> "+link);
 					}
 				}
 			//	else

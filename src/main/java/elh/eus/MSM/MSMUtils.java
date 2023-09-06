@@ -73,6 +73,7 @@ import twitter4j.JSONArray;
 import twitter4j.JSONException;
 import twitter4j.JSONObject;
 
+import org.jsoup.Jsoup;
 import org.jsoup.parser.Parser;
 
 //import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
@@ -529,6 +530,11 @@ public final class MSMUtils {
 							"<p>"+in.getText()+"</p></body></html>";
 				break;
 			}
+			//clean and make html valid xml
+			org.jsoup.nodes.Document doc= Jsoup.parse(validxml);
+			doc.outputSettings().syntax(org.jsoup.nodes.Document.OutputSettings.Syntax.xml);
+			doc.outputSettings().escapeMode(org.jsoup.nodes.Entities.EscapeMode.xhtml);
+			validxml=doc.toString();
 			/*
 			//clean and make html valid xml
 			org.jsoup.nodes.Document doc= Jsoup.parse(in,link);
@@ -539,7 +545,7 @@ public final class MSMUtils {
 			//}
 		    doc.outputSettings().syntax(org.jsoup.nodes.Document.OutputSettings.Syntax.xml);  
 		    doc.outputSettings().escapeMode(org.jsoup.nodes.Entities.EscapeMode.xhtml);
-			String validxml=doc.toString();*/
+			String validxml=doc.toString();*/			
 			//System.err.println("MSMUtils::saveHtml2pdf -> xml to store: "+validxml);			
 			//p.print(validxml);
 			//p.close();

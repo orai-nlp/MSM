@@ -813,19 +813,21 @@ public class DocumentParserBPipePlus {
 		{
 			result=result.substring(0, 2);
 		}
-		System.err.println("DocumentParserBpipePlus::extractLang - lang after xpaths: "+result);
+		//System.err.println("DocumentParserBpipePlus::extractLang - lang after xpaths: "+result);
 
 		//2. language detection
-		if (result == null ) {
+		if (result.length() < 2 ) {
 			result= LID.detectFeedLanguage(doc.getContent(), getFeedLangs())[0];
+			//System.err.println("DocumentParserBpipePlus::extractLang - LID lang : "+result);
 		}
 		
 		//some previous functions may return null. Be sure and empty string is returned and not null, otherwise org.json won't print the property
-		if (result == null ) {
-			result="";
+		if (result == null || result.length() < 2) {
+			result="unk";
 		}
 		
-		
+		System.err.println("DocumentParserBpipePlus::extractLang - lang : "+result);
+
 		
 		return result;
 	}
