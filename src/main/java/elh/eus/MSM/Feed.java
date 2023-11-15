@@ -215,7 +215,7 @@ public class Feed {
 			if (rs.getString("f.login_url") != null)
 			{
 				FeedCredential cred = new FeedCredential(rs.getString("f.url"), rs.getString("f.login_url"), rs.getString("f.login_username"),
-					rs.getString("f.login_passwd"), rs.getString("f.login_usr_field"),rs.getString("f.login_passwd_field"),
+					rs.getString("f.login_passwd"), rs.getString("f.login_usr_field"),rs.getString("f.login_passwd_field"),rs.getString("f.logged_check_field"),
 					rs.getString("f.login_cookie_button"));
 			
 				src.setLoginCredentials(cred);

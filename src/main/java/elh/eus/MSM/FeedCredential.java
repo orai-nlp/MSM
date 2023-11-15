@@ -8,15 +8,17 @@ public class FeedCredential {
 	private String ssopass;
 	private String userField;
 	private String passField;
+        private String loggedCheckField;
 	private String cookieNotice;
 	
-	public FeedCredential(String domain, String ssourl, String ssouser, String ssopass, String userField, String passField, String cookieNotice) {
+    public FeedCredential(String domain, String ssourl, String ssouser, String ssopass, String userField, String passField, String loggedFieldCheck, String cookieNotice) {
 		this.setDomain(domain);
 		this.setSsourl(ssourl);
 		this.setSsouser(ssouser);
 		this.setSsopass(ssopass);
 		this.setUserField(userField);
 		this.setPassField(passField);
+		this.setLoggedCheckField(loggedFieldCheck);
 		this.setCookieNotice(cookieNotice);
 	}
 
@@ -66,6 +68,14 @@ public class FeedCredential {
 
 	public void setPassField(String passField) {
 		this.passField = passField;
+	}
+
+	public String getLoggedCheckField() {
+		return loggedCheckField;
+	}
+
+	public void setLoggedCheckField(String loggedField) {
+		this.loggedCheckField = loggedField;
 	}
 
 	public String getCookieNotice() {

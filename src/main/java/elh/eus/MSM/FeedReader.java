@@ -188,8 +188,8 @@ public class FeedReader {
 		this.feeds=flist;
 	}
 	
-	public void addCredential(String domain, String ssourl, String ssouser, String ssopass, String userField, String passField, String cookieNotice) {
-		this.credentials.put(domain, new FeedCredential(domain,ssourl,ssouser,ssopass,userField,passField,cookieNotice));
+        public void addCredential(String domain, String ssourl, String ssouser, String ssopass, String userField, String passField, String loggedCheckField, String cookieNotice) {
+	        this.credentials.put(domain, new FeedCredential(domain,ssourl,ssouser,ssopass,userField,passField,loggedCheckField,cookieNotice));
 	}
 	
 	/**
@@ -371,7 +371,11 @@ public class FeedReader {
 		case "press":
 			for (Feed f : getFeeds())
 			{
+			    try{
 				getRssFeed(f, store);
+			    }catch (Exception e){
+				System.err.println("FeadReader::processFeeds -> Feed processed with errors: (" +f.getFeedURL()+") :\n "+e.getMessage());
+			    }
 			}
 			break;
 		case "multimedia":
@@ -566,13 +570,19 @@ public class FeedReader {
 					// parse the document into boilerpipe's internal data structure
 					//final InputSource is = HTMLFetcher.fetch(linkSrc).toInputSource();
 					String docXml = "";
-					if (subscription) {
+
+					try{
+					    if (subscription) {
 					    
 						seleniumDriver.get(link);
 						docXml = seleniumDriver.getPageSource();
-					}
-					else {
+					    }
+					    else {
 						docXml = fetchHTML(linkSrc,cookieStore);
+					    }
+					}catch (TimeoutException tel){
+					    System.err.println("FeadReader::getRssFeed ->  (Selenium) timeout when trying to get link: "+link+" \n "+tel.getMessage());
+					    continue;
 					}
 					final HTMLDocument is=new HTMLDocument(docXml);
 					
@@ -636,15 +646,17 @@ public class FeedReader {
 			} catch (AuthenticationException ae) {
 				System.err.println("FeadReader::getRssFeed ->  HTTP client authentication error whe reading a feed entry (" +link+") :\n "+ae.getMessage());
 				ae.printStackTrace();
-			} catch (TimeoutException te3){
-			    System.err.println("FeadReader::getRssFeed ->  selenium timeout when trying to get link: "+link+" \n "+te3.getMessage());
 			}
 
 		}
 		System.err.println("FeadReader::getRssFeed -> found "+newEnts+" new entries ");
 		// terminates driver session and closes all windows
-		if (subscription){ 
-		    seleniumDriver.quit();
+		if (subscription){
+		    try {
+			seleniumDriver.quit();
+		    }catch (Exception e){
+			System.err.println("FeadReader::getRssFeed ->  Failed to close selenium session properly, continuing anyways. Feed entry (" +link+") :\n "+e.getMessage());
+		    }
 		}
 
 		try {
@@ -1088,6 +1100,7 @@ public class FeedReader {
 					String login_pass = rs.getString("login_passwd");
 					String login_user_field = rs.getString("login_usr_field");
 					String login_pass_field = rs.getString("login_passwd_field");
+					String logged_check_field = rs.getString("logged_check_field");
 					String login_cookie_button = rs.getString("login_cookie_button");
 
 					String query2 = "SELECT domain FROM "
@@ -1102,7 +1115,7 @@ public class FeedReader {
 					}
 					if (! fdomain.equalsIgnoreCase("")) {
 						// domain, String ssourl, String ssouser, String ssopass, String userField, String passField, String cookieNotice
-						addCredential(fdomain, login_url, login_user, login_pass, login_user_field,login_pass_field,login_cookie_button);
+					        addCredential(fdomain, login_url, login_user, login_pass, login_user_field,login_pass_field,logged_check_field, login_cookie_button);
 					}
 					st2.close();
 				}
@@ -1121,10 +1134,10 @@ public class FeedReader {
 			for (String cred : allCredentials) {
 				String[] split = cred.split("::");
 				if (split.length < 7) {
-					System.err.println("MSM::FeedReader - Invalid credential, credential string format must be as follows: domain::ssourl::ssouser:ssopass::userfield::passfield::cookienotice ->"+split.length+" "+split[0]);				
+					System.err.println("MSM::FeedReader - Invalid credential, credential string format must be as follows: domain::ssourl::ssouser:ssopass::userfield::passfield::loggedCheckField::cookienotice ->"+split.length+" "+split[0]);				
 				}
 				else {
-					addCredential(split[0], split[1], split[2], split[3],split[4],split[5],split[6]);
+  				        addCredential(split[0], split[1], split[2], split[3],split[4],split[5],split[6],split[7]);
 				}
 			}
 		}
@@ -1255,6 +1268,7 @@ public class FeedReader {
 	boolean startSelenium(FeedCredential cred)
 	{
 		System.setProperty("webdriver.chrome.driver",params.getProperty("chromedriverPath", "chromedriver"));	
+		System.setProperty("webdriver.http.factory", "jdk-http-client");
 		//System.setProperty("webdriver.chrome.bin", "/usr/bin/google-chrome-beta");
 		ChromeOptions seleniumOptions = new ChromeOptions();
 		String seleniumOpts=params.getProperty("seleniumOptions","");
@@ -1263,8 +1277,9 @@ public class FeedReader {
 				seleniumOptions.addArguments(o);
 			}
 		}
-		seleniumOptions.setBinary("/usr/bin/google-chrome-beta");
-				
+		
+		seleniumOptions.setBinary(params.getProperty("chromePath", "/usr/bin/google-chrome-beta"));
+
 		seleniumDriver=new ChromeDriver(seleniumOptions);
 
 		try {
@@ -1280,7 +1295,7 @@ public class FeedReader {
 			}
 
 		}		
-		WebDriverWait wait = new WebDriverWait(seleniumDriver, Duration.ofSeconds(30));
+		WebDriverWait wait = new WebDriverWait(seleniumDriver, Duration.ofSeconds(60));
 		// if there is a cookie accepting notice wait until is ready and click to accept
 		if (! cred.getCookieNotice().equalsIgnoreCase("none")) {
 			try {
@@ -1306,11 +1321,18 @@ public class FeedReader {
 			seleniumDriver.findElement(By.id(cred.getUserField())).sendKeys(cred.getSsouser());
 			//pass
 			seleniumDriver.findElement(By.id(cred.getPassField())).sendKeys(cred.getSsopass() + Keys.ENTER);
+
 		}catch (ElementNotInteractableException nie){
 			System.err.println("FeadReader::getRssFeed ->  selenium found an element not clickable, proceeding without login");
 			return false;
 		}
 
+		try {
+    		        wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath(cred.getLoggedCheckField())));
+		}catch (ElementNotInteractableException nie){
+		        System.err.println("FeadReader::startSelenium ->  element indicating succesfull login not found, proceeding anyway");
+		}
+		
 		return true;
 	}
     
