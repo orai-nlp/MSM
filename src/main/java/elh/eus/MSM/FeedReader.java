@@ -47,7 +47,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.Scanner;
 import java.util.Set;
@@ -127,6 +126,7 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.ElementNotInteractableException;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -136,7 +136,7 @@ import org.openqa.selenium.print.PrintOptions;
 import org.openqa.selenium.print.PageSize;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-
+import org.openqa.selenium.Dimension;
 
 
 
@@ -444,7 +444,7 @@ public class FeedReader {
 			try {
 				feed = input.build(new XmlReader(stream));
 				// String ftype =feed.getFeedType();
-			} catch (NoSuchElementException nsee ){
+			} catch (java.util.NoSuchElementException nsee ){
 				System.err.println(
 						"FeadReader::getRssFeed ->  Feed ERROR with " + f.getFeedURL() + " seems the feed returned empty :\n ");
 				nsee.printStackTrace();
@@ -1281,6 +1281,11 @@ public class FeedReader {
 		seleniumOptions.setBinary(params.getProperty("chromePath", "/usr/bin/google-chrome-beta"));
 
 		seleniumDriver=new ChromeDriver(seleniumOptions);
+		Dimension window_size=seleniumDriver.manage().window().getSize();
+		System.err.println("FeadReader::getRssFeed ->  selenium window dimension:" +window_size.getWidth() +" x "+window_size.getHeight());
+		seleniumDriver.manage().window().maximize();
+		window_size=seleniumDriver.manage().window().getSize();
+		System.err.println("FeadReader::getRssFeed ->  selenium window maximized dimension:" +window_size.getWidth() +" x "+window_size.getHeight());
 
 		try {
 			seleniumDriver.get(cred.getSsourl());
@@ -1329,7 +1334,7 @@ public class FeedReader {
 
 		try {
     		        wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath(cred.getLoggedCheckField())));
-		}catch (ElementNotInteractableException nie){
+		}catch (ElementNotInteractableException | NoSuchElementException nie){
 		        System.err.println("FeadReader::startSelenium ->  element indicating succesfull login not found, proceeding anyway");
 		}
 		
