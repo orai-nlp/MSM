@@ -1283,7 +1283,7 @@ public class FeedReader {
 		seleniumDriver=new ChromeDriver(seleniumOptions);
 		Dimension window_size=seleniumDriver.manage().window().getSize();
 		System.err.println("FeadReader::getRssFeed ->  selenium window dimension:" +window_size.getWidth() +" x "+window_size.getHeight());
-		seleniumDriver.manage().window().maximize();
+		seleniumDriver.manage().window().setSize(new Dimension(1920,1080));
 		window_size=seleniumDriver.manage().window().getSize();
 		System.err.println("FeadReader::getRssFeed ->  selenium window maximized dimension:" +window_size.getWidth() +" x "+window_size.getHeight());
 
